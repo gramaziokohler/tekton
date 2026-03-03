@@ -13,6 +13,12 @@ for p in [TD_SRC, CT_SRC, DL_SRC]:
     if p not in sys.path:
         sys.path.insert(0, p)
 
+# force python to forget any previously loaded dlubal or ct_dlubal modules 
+# so grasshopper reliably pulls the newest version of your code every compute
+for mod_name in list(sys.modules.keys()):
+    if mod_name.startswith("ct_dlubal") or mod_name.startswith("dlubal"):
+        del sys.modules[mod_name]
+
 import compas
 import compas_timber
 from ct_dlubal.importer import DlubalImporter
@@ -60,7 +66,7 @@ if timber_model:
     # 3. export starten
     if RUN_EXPORT:
         print("starte export zu dlubal...")
-        importer = DlubalImporter(app_type=app_type, api_key=MY_API_KEY)
+        importer = DlubalImporter(app_type="rstab", api_key=MY_API_KEY)
         importer.run(timber_model, model_name=model_name or "GH Timber Export")
         print("export fertig!")
     else:

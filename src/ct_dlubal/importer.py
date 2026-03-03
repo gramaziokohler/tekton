@@ -1,6 +1,4 @@
 
-from dlubal.api.rfem import Application
-from dlubal.api.rfem.structure_core import node_pb2, material_pb2, section_pb2, member_pb2
 from .utils import NodeManager, calculate_dlubal_rotation
 
 class DlubalImporter:
@@ -67,61 +65,89 @@ class DlubalImporter:
                         "is_rigid": True
                     })
 
-        # 3. connect to dlubal
-        print("connecting to dlubal...")
-        app = Application(api_key_value=self.api_key) 
-        active_model = app.get_active_model()
-        print("model connected successfully.")
+        # 3. connect to dlubal and process data
+        print(f"connecting to dlubal (target: {self.app_type})...")
         
-        # 4. generate the actual dlubal objects
-        print("creating objects in dlubal...")
-        
-        # nodes
-        nodes_list = []
-        for node_id, pt in self.node_manager.nodes:
-            nodes_list.append(node_pb2.Node(no=node_id, coordinate_1=pt.x, coordinate_2=pt.y, coordinate_3=pt.z))
-            
-        # timber material
-        timber_material = material_pb2.Material(no=self.material_id, name=self.material_name)
+        if self.app_type.lower() == "rstab":
+            from dlubal.api import rstab
+            AppClass = rstab.Application
+            Core = rstab.structure_core
+        else:
+            from dlubal.api import rfem
+            AppClass = rfem.Application
+            Core = rfem.structure_core
 
-        # cross sections linked to the material
-        sections_list = []
-        for name, sec_id in self.sections_cache.items():
-            sections_list.append(section_pb2.Section(no=sec_id, name=name, material=self.material_id))
+        # with statement automatically opens and CLOSES the connection safely
+        with AppClass(api_key_value=self.api_key) as app:
+            print("model connected successfully.")
+            
+            # no close model call, as leads to UNIMPLEMENTED error... to be fixed later
+            # print("DEBUG: calling app.delete_all_objects()...")
+            # # delete_all_objects existiert oft schon in leicht älteren versionen. 
+            # app.delete_all_objects()
 
-        # members
-        members_list = []
-        for index, m in enumerate(members_data):
-            member_id = index + 1
-            if m["is_rigid"]:
-                # type 13 stands for rigid link in dlubal
-                members_list.append(member_pb2.Member(
-                    no=member_id, 
-                    node_start=m['node_start'], 
-                    node_end=m['node_end'], 
-                    type=13
+            print("DEBUG: preparing objects list in python...")
+            
+            # create the objects list using exactly the simple syntax from the example
+            objects = []
+            
+            # nodes
+            for node_id, pt in self.node_manager.nodes:
+                objects.append(Core.Node(
+                    no=node_id, 
+                    coordinate_1=pt.x, 
+                    coordinate_2=pt.y, 
+                    coordinate_3=pt.z
                 ))
-            else:
-                # normal timber member
-                members_list.append(member_pb2.Member(
-                    no=member_id, 
-                    node_start=m["node_start"], 
-                    node_end=m["node_end"],
-                    section_start=m["section_id"], 
-                    section_end=m["section_id"],
-                    rotation_angle=m["rotation"]
+                
+            # timber material
+            objects.append(Core.Material(
+                no=self.material_id, 
+                name=self.material_name
+            ))
+
+            # cross sections
+            # note: in the python client, the class is actually 'Section', not 'CrossSection' as in the C# example
+            for name, sec_id in self.sections_cache.items():
+                objects.append(Core.Section(
+                    no=sec_id, 
+                    name=name, 
+                    material=self.material_id
                 ))
-        
-        # 5. push everything to the active model
-        if nodes_list:
-            app.create_object_list(nodes_list, model_id=active_model)
+
+            # members
+            for index, m in enumerate(members_data):
+                member_id = index + 1
+                if m["is_rigid"]:
+                    # In python generated protobuffers, the enums are mapped to strings/ints without standard dot notation.
+                    # 'type' is typically expected as an int, where rigid is usually 13, and beam is 0 or 1.
+                    objects.append(Core.Member(
+                        no=member_id, 
+                        node_start=m['node_start'], 
+                        node_end=m['node_end'], 
+                        type=Core.MemberType.MEMBER_TYPE_RIGID if hasattr(Core, 'MemberType') else 13
+                    ))
+                else:
+                    objects.append(Core.Member(
+                        no=member_id, 
+                        node_start=m["node_start"], 
+                        node_end=m["node_end"],
+                        section_start=m["section_id"], 
+                        section_end=m["section_id"],
+                        rotation_angle=m["rotation"],
+                        type=Core.MemberType.MEMBER_TYPE_BEAM if hasattr(Core, 'MemberType') else 0
+                    ))
             
-        app.create_object(timber_material, model_id=active_model)
-        
-        if sections_list:
-            app.create_object_list(sections_list, model_id=active_model)
+            # push one by one
+
+            # up until here, it all works fine, the connection is established, objects are created in python
             
-        if members_list:
-            app.create_object_list(members_list, model_id=active_model)
-            
-        print("import completed.")
+            print(f"DEBUG: creating {len(objects)} objects one by one...")
+            for i, obj in enumerate(objects):
+                try:
+                    # but this ***** does not work yet!!
+                    app.create_object(obj)
+                except Exception as e:
+                    print(f"DEBUG: Error creating object {i} ({type(obj)}): {e}")
+                    raise
+            print("import completed.")
