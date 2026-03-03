@@ -20,13 +20,13 @@ class DlubalImporter:
             
         return self.sections_cache[cross_section_name]
 
-    def run(self, structural_model, model_name="Import"):
+    def run(self, timber_model, model_name="Import"):
         print("gathering model data from compas...")
         members_data = []
 
         # 1. process standard beams
-        for beam in structural_model.beams:
-            segments = structural_model.get_beam_structural_segments(beam)
+        for beam in timber_model.beams:
+            segments = timber_model.get_beam_structural_segments(beam)
             
             for segment in segments:
                 # get cross section directly from beam dimensions
@@ -52,10 +52,10 @@ class DlubalImporter:
                 })
 
         # 2. process  connectors given by compas timber
-        for joint in structural_model.joints:
+        for joint in timber_model.joints:
             if len(joint.elements) == 2:
                 beam_a, beam_b = joint.elements
-                for segment in structural_model.get_structural_connector_segments(beam_a, beam_b):
+                for segment in timber_model.get_structural_connector_segments(beam_a, beam_b):
                     n1 = self.node_manager.get_node_number(segment.segment.start)       
                     n2 = self.node_manager.get_node_number(segment.segment.end)
                     
