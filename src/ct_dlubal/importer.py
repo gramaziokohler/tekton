@@ -146,6 +146,7 @@ class DlubalImporter:
             for i, obj in enumerate(objects):
                 try:
                     # but this ***** does not work yet!!
+                    # it somehow works in RFEM, but in RSTAB it throws an UNIMPLEMENTED error from the server side... to be investigated by the CIA
                     app.create_object(obj)
                 except Exception as e:
                     print(f"DEBUG: Error creating object {i} ({type(obj)}): {e}")
