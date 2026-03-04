@@ -91,15 +91,13 @@ class DlubalImporter:
             
             # create the objects list using exactly the simple syntax from the example
             objects = []
-            
+            #from dlubal.api.rfem.structure_core import Node
+            from dlubal.api.rfem import structure_core
             # nodes
             for node_id, pt in self.node_manager.nodes:
-                objects.append(Core.Node(
-                    no=node_id, 
-                    coordinate_1=pt.x, 
-                    coordinate_2=pt.y, 
-                    coordinate_3=pt.z
-                ))
+                #print(dir(structure_core.Node))
+                node = structure_core.Node(no=node_id, coordinate_1=pt.x, coordinate_2=pt.y, coordinate_3=pt.z)
+                objects.append(node)
                 
             # timber material
             objects.append(Core.Material(
@@ -110,7 +108,7 @@ class DlubalImporter:
             # cross sections
             # note: in the python client, the class is actually 'Section', not 'CrossSection' as in the C# example
             for name, sec_id in self.sections_cache.items():
-                objects.append(Core.Section(
+                objects.append(Core.CrossSection(
                     no=sec_id, 
                     name=name, 
                     material=self.material_id
@@ -125,18 +123,16 @@ class DlubalImporter:
                     objects.append(Core.Member(
                         no=member_id, 
                         node_start=m['node_start'], 
-                        node_end=m['node_end'], 
-                        type=Core.MemberType.MEMBER_TYPE_RIGID if hasattr(Core, 'MemberType') else 13
+                        node_end=m['node_end']
                     ))
                 else:
                     objects.append(Core.Member(
                         no=member_id, 
                         node_start=m["node_start"], 
                         node_end=m["node_end"],
-                        section_start=m["section_id"], 
-                        section_end=m["section_id"],
-                        rotation_angle=m["rotation"],
-                        type=Core.MemberType.MEMBER_TYPE_BEAM if hasattr(Core, 'MemberType') else 0
+                        cross_section_start=m["section_id"], 
+                        cross_section_end=m["section_id"],
+                        rotation_angle=m["rotation"] # if hasattr(Core, 'MemberType') else 0
                     ))
             
             # push one by one
@@ -145,9 +141,11 @@ class DlubalImporter:
             
             print(f"DEBUG: creating {len(objects)} objects one by one...")
             for i, obj in enumerate(objects):
+                print(f"DEBUGgggggg: creating object {obj} ({type(obj)})")
                 try:
                     # but this ***** does not work yet!!
                     # it somehow works in RFEM, but in RSTAB it throws an UNIMPLEMENTED error from the server side... to be investigated by the CIA
+                    print(f"creating object of type {type(obj)}")
                     app.create_object(obj)
                 except Exception as e:
                     print(f"DEBUG: Error creating object {i} ({type(obj)}): {e}")
