@@ -2,6 +2,7 @@
 from .utils import NodeManager, calculate_dlubal_rotation
 
 class DlubalImporter:
+    """iterate over compas timber model, gather sections, nodes and members, then connect to dlubal and push objects one by one"""
     def __init__(self, app_type="rfem", api_key=None):
         self.app_type = app_type
         self.api_key = api_key
