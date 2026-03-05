@@ -148,13 +148,13 @@ class DlubalImporter:
                 else:
                     objects.append(Core.Member(
                         no=member_id, 
-                        node_start=m["node_start"], 
+node_start=m["node_start"], 
                         node_end=m["node_end"],
                         cross_section_start=m["section_id"], 
                         cross_section_end=m["section_id"],
-                        is_rotated=True if m["rotation"] != 0.0 else False,
-                        rotation_specification_type=rotation_by_angle_id,
-                        rotation_angle=m["rotation"]
+                        is_rotated=bool(m["rotation"] != 0.0),
+                        rotation_specification_type=0, # 0 = ROTATION_SPECIFICATION_TYPE_BY_ANGLE
+                        rotation_angle=float(m["rotation"])
                     ))
             
             # push all at once
