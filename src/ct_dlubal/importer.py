@@ -93,10 +93,9 @@ class DlubalImporter:
             objects = []
             #from dlubal.api.rfem.structure_core import Node
             from dlubal.api.rfem import structure_core
-            # nodes
+            # nodes (invert Z-axis since RFEM's Z-axis points downwards by default)
             for node_id, pt in self.node_manager.nodes:
-                #print(dir(structure_core.Node))
-                node = structure_core.Node(no=node_id, coordinate_1=pt.x, coordinate_2=pt.y, coordinate_3=pt.z)
+                node = structure_core.Node(no=node_id, coordinate_1=pt.x, coordinate_2=pt.y, coordinate_3=-pt.z)
                 objects.append(node)
                 
             # timber material
@@ -135,19 +134,11 @@ class DlubalImporter:
                         rotation_angle=m["rotation"] # if hasattr(Core, 'MemberType') else 0
                     ))
             
-            # push one by one
-
-            # up until here, it all works fine, the connection is established, objects are created in python
-            
-            print(f"DEBUG: creating {len(objects)} objects one by one...")
-            for i, obj in enumerate(objects):
-                print(f"DEBUGgggggg: creating object {obj} ({type(obj)})")
-                try:
-                    # but this ***** does not work yet!!
-                    # it somehow works in RFEM, but in RSTAB it throws an UNIMPLEMENTED error from the server side... to be investigated by the CIA
-                    print(f"creating object of type {type(obj)}")
-                    app.create_object(obj)
-                except Exception as e:
-                    print(f"DEBUG: Error creating object {i} ({type(obj)}): {e}")
-                    raise
-            print("import completed.")
+            # push all at once
+            print(f"DEBUG: creating {len(objects)} objects at once using create_object_list...")
+            try:
+                app.create_object_list(objects)
+                print("import completed.")
+            except Exception as e:
+                print(f"DEBUG: Error creating objects list: {e}")
+                raise
