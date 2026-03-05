@@ -9,9 +9,9 @@ class DlubalImporter:
         self.node_manager = NodeManager()
         self.sections_cache = {}
         
-        # default material for the whole model
+        # default material for the whole model (use exact Dlubal EN string format)
         self.material_id = 1
-        self.material_name = "Timber GL24h"
+        self.material_name = "GL24h | EN 14080:2013-09"
 
     def get_section_id(self, cross_section_name):
         # assign a new id if the section doesn't exist yet
@@ -30,10 +30,12 @@ class DlubalImporter:
             segments = timber_model.get_beam_structural_segments(beam)
             
             for segment in segments:
-                # get cross section directly from beam dimensions
-                width = beam.width
-                height = beam.height
-                cs_name = f"Rect {width}/{height}"
+                # get cross section directly from beam dimensions (convert meters to mm, round to nearest integer)
+                width_mm = int(round(beam.width * 1000))
+                height_mm = int(round(beam.height * 1000))
+                
+                # RFEM standard keyword for parametric rectangular sections
+                cs_name = f"Rectangle {width_mm}/{height_mm}"
                     
                 cs_id = self.get_section_id(cs_name)
                     
