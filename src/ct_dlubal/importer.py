@@ -31,11 +31,14 @@ class DlubalImporter:
             
             for segment in segments:
                 # get cross section directly from beam dimensions (convert meters to mm, round to nearest integer)
-                width_mm = int(round(beam.width * 1000))
-                height_mm = int(round(beam.height * 1000))
+                width_mm = float(beam.width)
+                height_mm = float(beam.height)
+                print(f"DEBUG: processing beam segment with width {width_mm} mm and height {height_mm} mm...")
+
+                print(f"original beam width: {beam.width} m, height: {beam.height} m")
                 
-                # RFEM standard keyword for parametric rectangular sections
-                cs_name = f"Rectangle {width_mm}/{height_mm}"
+                # RFEM standard keyword for parametric rectangular sections (Timber)
+                cs_name = f"R_M1 {width_mm}/{height_mm}"
                     
                 cs_id = self.get_section_id(cs_name)
                     
@@ -100,10 +103,15 @@ class DlubalImporter:
                 node = structure_core.Node(no=node_id, coordinate_1=pt.x, coordinate_2=pt.y, coordinate_3=-pt.z)
                 objects.append(node)
                 
+            # fetch the integer value for the TIMBER enum to avoid it defaulting to CONCRETE
+            mat_enum_desc = Core.Material.DESCRIPTOR.fields_by_name['material_type'].enum_type
+            timber_type_id = mat_enum_desc.values_by_name['MATERIAL_TYPE_TIMBER'].number
+
             # timber material
             objects.append(Core.Material(
                 no=self.material_id, 
-                name=self.material_name
+                name=self.material_name,
+                material_type=timber_type_id
             ))
 
             # cross sections
