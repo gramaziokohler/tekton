@@ -148,7 +148,7 @@ class DlubalImporter:
                 else:
                     objects.append(Core.Member(
                         no=member_id, 
-node_start=m["node_start"], 
+                        node_start=m["node_start"], 
                         node_end=m["node_end"],
                         cross_section_start=m["section_id"], 
                         cross_section_end=m["section_id"],
@@ -156,6 +156,10 @@ node_start=m["node_start"],
                         rotation_specification_type=0, # 0 = ROTATION_SPECIFICATION_TYPE_BY_ANGLE
                         rotation_angle=float(m["rotation"])
                     ))
+
+                    #     is_rotated=True, # Hardcoded for testing
+                    #     rotation_specification_type=0, # 0 = ROTATION_SPECIFICATION_TYPE_BY_ANGLE
+                    #     rotation_angle=0.523598775 # Hardcoded 30 degrees in radians for testing
             
             # push all at once
             if self.override_objects:
