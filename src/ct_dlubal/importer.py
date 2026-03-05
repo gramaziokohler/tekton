@@ -3,9 +3,12 @@ from .utils import NodeManager, calculate_dlubal_rotation
 
 class DlubalImporter:
     """iterate over compas timber model, gather sections, nodes and members, then connect to dlubal and push objects one by one"""
-    def __init__(self, app_type="rfem", api_key=None):
+    def __init__(self, app_type="rfem", api_key=None, override_objects=True, delete_all=False):
         self.app_type = app_type
         self.api_key = api_key
+        self.override_objects = override_objects
+        self.delete_all = delete_all
+        
         self.node_manager = NodeManager()
         self.sections_cache = {}
         
@@ -24,6 +27,11 @@ class DlubalImporter:
     def run(self, timber_model, model_name="Import"):
         print("gathering model data from compas...")
         members_data = []
+
+        # extract rotation enum type to prevent attribute errors
+        from dlubal.api.rfem import structure_core
+        rotation_spec_enum = structure_core.Member.DESCRIPTOR.fields_by_name['rotation_specification_type'].enum_type
+        rotation_by_angle_id = rotation_spec_enum.values_by_name['ROTATION_SPECIFICATION_TYPE_BY_ANGLE'].number
 
         # 1. process standard beams
         for beam in timber_model.beams:
@@ -86,12 +94,15 @@ class DlubalImporter:
         # with statement automatically opens and CLOSES the connection safely
         with AppClass(api_key_value=self.api_key) as app:
             print("model connected successfully.")
-            
-            # no close model call, as leads to UNIMPLEMENTED error... to be fixed later
-            # print("DEBUG: calling app.delete_all_objects()...")
-            # # delete_all_objects existiert oft schon in leicht älteren versionen. 
-            # app.delete_all_objects()
 
+            # implement optional delete all logic before starting
+            if self.delete_all:
+                print("DEBUG: parameter delete_all=True ... deleting all existing model objects...")
+                try:
+                    app.delete_all_objects()
+                except Exception as e:
+                    print(f"DEBUG: Could not execute delete_all_objects: {e}")
+            
             print("DEBUG: preparing objects list in python...")
             
             # create the objects list using exactly the simple syntax from the example
@@ -141,14 +152,27 @@ class DlubalImporter:
                         node_end=m["node_end"],
                         cross_section_start=m["section_id"], 
                         cross_section_end=m["section_id"],
-                        rotation_angle=m["rotation"] # if hasattr(Core, 'MemberType') else 0
+                        is_rotated=True if m["rotation"] != 0.0 else False,
+                        rotation_specification_type=rotation_by_angle_id,
+                        rotation_angle=m["rotation"]
                     ))
             
             # push all at once
-            print(f"DEBUG: creating {len(objects)} objects at once using create_object_list...")
-            try:
-                app.create_object_list(objects)
-                print("import completed.")
-            except Exception as e:
-                print(f"DEBUG: Error creating objects list: {e}")
-                raise
+            if self.override_objects:
+                print(f"DEBUG: override_objects=True ... updating {len(objects)} objects at once using create_object_list (which usually overwrites in RFEM)...")
+                try:
+                    # In newer RFEM API versions, create_object_list often acts as "create or replace" by ID,
+                    # whereas update_object_list throws an error if ANY single object in the list doesn't already exist.
+                    app.create_object_list(objects)
+                    print("import/update completed.")
+                except Exception as e:
+                    print(f"DEBUG: Error creating/updating objects list: {e}")
+                    raise
+            else:
+                print(f"DEBUG: creating {len(objects)} objects at once using create_object_list...")
+                try:
+                    app.create_object_list(objects)
+                    print("import completed.")
+                except Exception as e:
+                    print(f"DEBUG: Error creating objects list: {e}")
+                    raise

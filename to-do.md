@@ -1,0 +1,4 @@
+- get beam orientation from beam.frame / structural element.frame
+- if nodes / crossections / materials / members are present then give choice to append or override.
+- check connector element for validity
+- check why get_structural_elements is working incorrectly
