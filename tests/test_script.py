@@ -43,7 +43,7 @@ connector_geometry = []
 TOL = 0.3 # abstand ab dem knoten generiert werden
 
 from compas.data import json_load
-timber_model = json_load(r"C:\Users\user\Downloads\timber_model.json")
+timber_model = json_load(r"C:\path\to\ct_dlubal\tests\timber-models\timber_model-rotated-beams.json")
 
 if timber_model:
     # 1. beams verbinden (tolerance definieren)
