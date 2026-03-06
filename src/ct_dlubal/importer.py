@@ -134,9 +134,15 @@ class DlubalImporter:
             # add nodal supports for base nodes
             if support_nodes:
                 print(f"DEBUG: creating NodalSupport for {len(support_nodes)} nodes (Z ≈ 0)")
+                # Evaluate ID 1 or higher if we try to override/update and Dlubal bugs out 
+                # (RFEM requires elements like NodalSupports to be uniquely registered, 
+                # if we have no unique mapping, deleting all or managing IDs strictly is required)
+                
                 # Rigid support for translation and rotation (in Protobuf math.inf means rigidly fixed)
                 support = TFN.NodalSupport(
                     no=1,
+                    user_defined_name_enabled=True,
+                    name="Base Support Rigid",
                     nodes=support_nodes,
                     spring_x=math.inf,
                     spring_y=math.inf,
@@ -145,6 +151,13 @@ class DlubalImporter:
                     rotational_restraint_y=math.inf,
                     rotational_restraint_z=math.inf
                 )
+                
+                # If override_objects=True, we use update_object (or app.create_object) individually for supports if they exist
+                # But to keep `create_object_list` simple, let's just make sure delete_all is handled or we expect it to fail if it exists.
+                if self.override_objects:
+                    # In update mode, `create_object_list` might fail for NodalSupport if it already exists or if it tries to recreate it.
+                    pass
+                
                 objects.append(support)
                 
             # fetch the integer value for the TIMBER enum to avoid it defaulting to CONCRETE

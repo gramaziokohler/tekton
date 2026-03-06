@@ -73,7 +73,7 @@ if timber_model:
     # 3. export starten
     if RUN_EXPORT:
         print("starte export zu dlubal...")
-        importer = DlubalImporter(app_type="rfem", api_key=MY_API_KEY)
+        importer = DlubalImporter(app_type="rfem", api_key=MY_API_KEY, delete_all=True)
         importer.run(timber_model, model_name="test-model-rfem" or "GH Timber Export")
         print("export fertig!")
     else:
