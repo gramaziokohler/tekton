@@ -3,7 +3,7 @@ from .utils import NodeManager, calculate_dlubal_rotation
 
 class DlubalImporter:
     """iterate over compas timber model, gather sections, nodes and members, then connect to dlubal and push objects one by one"""
-    def __init__(self, app_type="rfem", api_key=None, override_objects=True, delete_all=False):
+    def __init__(self, app_type="rfem", api_key=None, override_objects=True, delete_all=False, material_preset="GL24h"):
         self.app_type = app_type
         self.api_key = api_key
         self.override_objects = override_objects
@@ -12,9 +12,19 @@ class DlubalImporter:
         self.node_manager = NodeManager()
         self.sections_cache = {}
         
-        # default material for the whole model (use exact Dlubal EN string format)
+        # Mapping for common timber materials
+        self.material_library = {
+            "GL24h": "GL24h | EN 14080:2013-09",
+            "GL24c": "GL24c | EN 14080:2013-09",
+            "GL28c": "GL28c | EN 14080:2013-09",
+            "GL30c": "GL30c | EN 14080:2013-09",
+            "C24": "C24 | EN 338:2016-04",
+            "C30": "C30 | EN 338:2016-04"
+        }
+        
+        # Get exact string or fall back to preset string if not found
         self.material_id = 1
-        self.material_name = "GL24h | EN 14080:2013-09"
+        self.material_name = self.material_library.get(material_preset, material_preset)
 
     def get_section_id(self, cross_section_name):
         # assign a new id if the section doesn't exist yet
@@ -82,14 +92,17 @@ class DlubalImporter:
         # 3. connect to dlubal and process data
         print(f"connecting to dlubal (target: {self.app_type})...")
         
+        import math
         if self.app_type.lower() == "rstab":
             from dlubal.api import rstab
             AppClass = rstab.Application
             Core = rstab.structure_core
+            TFN = rstab.types_for_nodes
         else:
             from dlubal.api import rfem
             AppClass = rfem.Application
             Core = rfem.structure_core
+            TFN = rfem.types_for_nodes
 
         # with statement automatically opens and CLOSES the connection safely
         with AppClass(api_key_value=self.api_key) as app:
@@ -107,12 +120,32 @@ class DlubalImporter:
             
             # create the objects list using exactly the simple syntax from the example
             objects = []
-            #from dlubal.api.rfem.structure_core import Node
-            from dlubal.api.rfem import structure_core
+            support_nodes = []
+            
             # nodes (invert Z-axis since RFEM's Z-axis points downwards by default)
             for node_id, pt in self.node_manager.nodes:
-                node = structure_core.Node(no=node_id, coordinate_1=pt.x, coordinate_2=pt.y, coordinate_3=-pt.z)
+                node = Core.Node(no=node_id, coordinate_1=pt.x, coordinate_2=pt.y, coordinate_3=-pt.z)
                 objects.append(node)
+                
+                # identify base nodes via Z approx 0 (tolerance 1cm)
+                if abs(pt.z) <= 0.01:
+                    support_nodes.append(node_id)
+            
+            # add nodal supports for base nodes
+            if support_nodes:
+                print(f"DEBUG: creating NodalSupport for {len(support_nodes)} nodes (Z ≈ 0)")
+                # Rigid support for translation and rotation (in Protobuf math.inf means rigidly fixed)
+                support = TFN.NodalSupport(
+                    no=1,
+                    nodes=support_nodes,
+                    spring_x=math.inf,
+                    spring_y=math.inf,
+                    spring_z=math.inf,
+                    rotational_restraint_x=math.inf,
+                    rotational_restraint_y=math.inf,
+                    rotational_restraint_z=math.inf
+                )
+                objects.append(support)
                 
             # fetch the integer value for the TIMBER enum to avoid it defaulting to CONCRETE
             mat_enum_desc = Core.Material.DESCRIPTOR.fields_by_name['material_type'].enum_type
