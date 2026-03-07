@@ -39,16 +39,10 @@ class TimberModelCreator:
 
                 surface = rf_system.target_surface
                 if surface:
-                    # Do not use modulo `% 1.0` on surface parameters.
-                    # Surface domains are not necessarily normalized 0 to 1.
                     point, (u, v) = surface.closest_point(centerline.midpoint, return_parameters=True)
                     frame = surface.frame_at(u, v)
-
-                    # The z_vector defines the height direction of the cross-section.
-                    # Setting it to the surface normal aligns the beam correctly.
                     z_vector = frame.zaxis
-                    # z_vector = Vector(0, 0, 1)  # For testing, use global z-axis to check if rotation is applied correctly
-
+                    
                 beam = Beam.from_centerline(centerline, width=self.beam_width, height=self.beam_height, z_vector=z_vector)
 
                 self.timber_model.add_element(beam)
