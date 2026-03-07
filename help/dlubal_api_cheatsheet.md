@@ -1,12 +1,36 @@
-﻿# Dlubal RFEM / RSTAB (API v2) - Python Cheatsheet
+﻿# Dlubal RFEM / RSTAB (API v2.13.8) - Python Cheatsheet
 
-Summary of lessons learned for the **Dlubal API v2 (via gRPC/Protobuf)**, specifically built for the `ct_dlubal` (COMPAS Timber) workflow. 
+Summary of relevant information for using the **Dlubal API v2 (via gRPC/Protobuf)**, tailored for usage with the `ct_dlubal` (COMPAS Timber) workflow. 
 
----
+
+## 0. Compas Timber Structural Model PRE-REQUISITES
+Before sending anything to Dlubal, the `compas_timber` model must be processed and segmented.  Use the following methods to split the beams into structural segments at their intersections (joints) and extract the virtual connector segments:
+
+```python
+# 1. Connect beams (if not already done) using a tolerance
+timber_model.connect_adjacent_beams(max_distance=0.3)
+
+# 2. Segment the beams into structural lines (crucial for structural nodes!)
+timber_model.create_beam_structural_segments()
+
+# 3. Retrieve the segments during export
+for beam in timber_model.beams:
+    segments = timber_model.get_beam_structural_segments(beam)
+    for seg in segments:
+        # These segments have clean .start and .end nodes for Dlubal members
+
+# 4. Retrieve the connectors between beams (e.g. at a joint)
+for joint in timber_model.joints:
+    beam_a, beam_b = joint.elements
+    # This generates a virtual connector linking beam_a and beam_b
+    segments = timber_model.get_structural_connector_segments(beam_a, beam_b)
+```
+
+
 
 ## 1. Connection & Data Transfer (gRPC)
-Always use the `with` statement to connect to the application. If your script crashes without closing the connection, the gRPC port stays open in the background and blocks future connections (`RESOURCE_EXHAUSTED` error).
-Instead of creating objects one-by-one (which is slow and unstable), collect them in a normal Python list and push them all at once.
+Use the `with` statement to connect to the application. If your script crashes without closing the connection, the gRPC port stays open in the background and blocks future connections (`RESOURCE_EXHAUSTED` error).
+Instead of creating objects one-by-one (which is slow and potentially exhausts your API calls quickly), collect them in a Python list and push them all at once (create_object_list).
 
 ```python
 from dlubal.api.rfem import Application
@@ -79,7 +103,7 @@ cs_name = f"R_M1 {width_mm}/{height_mm}"
 cross_section = core.CrossSection(no=1, name=cs_name, material=1)
 ```
 
-## 6. Members & Connectors (Rigid vs. Hinged)
+## 6. Members & Connectors (Rigid/Hinged)
 Members connect a start Node ID with an end Node ID. Their behavior depends heavily on the chosen `type`.
 
 ```python
@@ -128,7 +152,7 @@ support = tfn.NodalSupport(
 
 ## 8. Load Cases & Settings
 A structural model cannot be calculated without loads. A Load Case always requires a **Static Analysis Settings** rule first.
-We usually create Load Case 1 as the essential "Self-Weight".
+Create Load Case 1 as the essential "Self-Weight".
 
 ```python
 from dlubal.api.rfem import loading
