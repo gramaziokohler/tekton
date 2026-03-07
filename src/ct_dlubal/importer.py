@@ -96,6 +96,8 @@ class DlubalImporter:
         print(f"connecting to dlubal (target: {self.app_type})...")
         
         import math
+
+        # case RFEM or RSTAB:
         if self.app_type.lower() == "rstab":
             from dlubal.api import rstab
             AppClass = rstab.Application

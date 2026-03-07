@@ -10,3 +10,7 @@
 - [ ] **Exzentrizitäten verstehen/klären:** Detailkonzept zu Formschluss und Systemachsenversatz erarbeiten.
 - [X] **RSTAB-Kompatibilität:** API-Blockade beim Wechsel auf RSTAB beheben.
 - [x] **Lastfälle & Lasten:** Elementare Lastfälle Eigengewicht (LF1) inkl. Berechnungseinstellungen implementiert.
+
+-auto fetch model name
+-fetch available materials?
+....

@@ -26,8 +26,6 @@ for joint in timber_model.joints:
     segments = timber_model.get_structural_connector_segments(beam_a, beam_b)
 ```
 
-
-
 ## 1. Connection & Data Transfer (gRPC)
 Use the `with` statement to connect to the application. If your script crashes without closing the connection, the gRPC port stays open in the background and blocks future connections (`RESOURCE_EXHAUSTED` error).
 Instead of creating objects one-by-one (which is slow and potentially exhausts your API calls quickly), collect them in a Python list and push them all at once (create_object_list).
