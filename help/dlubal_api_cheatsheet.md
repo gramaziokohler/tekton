@@ -1,95 +1,153 @@
-﻿# Dlubal RFEM / RSTAB (API v2) - Cheatsheet für Python
+﻿# Dlubal RFEM / RSTAB (API v2) - Python Cheatsheet
 
-Dieses Dokument fasst die wichtigsten Fallstricke und Herangehensweisen bei der Arbeit mit der (neuen) **Dlubal API v2 (via gRPC/Protobuf)** zusammen, speziell im Kontext des `ct_dlubal` (COMPAS Timber) Importers.
+Summary of lessons learned for the **Dlubal API v2 (via gRPC/Protobuf)**, specifically built for the `ct_dlubal` (COMPAS Timber) workflow. 
 
 ---
 
-## 1. Namensgebung fÃ¼r Querschnitte (String Parsing)
-
-Dlubal RFEM generiert Querschnitte aus einfachen Strings. Die Abmessungen mÃ¼ssen in den meisten FÃ¤llen in **Millimetern** angegeben werden, auch wenn die Quellgeometrie (z.B. in Rhino/COMPAS) in Metern modelliert wurde. Ist der String ungÃ¼ltig formatiert, ist der Querschnitt im Programm meist unsichtbar oder fehlerhaft.
-
-```python
-# FALSCH (Meter oder falsches PrÃ¤fix)
-# name = "Rect 0.1/0.2"
-
-# RICHTIG (Millimeter mit gÃ¼ltigem Dlubal-PrÃ¤fix "Rectangle" oder "R_M1")
-width_mm = 120
-height_mm = 240
-cs_name = f"Rectangle {width_mm}/{height_mm}" 
-# oder auch f"R_M1 {width_mm}/{height_mm}" je nach Sprachpaket
-
-# API-Objekt generieren
-from dlubal.api.rfem import structure_core
-cross_section = structure_core.CrossSection(
-    no=1, 
-    name=cs_name, 
-    material=1
-)
-```
-
-## 2. Material-Typen (Achtung: Versteckte Standard-Enums!)
-
-Dies ist eine der hÃ¤ufigsten Fehlerquellen: Wenn man ein neues Material per API erzeugt, stuft Dlubal es **standardmÃ¤ÃŸig immer als Beton (CONCRETE)** ein! Wenn der Name im Katalog aber ein Holz ist (z.B. "GL24h"), schlÃ¤gt die Zuweisung bzw. interne Berechnung fehl. Man muss den Material-Typ `material_type` zwingend mit dem korrekten Flag Ã¼berschreiben!
-
-```python
-from dlubal.api.rfem import structure_core
-
-# Enum-ID fÃ¼r Timber aus dem Protobuf-Schema extrahieren
-# Meist ist TIMBER = 1, CONCRETE = 0, STEEL = 2 etc.
-mat_type_timber = structure_core.Material.Descriptor().fields_by_name['material_type'].enum_type.values_by_name['MATERIAL_TYPE_TIMBER'].number
-
-timber_material = structure_core.Material(
-    no=1, 
-    name="GL24h | EN 14080:2013-09", # Genauer Name aus dem aktiven Dlubal-Katalog
-    material_type=mat_type_timber    # <--- ZWINGEND ERFORDERLICH!
-)
-```
-
-## 3. Z-Achsen Konvention beachten (Gravity)
-
-Im konstruktiven Ingenieurbau (sowie nativ in Dlubal RFEM) zeigt die globale Z-Achse standardmÃ¤ÃŸig **nach unten** in Richtung der Schwerkraft. Da 3D-CAD-Software (wie Rhino/COMPAS) Z klassischerweise nach oben definiert, mÃ¼ssen die Z-Koordinaten der generierten Nodes invertiert werden, damit Modelle nicht kopfÃ¼ber hÃ¤ngen.
-
-```python
-# "coordinate_3" steht fÃ¼r die Z-Achse im Dlubal-Modell
-node = structure_core.Node(
-    no=node_id, 
-    coordinate_1=pt.x, 
-    coordinate_2=pt.y, 
-    coordinate_3=-pt.z  # invertieren fÃ¼r korrekte Dlubal-Darstellung
-)
-```
-
-## 4. Objekte in Listen pushen (Mass-Create)
-
-Statt Hunderte API-Aufrufe mit `app.create_object(obj)` einzeln in einer langen Schleife abzufeuern, sollte man ein Array aus allen generierten Objekten bilden und dieses per `create_object_list` senden. 
-Dieses Batch-Processing lÃ¶st das Problem von gRPC Timeouts oder Blockaden und ist dramatisch schneller.
-
-```python
-objects = []
-
-# Objekte sammeln
-objects.append(timber_material)
-objects.append(cross_section)
-# ... for-Schleife Ã¼ber alle Nodes, Members etc. ...
-
-# Alles in EINEM Netzwerk-Call an RFEM/RSTAB feuern:
-app.create_object_list(objects)
-```
-
-## 5. Fehlersuche & Reverse Engineering (gRPC Blockaden)
-
-Wenn man herausfinden will, welche Properties Dlubal intern genau erwartet, ist es am einfachsten:
-1. Ein Objekt in RFEM hÃ¤ndisch / per GUI anzulegen.
-2. Das Objekt Ã¼ber ein Python Script (mit ID/Name) auszulesen.
-
-**Wichtig:** Wenn ein Script abstÃ¼rzt, bleibt die gRPC-Schnittstelle oft "blockiert" (Error: `RESOURCE_EXHAUSTED`). Daher sollte die Verbindung zum Dlubal-Client immer mit einem Context-Manager (z.B. einem `with`-Statement) geÃ¶ffnet werden, damit die Verbindung bei einem Crash sicher und sauber abgebaut (geclosed) wird:
+## 1. Connection & Data Transfer (gRPC)
+Always use the `with` statement to connect to the application. If your script crashes without closing the connection, the gRPC port stays open in the background and blocks future connections (`RESOURCE_EXHAUSTED` error).
+Instead of creating objects one-by-one (which is slow and unstable), collect them in a normal Python list and push them all at once.
 
 ```python
 from dlubal.api.rfem import Application
 
-# Safe Connection
-with Application(api_key_value="dein_API_key") as app:
-    # Get active material (z.B. frisch angelegt von Hand)
-    mat = app.get_object(structure_core.Material, 1)
-    print(mat)
+# 1. Use 'with' to ensure the connection closes cleanly
+with Application(api_key_value="YOUR_API_KEY") as app:
+    
+    # 2. Safest way to avoid ID conflicts: delete all first
+    app.delete_all_objects()
+    
+    objects = []
+    # (... append nodes, members, etc. to 'objects' list here ...)
+    
+    # 3. Push everything in one single network stroke
+    app.create_object_list(objects)
+```
+
+## 2. Coordinate Systems & Z-Axis
+Dlubal uses a **Z-Down** coordinate system (gravity points towards positive Z). COMPAS Timber uses a **Z-Up** system. 
+You must invert the Z-coordinate when creating nodes, otherwise your model will be upside down.
+
+```python
+# coordinate_3 stands for the Z-axis in Dlubal
+node = core.Node(
+    no=node_id, 
+    coordinate_1=pt.x, 
+    coordinate_2=pt.y, 
+    coordinate_3=-pt.z  # invert this!
+)
+```
+
+**Member Rotation (Beta Angle):**
+Because we flip the Z-axis, we are mirroring the coordinate space. When calculating the rotation angle (`beta`) for beams, map your axes perfectly into the Dlubal space first (e.g. `z_D = -z_C`) and calculate the rotation around the X-axis against Dlubal's default horizontal Y-vector.
+
+## 3. Protobuf Enums (Finding the right ints)
+The Dlubal API uses compiled Protobuf. Pproperties (like material types, element types, load categories) expect a specific **integer ID**, not a string.
+Find these numbers dynamically by looking into the object's `DESCRIPTOR` property or hardcode them once found.
+
+```python
+# Example: Finding the integer for a RIGID member type
+from dlubal.api.rfem import structure_core as core
+member_enum = core.Member.DESCRIPTOR.fields_by_name['type'].enum_type
+rigid_int = member_enum.values_by_name['TYPE_RIGID'].number # returns 2
+```
+
+## 4. Materials
+If you create a material, Dlubal assumes it is "Concrete" by default. If your catalogue name is a timber material (like `GL24h`), the API will fail to match it and crash during calculation.
+You **must** override the `material_type` flag to tell Dlubal it is timber (usually ID 1).
+
+```python
+# Get the timber integer ID safely
+timber_type_id = core.Material.DESCRIPTOR.fields_by_name['material_type'].enum_type.values_by_name['MATERIAL_TYPE_TIMBER'].number
+
+mat = core.Material(
+    no=1, 
+    name="GL24h | EN 14080:2013-09", # Exact catalogue string needed
+    material_type=timber_type_id     # Critical!
+)
+```
+
+## 5. Cross Sections
+Cross sections are generated via simple strings. For parametric timber, you must provide dimensions in **millimeters** (even if the rest of your model uses meters).
+
+```python
+width_mm = 120
+height_mm = 240
+# Valid Dlubal prefix for parametric rectangular timber sections is 'R_M1'
+cs_name = f"R_M1 {width_mm}/{height_mm}" 
+
+cross_section = core.CrossSection(no=1, name=cs_name, material=1)
+```
+
+## 6. Members & Connectors (Rigid vs. Hinged)
+Members connect a start Node ID with an end Node ID. Their behavior depends heavily on the chosen `type`.
+
+```python
+# 1. Standard Beam (Requires a cross section)
+beam = core.Member(
+    no=1,
+    type=1, # 1 = TYPE_BEAM
+    node_start=10, 
+    node_end=11,
+    cross_section_start=1, 
+    cross_section_end=1,
+    is_rotated=True,
+    rotation_specification_type=0, # By angle
+    rotation_angle=0.52 # radians!
+)
+
+# 2. Fully Rigid Connector (No cross section needed)
+# Good for blocky nodes / pure volume overlaps
+rigid_link = core.Member(no=2, type=2, node_start=11, node_end=12) # 2 = TYPE_RIGID
+
+# 3. Hinged Connector (No cross section needed)
+# Virtual beam with My and Mz released at both ends! Great for pegged connections.
+hinged_link = core.Member(no=3, type=24, node_start=12, node_end=13) # 24 = TYPE_COUPLING_HINGE_HINGE
+```
+
+## 7. Nodal Supports (Auflager)
+To fix a node to the ground, use `NodalSupport` from the `types_for_nodes` module. 
+Instead of booleans, Dlubal models supports as springs. To make a direction totally rigid, specify `math.inf` for the spring stiffness.
+
+```python
+import math
+from dlubal.api.rfem import types_for_nodes as tfn
+
+# Attach this rigid support to nodes 1, 2, and 3
+support = tfn.NodalSupport(
+    no=1,
+    nodes=[1, 2, 3],
+    spring_x=math.inf,
+    spring_y=math.inf,
+    spring_z=math.inf,
+    rotational_restraint_x=math.inf,
+    rotational_restraint_y=math.inf,
+    rotational_restraint_z=math.inf
+)
+```
+
+## 8. Load Cases & Settings
+A structural model cannot be calculated without loads. A Load Case always requires a **Static Analysis Settings** rule first.
+We usually create Load Case 1 as the essential "Self-Weight".
+
+```python
+from dlubal.api.rfem import loading
+
+# 1. Provide analysis rules (0 = Geometrically Linear Analysis)
+sas = loading.StaticAnalysisSettings(no=1, name="Linear Analysis", analysis_type=0)
+
+# 2. Define the Load Case (11 = Permanent Action, 1 = Static Analysis)
+lc = loading.LoadCase(
+    no=1, 
+    name="Self-Weight", 
+    action_category=11, 
+    analysis_type=1,
+    self_weight_active=True,
+    self_weight_factor_x=0.0,
+    self_weight_factor_y=0.0,
+    self_weight_factor_z=1.0 # 1.0 = Gravity points downwards
+)
+
+# 3. Link them together
+lc.static_analysis_settings = 1 
 ```
