@@ -101,11 +101,13 @@ class DlubalImporter:
             AppClass = rstab.Application
             Core = rstab.structure_core
             TFN = rstab.types_for_nodes
+            Loc = rstab.loading
         else:
             from dlubal.api import rfem
             AppClass = rfem.Application
             Core = rfem.structure_core
             TFN = rfem.types_for_nodes
+            Loc = rfem.loading
 
         # with statement automatically opens and CLOSES the connection safely
         with AppClass(api_key_value=self.api_key) as app:
@@ -182,6 +184,32 @@ class DlubalImporter:
                     name=name, 
                     material=self.material_id
                 ))
+                
+            # load cases: we create a basic self-weight loadcase
+            # 11 = ACTION_CATEGORY_PERMANENT_G
+            # 1 = ANALYSIS_TYPE_STATIC_ANALYSIS
+            lc1 = Loc.LoadCase(
+                no=1, 
+                name="Eigengewicht (Self-Weight)", 
+                action_category=11, 
+                analysis_type=1,
+                self_weight_active=True,
+                self_weight_factor_x=0.0,
+                self_weight_factor_y=0.0,
+                self_weight_factor_z=1.0 # standard positive downwards in Dlubal
+            )
+            
+            # Static Analysis Settings (must exist for loadcase)
+            # 0 = ANALYSIS_TYPE_GEOMETRICALLY_LINEAR
+            sas1 = Loc.StaticAnalysisSettings(
+                no=1,
+                name="Linear Analysis",
+                analysis_type=0
+            )
+            
+            lc1.static_analysis_settings = 1
+            objects.append(sas1)
+            objects.append(lc1)
 
             # members
             for index, m in enumerate(members_data):
