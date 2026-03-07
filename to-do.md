@@ -8,5 +8,5 @@
 - [x] **Materialien:** Festigkeitsklassen (GL24h, C24 etc.) über `material_preset` auswählbar gemacht.
 - [x] **Stabgelenke / Connectors:** Connectors optional als `rigid` oder parametrisch mit `Stabendgelenken` (Freigabe von Momenten etc.) ausführen lassen.
 - [ ] **Exzentrizitäten verstehen/klären:** Detailkonzept zu Formschluss und Systemachsenversatz erarbeiten.
-- [ ] **RSTAB-Kompatibilität:** API-Blockade beim Wechsel auf RSTAB beheben.
-- [ ] **Lastfälle & Lasten:** (Später) Elementare Lastfälle (z.B. Eigengewicht) und Lasten implementieren.
+- [X] **RSTAB-Kompatibilität:** API-Blockade beim Wechsel auf RSTAB beheben.
+- [x] **Lastfälle & Lasten:** Elementare Lastfälle Eigengewicht (LF1) inkl. Berechnungseinstellungen implementiert.
