@@ -3,11 +3,12 @@ from .utils import NodeManager, calculate_dlubal_rotation
 
 class DlubalImporter:
     """iterate over compas timber model, gather sections, nodes and members, then connect to dlubal and push objects one by one"""
-    def __init__(self, app_type="rfem", api_key=None, override_objects=True, delete_all=False, material_preset="GL24h"):
+    def __init__(self, app_type="rfem", api_key=None, override_objects=True, delete_all=False, material_preset="C16", connector_mode="rigid"):
         self.app_type = app_type
         self.api_key = api_key
         self.override_objects = override_objects
         self.delete_all = delete_all
+        self.connector_mode = connector_mode
         
         self.node_manager = NodeManager()
         self.sections_cache = {}
@@ -18,6 +19,8 @@ class DlubalImporter:
             "GL24c": "GL24c | EN 14080:2013-09",
             "GL28c": "GL28c | EN 14080:2013-09",
             "GL30c": "GL30c | EN 14080:2013-09",
+            "C14": "C14 | EN 338:2016-04",
+            "C16": "C16 | EN 338:2016-04",
             "C24": "C24 | EN 338:2016-04",
             "C30": "C30 | EN 338:2016-04"
         }
@@ -185,9 +188,14 @@ class DlubalImporter:
                 member_id = index + 1
                 if m["is_rigid"]:
                     # In python generated protobuffers, the enums are mapped to strings/ints without standard dot notation.
-                    # 'type' is typically expected as an int, where rigid is usually 13, and beam is 0 or 1.
+                    # 'type' is typically expected as an int.
+                    # 2 = TYPE_RIGID (starr, default)
+                    # 24 = TYPE_COUPLING_HINGE_HINGE (Koppelstab mit Gelenken)
+                    c_type = 24 if self.connector_mode == "hinged" else 2
+                    
                     objects.append(Core.Member(
                         no=member_id, 
+                        type=c_type,
                         node_start=m['node_start'], 
                         node_end=m['node_end']
                     ))
