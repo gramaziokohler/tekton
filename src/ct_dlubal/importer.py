@@ -1,7 +1,11 @@
 
 from .utils import NodeManager, calculate_dlubal_rotation
 from .translator import TimberToStructural
-from .backends.dlubal.mapper import DlubalMapper
+from .dlubal.client import DlubalClient
+from .dlubal.mapper_nodes import NodeMapper
+from .dlubal.mapper_members import MemberMapper
+from .dlubal.mapper_supports import SupportMapper
+from .dlubal.mapper_loads import LoadMapper
 
 class TimberImporter:
     """Orchestriert den Export von COMPAS Timber zu Statiksoftware über ein neutrales Modell"""
@@ -14,32 +18,50 @@ class TimberImporter:
         self.connector_mode = connector_mode
 
     def run(self, timber_model, model_name="Import"):
-        # 1. Übersetzen in neutrales Modell
+        # 1. Übersetzen in neutrales Modell (Agnostisch)
         translator = TimberToStructural(connector_mode=self.connector_mode, material_name=self.material_preset)
         structural_model = translator.translate(timber_model)
         
-        # 2. Verbinden mit Dlubal API
-        if self.app_type.lower() == "rstab":
-            from dlubal.api import rstab as dlubal_api
-        else:
-            from dlubal.api import rfem as dlubal_api
-            
-        AppClass = dlubal_api.Application
-        Core = dlubal_api.structure_core
-        TFN = dlubal_api.types_for_nodes
-        Loc = dlubal_api.loading
-
-        with AppClass(api_key_value=self.api_key) as app:
+        # 2. Verbindung mit Dlubal über Client Modul
+        with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
             if self.delete_all:
-                app.delete_all_objects()
+                conn.delete_all_objects()
 
-            # 3. Mapping von neutral -> Dlubal
-            mapper = DlubalMapper(Core, TFN, Loc, material_name=self.material_preset)
-            objects = mapper.map_model(structural_model)
+            # Mappers initialisieren (Software-spezifisch)
+            node_mapper = NodeMapper(conn.api.structure_core)
+            member_mapper = MemberMapper(conn.api.structure_core)
+            support_mapper = SupportMapper(conn.api.types_for_nodes)
+            load_mapper = LoadMapper(conn.api.loading)
+
+            # 3. Mapping von neutral -> Dlubal PB Objekte
+            objects = []
+            
+            # Materials
+            for mat_id, mat_name in structural_model.materials.items():
+                objects.append(member_mapper.map_material(mat_id, mat_name))
+
+            # Nodes
+            for n in structural_model.nodes:
+                objects.append(node_mapper.map(n))
+
+            # Sections
+            for s in structural_model.sections:
+                objects.append(member_mapper.map_section(s))
+
+            # Members
+            for m in structural_model.members:
+                objects.append(member_mapper.map_member(m))
+
+            # Supports
+            for su in structural_model.supports:
+                objects.append(support_mapper.map(su))
+
+            # Loads
+            objects.extend(load_mapper.default_load_case())
 
             # 4. Push zu Dlubal
             try:
-                app.create_object_list(objects)
+                conn.create_object_list(objects)
                 print(f"Erfolgreich {len(objects)} Objekte nach Dlubal exportiert.")
             except Exception as e:
                 print(f"Fehler beim Export: {e}")
