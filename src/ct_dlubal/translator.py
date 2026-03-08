@@ -46,14 +46,17 @@ class TimberToStructural:
             for segment in segments:
                 n1 = self.node_manager.get_node_number(segment.segment.start)
                 n2 = self.node_manager.get_node_number(segment.segment.end)
-                beta = calculate_dlubal_rotation(segment.frame)
+                
+                # Wir geben den vollen Orientierungs-Vektor (Y-Achse) ans neutrale Modell weiter
+                # Das ist 100% agnostisch!
+                y_vector = Vector(*segment.frame.yaxis)
                 
                 model.members.append(StructuralMember(
                     id=member_id_counter,
                     node_start=n1,
                     node_end=n2,
                     section_id=current_section_id,
-                    rotation=beta
+                    orientation_vector=y_vector
                 ))
                 member_id_counter += 1
 

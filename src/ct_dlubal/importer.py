@@ -27,9 +27,12 @@ class TimberImporter:
             if self.delete_all:
                 conn.delete_all_objects()
 
+            # Knoten Koordinaten für den MemberMapper sammeln
+            nodes_cache = {n.id: n.point for n in structural_model.nodes}
+
             # Mappers initialisieren (Software-spezifisch)
             node_mapper = NodeMapper(conn.api.structure_core)
-            member_mapper = MemberMapper(conn.api.structure_core)
+            member_mapper = MemberMapper(conn.api.structure_core, nodes_cache=nodes_cache)
             support_mapper = SupportMapper(conn.api.types_for_nodes)
             load_mapper = LoadMapper(conn.api.loading)
 

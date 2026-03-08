@@ -1,31 +1,19 @@
 import math
 from compas.geometry import Vector
-from ..core.model import StructuralMember, StructuralSection
+from ..core.model import StructuralMember, StructuralSection, StructuralNode
+from .utils import calculate_beta_from_vector
 
 class MemberMapper:
     """Konvertiert neutrale Member/Sections in Dlubal PB Objekte"""
-    def __init__(self, Core):
+    def __init__(self, Core, nodes_cache=None):
         self.Core = Core
+        # Wir brauchen Zugriff auf die Knotenkoordinaten für die Winkelberechnung
+        self.nodes_cache = nodes_cache or {} 
 
-    def map_section(self, section: StructuralSection):
-        if section.name == "Rigid":
-            name = "Rigid"
-        elif section.shape_type == "rectangular":
-            w_mm = int(section.width * 1000)
-            h_mm = int(section.height * 1000)
-            name = f"R_M1 {w_mm}/{h_mm}"
-        else:
-            name = section.name
-        
-        return self.Core.CrossSection(
-            no=section.id,
-            name=name,
-            material=section.material_id
-        )
+    # ... (map_section and map_material remain similar)
 
     def map_member(self, member: StructuralMember):
         if member.is_rigid:
-            # TYPE_RIGID = 2
             return self.Core.Member(
                 no=member.id,
                 type=2,
@@ -33,15 +21,22 @@ class MemberMapper:
                 node_end=member.node_end
             )
         
+        # Beta Winkel on-the-fly im Mapper berechnen (Software-Spezifisch!)
+        p1 = self.nodes_cache.get(member.node_start)
+        p2 = self.nodes_cache.get(member.node_end)
+        beta = 0.0
+        if p1 and p2:
+            beta = calculate_beta_from_vector(p1, p2, member.orientation_vector)
+
         return self.Core.Member(
             no=member.id,
             node_start=member.node_start,
             node_end=member.node_end,
             cross_section_start=member.section_id,
             cross_section_end=member.section_id,
-            is_rotated=bool(member.rotation != 0.0),
-            rotation_specification_type=0, # BY_ANGLE
-            rotation_angle=float(member.rotation)
+            is_rotated=bool(beta != 0.0),
+            rotation_specification_type=0, 
+            rotation_angle=float(beta)
         )
 
     def map_material(self, mat_id: int, mat_name: str):

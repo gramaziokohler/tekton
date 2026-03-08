@@ -22,7 +22,9 @@ class StructuralMember:
     node_start: int
     node_end: int
     section_id: int
-    rotation: float = 0.0
+    # A vector defining the local "up" or "side" orientation (agnostic)
+    # Typically the Y-axis of the beam's frame in COMPAS
+    orientation_vector: Vector = field(default_factory=lambda: Vector(0, 0, 1))
     is_rigid: bool = False
 
 @dataclass
