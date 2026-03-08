@@ -23,8 +23,23 @@
     - supports,
     - loads
 
+```
+src/ct_dlubal/
+├── core/
+│   ├── model.py          # neutral intermediary model
+│   └── constants.py
+├── dlubal/
+│   ├── __init__.py
+│   ├── client.py         # manages the connection (with AppClass...)
+│   ├── mapper_nodes.py
+│   ├── mapper_members.py
+│   ├── mapper_supports.py
+│   └── mapper_loads.py
+├── importer.py           # Orchestration (call mapper, use client)
+└── utils.py
+```
 
-Wir könnten die DlubalImporter.run() Methode in ct_dlubal so umbauen, dass sie zuerst eine Liste von neutralen Objekten erzeugt und diese dann in einem zweiten Schritt an die Dlubal-API übergibt.
+However, this starts to have some overlap with compas FEA2
 
 ## GUI
 - [ ] unit systems?

@@ -1,6 +1,13 @@
 # ct_dlubal
 
+## Requirements
 
+The following software and packages are required to use `ct_dlubal`:
+
+- **Python**: version 3.12
+- **Dlubal API**: version 2.13.8
+- **RFEM**: version 6.13
+- **RSTAB**: version 9.13
 
 ## Installation
 
