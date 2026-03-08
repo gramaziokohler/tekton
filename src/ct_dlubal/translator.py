@@ -14,22 +14,34 @@ class TimberToStructural:
         
         member_id_counter = 1
         section_id_counter = 1
-        sections_map = {} # timber dims -> section_id
+        sections_map = {} # (width, height, shape) -> section_id
         
         # 1. Beams
         for beam in timber_model.beams:
             segments = timber_model.get_beam_structural_segments(beam)
             
-            # Querschnitt finden oder anlegen
-            dims = (float(beam.width), float(beam.height))
-            if dims not in sections_map:
+            # Querschnitt finden oder anlegen (Agnostisch über Geometrie)
+            w = float(beam.width)
+            h = float(beam.height)
+            shape = "rectangular"
+            key = (w, h, shape)
+            
+            if key not in sections_map:
                 sec_id = section_id_counter
-                section_name = f"R_M1 {dims[0]}/{dims[1]}"
-                model.sections.append(StructuralSection(id=sec_id, name=section_name, material_id=1))
-                sections_map[dims] = sec_id
+                # Neutraler Name, kann vom Backend überschrieben werden
+                name = f"Beam_{w}x{h}"
+                model.sections.append(StructuralSection(
+                    id=sec_id, 
+                    name=name, 
+                    width=w, 
+                    height=h, 
+                    shape_type=shape,
+                    material_id=1
+                ))
+                sections_map[key] = sec_id
                 section_id_counter += 1
             
-            current_section_id = sections_map[dims]
+            current_section_id = sections_map[key]
 
             for segment in segments:
                 n1 = self.node_manager.get_node_number(segment.segment.start)

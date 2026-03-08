@@ -3,8 +3,8 @@ from .utils import NodeManager, calculate_dlubal_rotation
 from .translator import TimberToStructural
 from .backends.dlubal.mapper import DlubalMapper
 
-class DlubalImporter:
-    """Orchestriert den Import von COMPAS Timber zu Dlubal über ein neutrales Modell"""
+class TimberImporter:
+    """Orchestriert den Export von COMPAS Timber zu Statiksoftware über ein neutrales Modell"""
     def __init__(self, app_type="rfem", api_key=None, override_objects=True, delete_all=False, material_preset="C24", connector_mode="rigid"):
         self.app_type = app_type
         self.api_key = api_key

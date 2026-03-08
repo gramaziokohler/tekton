@@ -36,9 +36,21 @@ class DlubalMapper:
 
         # 3. Sections
         for s in model.sections:
+            # Hier findet die Dlubal-spezifische String-Generierung statt
+            if s.name == "Rigid":
+                dlubal_sec_name = "Rigid" 
+            elif s.shape_type == "rectangular":
+                # RFEM erwartet mm Angaben im String z.B. R_M1 120/240
+                # s.width ist in Metern -> convert to mm
+                w_mm = int(s.width * 1000)
+                h_mm = int(s.height * 1000)
+                dlubal_sec_name = f"R_M1 {w_mm}/{h_mm}"
+            else:
+                dlubal_sec_name = s.name
+
             objects.append(self.Core.CrossSection(
                 no=s.id, 
-                name=s.name, 
+                name=dlubal_sec_name, 
                 material=s.material_id
             ))
         

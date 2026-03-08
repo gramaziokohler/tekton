@@ -10,8 +10,11 @@ class StructuralNode:
 @dataclass
 class StructuralSection:
     id: int
-    name: str # e.g. "RECT 120/240"
+    name: str # e.g. "RECT 120/240" (optional, fallback)
+    width: float = 0.0 # in meters (standard COMPAS/SI)
+    height: float = 0.0 # in meters
     material_id: int
+    shape_type: str = "rectangular" # "rectangular", "circular", etc.
 
 @dataclass
 class StructuralMember:
