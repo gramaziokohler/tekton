@@ -2,6 +2,11 @@
 
 Summary of relevant information for using the **Dlubal API v2 (via gRPC/Protobuf)**, tailored for usage with the `ct_dlubal` (COMPAS Timber) workflow. 
 
+Required software versions:
+- Python  3.12 (for Windows ARM)
+- dlubal-api 2.13.8
+- RSTAB   9.13
+- RFEM    6.13
 
 ## 0. Compas Timber Structural Model PRE-REQUISITES
 Before sending anything to Dlubal, the `compas_timber` model must be processed and segmented.  Use the following methods to split the beams into structural segments at their intersections (joints) and extract the virtual connector segments:

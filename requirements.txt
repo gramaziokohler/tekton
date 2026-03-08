@@ -1,4 +1,6 @@
+# python 3.12
+
 compas >= 2
-compas_timber
-dlubal-api
+compas_timber == 2.0.0-dev0
+dlubal-api == 2.13.8
 numpy

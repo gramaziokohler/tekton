@@ -23,7 +23,7 @@ for p in [TD_SRC, CT_SRC, DL_SRC]:
 import compas
 import compas_timber
 
-sys.path.append(r"C:\Program Files\Dlubal\RSTAB 9.13\bin\Lib\site-packages")
+sys.path.append(r"C:\Program Files\Dlubal\RSTAB 9.12\bin\Lib\site-packages")
 
 from ct_dlubal.importer import DlubalImporter
 

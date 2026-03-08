@@ -10,7 +10,24 @@
 - [ ] **Exzentrizitäten verstehen/klären:** Detailkonzept zu Formschluss und Systemachsenversatz erarbeiten.
 - [X] **RSTAB-Kompatibilität:** API-Blockade beim Wechsel auf RSTAB beheben.
 - [x] **Lastfälle & Lasten:** Elementare Lastfälle Eigengewicht (LF1) inkl. Berechnungseinstellungen implementiert.
+- [ ] **Auflager 2:** Andere Auflagertypen erlauben
 
--auto fetch model name
--fetch available materials?
-....
+## Refactor
+- decoupling
+    - neutral structural model
+    - software agnostic
+    - lowest common denominator 
+    - then software specific converter
+- separate modules for
+    - nodes, members,
+    - supports,
+    - loads
+
+
+Wir könnten die DlubalImporter.run() Methode in ct_dlubal so umbauen, dass sie zuerst eine Liste von neutralen Objekten erzeugt und diese dann in einem zweiten Schritt an die Dlubal-API übergibt.
+
+## GUI
+- [ ] unit systems?
+- [ ] scaling
+- [ ] auto fetch model name
+- [ ] fetch available materials?
