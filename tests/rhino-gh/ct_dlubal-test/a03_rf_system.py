@@ -48,6 +48,7 @@ class RFSystem:
         self.target_corners = target_corners
         self.target_surface = target_surface
         self.timber_model = None
+        self.brep = None
 
     
     @property
@@ -56,6 +57,9 @@ class RFSystem:
         lines = [self.mesh.edge_attribute(edge, "centerline") for edge in self.mesh.edges()]
         return lines
     
+    def set_brep(self, brep):
+        """Set the brep attribute."""
+        self.brep = brep
 
     def copy(self) -> "RFSystem":
         """Create a copy of the RFSystem object."""

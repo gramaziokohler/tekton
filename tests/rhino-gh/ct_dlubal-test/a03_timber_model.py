@@ -4,7 +4,8 @@ from unittest.main import main
 
 from compas.datastructures.mesh.mesh import Mesh
 from compas.geometry import is_colinear_line_line
-from compas.geometry import Line
+from compas.geometry import Line, Vector
+from compas.geometry import Transformation
 
 from compas_timber.connections import JointTopology, LMiterJoint, TButtJoint, XLapJoint
 # from compas_timber.design import DirectRule, JointRuleSolver, TopologyRule, CategoryRule
@@ -34,10 +35,15 @@ class TimberModelCreator:
             mesh: Mesh = rf_system.mesh
             for edge in mesh.edges():
                 centerline = mesh.edge_attribute(edge, "centerline")
-                normal = mesh.edge_attribute(edge, "normal")
-                beam = Beam.from_centerline(centerline, width=self.beam_width, height=self.beam_height)
+                z_vector = None
 
-
+                surface = rf_system.target_surface
+                if surface:
+                    point, (u, v) = surface.closest_point(centerline.midpoint, return_parameters=True)
+                    frame = surface.frame_at(u, v)
+                    z_vector = frame.zaxis
+                    
+                beam = Beam.from_centerline(centerline, width=self.beam_width, height=self.beam_height, z_vector=z_vector)
 
                 self.timber_model.add_element(beam)
                 mesh.edge_attribute(edge, "beam", beam)
