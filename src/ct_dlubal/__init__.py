@@ -4,15 +4,17 @@ __license__ = "MIT License"
 __email__ = "wiedemeier@arch.ethz.ch"
 __version__ = "0.1.0"
 
-from .importer import TimberImporter
+from .importer import DlubalImporter
 from .exporter import export_file
 from .translator import TimberToStructural
 
 # High-level convenience functions
-def push_to_dlubal(timber_model, app_type="rfem", delete_all=False):
+def push_to_dlubal(timber_model, app_type="rfem", delete_all=False, api_key=None):
     """Translate and push a timber model to Dlubal live."""
-    importer = TimberImporter(app_type=app_type, delete_all=delete_all)
-    return importer.run(timber_model)
+    translator = TimberToStructural()
+    structural_model = translator.translate(timber_model)
+    importer = DlubalImporter(app_type=app_type, delete_all=delete_all, api_key=api_key)
+    return importer.run(structural_model)
 
 def save_to_saf(timber_model, filepath):
     """Translate and save a timber model to a SAF file."""
@@ -21,4 +23,4 @@ def save_to_saf(timber_model, filepath):
     
     return export_file(struct_model, filepath, format="SAF")
 
-__all__ = ["push_to_dlubal", "save_to_saf", "TimberImporter", "TimberToStructural"]
+__all__ = ["push_to_dlubal", "save_to_saf", "DlubalImporter", "TimberToStructural"]

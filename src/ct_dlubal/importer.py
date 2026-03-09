@@ -3,10 +3,10 @@ from .dlubal.mappers.mapper_nodes import NodeMapper
 from .dlubal.mappers.mapper_members import MemberMapper
 from .dlubal.mappers.mapper_supports import SupportMapper
 from .dlubal.mappers.mapper_loads import LoadMapper
-from .translator import TimberToStructural
+# Translator removed here, handled upstream
 
-class TimberImporter:
-    """Orchestrates the export from COMPAS Timber to structural software via a neutral model."""
+class DlubalImporter:
+    """Orchestrates the export from the neutral structural model to Dlubal via gRPC."""
     
     def __init__(self, app_type="rfem", api_key=None, delete_all=False, material_preset="C24", connector_mode="rigid"):
         self.app_type = app_type
@@ -15,12 +15,8 @@ class TimberImporter:
         self.material_preset = material_preset
         self.connector_mode = connector_mode
 
-    def run(self, timber_model, model_name="Import"):
-        # 1. Translate to neutral model (Agnostic)
-        translator = TimberToStructural(connector_mode=self.connector_mode, material_name=self.material_preset)
-        structural_model = translator.translate(timber_model)
-        
-        # 2. Connect to Dlubal via Client Module
+    def run(self, structural_model, model_name="Import"):
+        # 1. Connect to Dlubal via Client Module
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
             if self.delete_all:
                 conn.delete_all_objects()
