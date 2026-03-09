@@ -23,6 +23,15 @@
     - supports,
     - loads
 
+- multi target functionality?
+    - abaqus, 
+    - ansys, 
+    - karamba3d, 
+- save to file
+    - SAF (structural analysis format),
+    - IFC (structural analysis view), 
+    - dlubal xml
+
 ```
 src/ct_dlubal/
 ├── core/
@@ -40,6 +49,14 @@ src/ct_dlubal/
 ```
 
 However, this starts to have some overlap with compas FEA2
+
+### clarify:
+- do we want to target multiple fea softwares?
+- first step is to model every structural relevant part -> should this be a separate neutral model?
+- will ct integrate supports and loads?
+    - does intermediare model make sense? overlap with fea2
+    - could use compas fea2, but also maybe overkill
+- flexibility for changes on both ends (ct and fea software)
 
 ## GUI
 - [ ] unit systems?
