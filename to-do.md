@@ -23,6 +23,15 @@
     - supports,
     - loads
 
+- multi target functionality?
+    - abaqus, 
+    - ansys, 
+    - karamba3d, 
+- save to file
+    - SAF (structural analysis format),
+    - IFC (structural analysis view), 
+    - dlubal xml
+
 ```
 src/ct_dlubal/
 ├── core/
