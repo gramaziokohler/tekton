@@ -1,5 +1,5 @@
 from .core.model import StructuralModel, StructuralNode, StructuralMember, StructuralSupport, StructuralSection
-from .utils import NodeManager, calculate_dlubal_rotation
+from .utils import NodeManager
 
 class TimberToStructural:
     """Konvertiert ein compas_timber Model in ein neutrales StructuralModel"""

@@ -19,48 +19,42 @@ sys.path.append(r"C:\Program Files\Dlubal\RSTAB 9.12\bin\Lib\site-packages")
 import ct_dlubal
 
 # Configuration
-MY_API_KEY = "ak-REDACTED-ROTATED-2026-09"
+from dotenv import load_dotenv
+load_dotenv() # Loads variables from .env into environment
+
+MY_API_KEY = os.getenv("DLUBAL_API_KEY")
 APP_TYPE = "rfem" # or "rstab"
 TIMBER_MODEL_PATH = r"C:\path\to\ct_dlubal\tests\timber-models\timber_model-rotated-beams-2.json"
 
-def main():
-    print(f"Loading timber model from: {TIMBER_MODEL_PATH}")
-    timber_model = json_load(TIMBER_MODEL_PATH)
-    
-    if not timber_model:
-        print("Error: Could not load the timber model.")
-        return
-    
-    print(f"Loaded {len(timber_model.beams)} beams and {len(timber_model.joints)} joints.")
+# =================================================
+# ============= MAIN EXECUTION BLOCK ==============
 
-    # 1. TRANSLATION STEP (Timber -> Neutral Structural Model)
-    print("Translating timber model to agnostic structural model...")
-    from ct_dlubal.translator import TimberToStructural
-    
-    translator = TimberToStructural(connector_mode="rigid", material_name="C24")
-    structural_model = translator.translate(timber_model)
-    
-    print(f"  -> Generated {len(structural_model.nodes)} structural nodes.")
-    print(f"  -> Generated {len(structural_model.members)} structural members.")
+print(f"Loading timber model from: {TIMBER_MODEL_PATH}")
+timber_model = json_load(TIMBER_MODEL_PATH)
 
-    # 2. PUSH STEP (Neutral Structural Model -> Dlubal)
-    print("Initiating Live push to Dlubal...")
-    from ct_dlubal.importer import DlubalImporter
-    
-    try:
-        importer = DlubalImporter(
-            app_type=APP_TYPE, 
-            delete_all=True, 
-            api_key=MY_API_KEY
-        )
-        importer.run(structural_model, model_name="test-model")
-        print("Successfully exported to Dlubal!")
-    except Exception as e:
-        print(f"Live export failed: {e}")
+# 1. TRANSLATION STEP (Timber -> Intermediate Model)
+print("Translating timber model to agnostic structural model...")
+from ct_dlubal.translator import TimberToStructural
 
-    # 3. (OPTIONAL) SAVE STEP
-    # from ct_dlubal.exporter import export_file
-    # export_file(structural_model, r"C:\path\to\output.saf", format="SAF")
+translator = TimberToStructural(connector_mode="rigid", material_name="C24")
+structural_model = translator.translate(timber_model)
 
-if __name__ == "__main__":
-    main()
+print(f"  -> Generated {len(structural_model.nodes)} structural nodes.")
+print(f"  -> Generated {len(structural_model.members)} structural members.")
+
+# 2. PUSH STEP (Intermediate Model -> Dlubal)
+print("Initiating Live push to Dlubal...")
+from ct_dlubal.importer import DlubalImporter
+
+try:
+    importer = DlubalImporter(app_type=APP_TYPE, delete_all=True, api_key=MY_API_KEY)
+    importer.run(structural_model, model_name="test-model")
+    print("Successfully exported to Dlubal!")
+
+except Exception as e:
+    print(f"Live export failed: {e}")
+
+# 3. (OPTIONAL) SAVE STEP
+# from ct_dlubal.exporter import export_file
+# export_file(structural_model, r"C:\path\to\output.saf", format="SAF")
+

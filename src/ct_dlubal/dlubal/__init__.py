@@ -1,7 +1,7 @@
-from .dlubal import client
-from .dlubal.mappers import mapper_nodes, mapper_members, mapper_supports, mapper_loads
+from . import client
+from .mappers import mapper_nodes, mapper_members, mapper_supports, mapper_loads
 
-# Forward imports for cleaner access in dlubal_api.py
+# Forward imports for cleaner access in importer.py
 DlubalClient = client.DlubalClient
 NodeMapper = mapper_nodes.NodeMapper
 MemberMapper = mapper_members.MemberMapper

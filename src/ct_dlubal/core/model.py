@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
-from compas.geometry import Point, Frame
+from compas.geometry import Point, Frame, Vector
 
 @dataclass
 class StructuralNode:
@@ -11,9 +11,9 @@ class StructuralNode:
 class StructuralSection:
     id: int
     name: str # e.g. "RECT 120/240" (optional, fallback)
+    material_id: int
     width: float = 0.0 # in meters (standard COMPAS/SI)
     height: float = 0.0 # in meters
-    material_id: int
     shape_type: str = "rectangular" # "rectangular", "circular", etc.
 
 @dataclass
