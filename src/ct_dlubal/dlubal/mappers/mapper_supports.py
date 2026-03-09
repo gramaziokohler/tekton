@@ -1,4 +1,4 @@
-from ..core.model import StructuralSupport
+from ...core.model import StructuralSupport
 
 class SupportMapper:
     """Konvertiert neutrale Auflager in Dlubal PB Objekte"""
