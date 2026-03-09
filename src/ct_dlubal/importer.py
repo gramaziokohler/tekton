@@ -1,11 +1,11 @@
 
 from .utils import NodeManager, calculate_dlubal_rotation
 from .translator import TimberToStructural
-from .dlubal.client import DlubalClient
-from .dlubal.mapper_nodes import NodeMapper
-from .dlubal.mapper_members import MemberMapper
-from .dlubal.mapper_supports import SupportMapper
-from .dlubal.mapper_loads import LoadMapper
+from .importer.dlubal.client import DlubalClient
+from .importer.dlubal.mapper_nodes import NodeMapper
+from .importer.dlubal.mapper_members import MemberMapper
+from .importer.dlubal.mapper_supports import SupportMapper
+from .importer.dlubal.mapper_loads import LoadMapper
 
 class TimberImporter:
     """Orchestriert den Export von COMPAS Timber zu Statiksoftware über ein neutrales Modell"""

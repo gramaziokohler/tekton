@@ -48,7 +48,33 @@ src/ct_dlubal/
 └── utils.py
 ```
 
-However, this starts to have some overlap with compas FEA2
+or even:
+
+
+```
+src/ct_dlubal/
+├── core/
+│   ├── model.py            # neutral intermediary model
+│   └── constants.py
+├── importer/               # LIVE ACTIONS
+│   ├── dlubal/             # DLUBAL SPECIFIC: API and Mappings
+│   │   ├── __init__.py
+│   │   ├── client.py       # manages the connection
+│   │   ├── mapper_nodes.py
+│   │   ├── mapper_members.py
+│   │   ├── mapper_supports.py
+│   │   └── mapper_loads.py
+│   ├── __init__.py         # Expose dlubal_api logic
+│   └── dlubal_api.py       # Orchestration (LiveImporter)
+├── exporter/               # OFFLINE ACTIONS
+│   ├── formats/
+│   │   └── saf.py          # SAF / Excel logic
+│   ├── __init__.py         # export_file(model, path, format)
+│   └── base.py
+├── translator.py           # compas_timber -> neutral model
+└── utils.py
+
+```
 
 ### clarify:
 - do we want to target multiple fea softwares?
@@ -63,3 +89,8 @@ However, this starts to have some overlap with compas FEA2
 - [ ] scaling
 - [ ] auto fetch model name
 - [ ] fetch available materials?
+
+
+
+
+
