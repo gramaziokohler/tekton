@@ -44,7 +44,7 @@ print(f"  -> Generated {len(structural_model.members)} structural members.")
 
 # 2. PUSH STEP (Intermediate Model -> Dlubal)
 print("Initiating Live push to Dlubal...")
-from ct_dlubal.importer import DlubalImporter
+from ct_dlubal.dlubal.importer import DlubalImporter
 
 try:
     importer = DlubalImporter(app_type=APP_TYPE, delete_all=True, api_key=MY_API_KEY, load_cases=["sw", "snow"])

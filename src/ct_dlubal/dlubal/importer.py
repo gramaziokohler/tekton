@@ -1,8 +1,8 @@
-from .dlubal.client import DlubalClient
-from .dlubal.mappers.mapper_nodes import NodeMapper
-from .dlubal.mappers.mapper_members import MemberMapper
-from .dlubal.mappers.mapper_supports import SupportMapper
-from .dlubal.mappers.mapper_loads import LoadMapper
+from .client import DlubalClient
+from .mappers.mapper_nodes import NodeMapper
+from .mappers.mapper_members import MemberMapper
+from .mappers.mapper_supports import SupportMapper
+from .mappers.mapper_loads import LoadMapper
 # Translator removed here, handled upstream
 
 class DlubalImporter:

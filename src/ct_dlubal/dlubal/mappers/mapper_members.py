@@ -26,15 +26,26 @@ class MemberMapper:
     # ... (map_section and map_material remain similar)
 
     def map_member(self, member: StructuralMember):
-        if member.is_rigid:
+        if member.member_type == "RIGID":
+            # Dlubal Type 2 is RIGID. 
             return self.Core.Member(
                 no=member.id,
-                type=2,
+                type=2, # TYPE_RIGID
                 node_start=member.node_start,
                 node_end=member.node_end
             )
         
-        # Beta Winkel on-the-fly im Mapper berechnen (Software-Spezifisch!)
+        if member.member_type == "COUPLING":
+            # Dlubal Type 24 is COUPLING (hinged-hinged rigid link)
+            # Useful for rotational stiffness/hinged connectors
+            return self.Core.Member(
+                no=member.id,
+                type=24, # TYPE_COUPLING_HINGE_HINGE
+                node_start=member.node_start,
+                node_end=member.node_end
+            )
+        
+        # Standard BEAM (Type 1 is default)
         p1 = self.nodes_cache.get(member.node_start)
         p2 = self.nodes_cache.get(member.node_end)
         beta = 0.0

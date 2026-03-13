@@ -4,7 +4,7 @@ __license__ = "MIT License"
 __email__ = "wiedemeier@arch.ethz.ch"
 __version__ = "0.1.0"
 
-from .importer import DlubalImporter
+from .dlubal.importer import DlubalImporter
 from .exporter import export_file
 from .translator import TimberToStructural
 

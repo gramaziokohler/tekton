@@ -140,12 +140,16 @@ class TimberToStructural:
                     n1 = self.node_manager.get_node_number(geometry.start)       
                     n2 = self.node_manager.get_node_number(geometry.end)
                     
+                    # Bestimme den Typ basierend auf connector_mode
+                    m_type = "RIGID" if self.connector_mode == "rigid" else "COUPLING"
+
                     model.members.append(StructuralMember(
                         id=member_id_counter,
                         node_start=n1,
                         node_end=n2,
                         section_id=rigid_sec_id,
-                        is_rigid=True
+                        is_rigid=(m_type == "RIGID"),
+                        member_type=m_type
                     ))
                     member_id_counter += 1
 
@@ -175,5 +179,9 @@ class TimberToStructural:
                 ry=0.0,          # Rotation Y frei
                 rz=0.0           # Rotation Z frei
             ))
+
+        # 4. Loads (Static Cases - Default for now)
+        from ct_dlubal.core.model import StructuralLoadCase, StructuralPointLoad
+        model.load_cases.append(StructuralLoadCase(id=1, name="Self-Weight", action_category="PERMANENT", self_weight=True))
 
         return model

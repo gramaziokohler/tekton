@@ -25,7 +25,7 @@ import compas_timber
 
 sys.path.append(r"C:\Program Files\Dlubal\RSTAB 9.12\bin\Lib\site-packages")
 
-from ct_dlubal.importer import DlubalImporter
+from ct_dlubal.dlubal.importer import DlubalImporter
 
 # grasshopper reload
 #from compas_rhino.devtools import DevTools

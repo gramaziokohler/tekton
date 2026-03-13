@@ -3,4 +3,6 @@
 compas >= 2
 compas_timber == 2.0.0-dev0
 dlubal-api == 2.13.8
+openpyxl
+dotenv
 numpy
