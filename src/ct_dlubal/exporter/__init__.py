@@ -17,8 +17,16 @@ FORMATS = {
     "SAF": SAFExporter,
 }
 
-def export_file(model, filepath, format="SAF"):
+def export_file(model, filepath, format=None):
     """Main entry point for file-based exports."""
+    if format is None:
+        # Auto-detect format from extension
+        ext = filepath.split('.')[-1].lower()
+        if ext in ['saf', 'xlsx']:
+            format = "SAF"
+        else:
+            format = "SAF" # Default
+            
     fmt = format.upper()
     if fmt not in FORMATS:
         raise ValueError(f"Unsupported export format: {fmt}. Available formats: {list(FORMATS.keys())}")

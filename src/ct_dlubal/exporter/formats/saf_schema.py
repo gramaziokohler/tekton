@@ -1,32 +1,27 @@
 # SAF (Structural Analysis Format) Definition
-# This file contains the schema definitions for SAF spreadsheets based on the 2.0.0 standard.
+# This file contains the schema definitions for SAF spreadsheets based on the 1.0.5+ standard.
 
+# Column order and names for all sheets except Model and Project (which are vertical)
 SHEETS = {
-    'Project': [
-        'Model Name', 'Project Name', 'Description', 'SAF Version', 'Unit System'
-    ],
     'StructuralMaterial': [
-        'Name', 'Material Type', 'Standard', 'E Modulus [N/mm2]', 'G Modulus [N/mm2]', 'Density [kg/m3]'
+        'Name', 'Type', 'Subtype', 'Quality', 'Unit mass [kg/m3]', 'E modulus [MPa]', 'G modulus [MPa]', 'Poisson Coefficient', 'Thermal expansion [1/K]', 'Design properties', 'Id'
     ],
     'StructuralCrossSection': [
-        'Name', 'Material', 'Shape Type', 'Form Code', 'Width [mm]', 'Height [mm]'
+        'Name', 'Material', 'Cross-section type', 'Shape', 'Parameters [mm]', 'Profile', 'Form code', 'Description ID of the profile', 'A [m2]', 'Iy [m4]', 'Iz [m4]', 'It [m4]', 'Iw [m6]', 'Wply [m3]', 'Wplz [m3]', 'Id'
     ],
-    'StructuralNode': [
-        'Name', 'X [m]', 'Y [m]', 'Z [m]'
+    'StructuralPointConnection': [
+        'Name', 'Coordinate X [m]', 'Coordinate Y [m]', 'Coordinate Z [m]', 'Id'
     ],
-    'Structural1DMember': [
-        'Name', 'Node Start', 'Node End', 'Cross Section', 'Rotation Angle [deg]', 'System Line Offset X [mm]', 'System Line Offset Y [mm]', 'System Line Offset Z [mm]'
+    'StructuralCurveMember': [
+        'Name', 'Type', 'Cross section', 'Arbitrary definition', 'Nodes', 'Segments', 'Begin node', 'End node', 'Internal nodes', 'Length [m]', 'Geometrical shape', 'Parent ID', 'LCS', 'LCS Rotation [deg]', 'Coordinate X [m]', 'Coordinate Y [m]', 'Coordinate Z [m]', 'System line', 'Eccentricity ey [mm]', 'Eccentricity ez [mm]', 'Layer', 'Behaviour in analysis', 'Color', 'Id'
     ],
-    'StructuralSupportNode': [
-        'Name', 'Node', 'Restraint X', 'Restraint Y', 'Restraint Z', 'Restraint Rx', 'Restraint Ry', 'Restraint Rz'
+    'StructuralPointSupport': [
+        'Name', 'Point connection', 'Support Condition X', 'Support Condition Y', 'Support Condition Z', 'Support Condition Rx', 'Support Condition Ry', 'Support Condition Rz'
+    ],
+    'StructuralLoadGroup': [
+        'Name', 'Action category', 'Id'
     ],
     'StructuralLoadCase': [
-        'Name', 'Description', 'Action Category', 'Duration Class'
+        'Name', 'Description', 'Action category', 'Variable load type', 'Id'
     ],
-    'StructuralPointLoad': [
-        'Name', 'Node', 'Load Case', 'Value FX [kN]', 'Value FY [kN]', 'Value FBZ [kN]', 'Value MX [kNm]', 'Value MY [kNm]', 'Value MZ [kNm]'
-    ],
-    'StructuralSurfaceMember': [
-        'Name', 'Nodes', 'Thickness [mm]', 'Material'
-    ]
 }

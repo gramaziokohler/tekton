@@ -28,7 +28,7 @@ if timber_model:
     print(f"Members: {len(structural_model.members)}")
 
     # 3. Export to SAF
-    saf_path = r"C:\path\to\ct_dlubal\tests\structural_model_export.xlsx"
+    saf_path = r"C:\path\to\ct_dlubal\tests\structural_model_export.saf"
     print(f"Initiating SAF export to: {saf_path}")
     
     exporter = StructuralExporter(structural_model)
