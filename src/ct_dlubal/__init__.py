@@ -21,6 +21,6 @@ def save_to_saf(timber_model, filepath):
     translator = TimberToStructural()
     struct_model = translator.translate(timber_model)
     
-    return export_file(struct_model, filepath, format="SAF")
+    return export_file(struct_model, filepath, "saf")
 
 __all__ = ["push_to_dlubal", "save_to_saf", "DlubalImporter", "TimberToStructural"]
