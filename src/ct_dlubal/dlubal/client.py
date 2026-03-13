@@ -14,12 +14,13 @@ class DlubalClient:
         self._connection = None
 
     def __enter__(self):
-        self._connection = self.api.Application(api_key_value=self.api_key)
-        return self._connection.__enter__()
+        self._app_context = self.api.Application(api_key_value=self.api_key)
+        self.application = self._app_context.__enter__()
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._connection:
-            self._connection.__exit__(exc_type, exc_val, exc_tb)
+        if self._app_context:
+            self._app_context.__exit__(exc_type, exc_val, exc_tb)
 
     @property
     def core(self):
@@ -32,3 +33,11 @@ class DlubalClient:
     @property
     def loading(self):
         return self.api.loading
+
+    def delete_all_objects(self):
+        """Löscht alle Objekte im aktuellen Modell"""
+        self.application.delete_all_objects()
+
+    def create_object_list(self, objects):
+        """Sendet eine Liste von Objekten an Dlubal"""
+        self.application.create_object_list(objects)

@@ -23,8 +23,8 @@ from dotenv import load_dotenv
 load_dotenv() # Loads variables from .env into environment
 
 MY_API_KEY = os.getenv("DLUBAL_API_KEY")
-APP_TYPE = "rfem" # or "rstab"
-TIMBER_MODEL_PATH = r"C:\path\to\ct_dlubal\tests\timber-models\timber_model-rotated-beams-2.json"
+APP_TYPE = "rstab" # or "rstab"
+TIMBER_MODEL_PATH = r"C:\path\to\ct_dlubal\tests\timber-models\timber_model-rotated-beams-3.json"
 
 # =================================================
 # ============= MAIN EXECUTION BLOCK ==============
@@ -47,7 +47,7 @@ print("Initiating Live push to Dlubal...")
 from ct_dlubal.importer import DlubalImporter
 
 try:
-    importer = DlubalImporter(app_type=APP_TYPE, delete_all=True, api_key=MY_API_KEY)
+    importer = DlubalImporter(app_type=APP_TYPE, delete_all=True, api_key=MY_API_KEY, load_cases=["sw", "snow"])
     importer.run(structural_model, model_name="test-model")
     print("Successfully exported to Dlubal!")
 

@@ -8,12 +8,13 @@ from .dlubal.mappers.mapper_loads import LoadMapper
 class DlubalImporter:
     """Orchestrates the export from the neutral structural model to Dlubal via gRPC."""
     
-    def __init__(self, app_type="rfem", api_key=None, delete_all=False, material_preset="C24", connector_mode="rigid"):
+    def __init__(self, app_type="rfem", api_key=None, delete_all=False, material_preset="C24", connector_mode="rigid", load_cases=["sw"]):
         self.app_type = app_type
         self.api_key = api_key
         self.delete_all = delete_all
         self.material_preset = material_preset
         self.connector_mode = connector_mode
+        self.load_cases = load_cases
 
     def run(self, structural_model, model_name="Import"):
         # 1. Connect to Dlubal via Client Module
@@ -53,8 +54,8 @@ class DlubalImporter:
             for su in structural_model.supports:
                 objects.append(support_mapper.map(su))
 
-            # Loads
-            objects.extend(load_mapper.default_load_case())
+            # Loads (using selected cases)
+            objects.extend(load_mapper.create_load_cases(self.load_cases))
 
             # 4. Push to Dlubal
             try:
