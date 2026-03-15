@@ -28,17 +28,18 @@ CONFIG_FILE = os.path.expanduser("~/.ct_dlubal_prefs.json")
 class DlubalExportGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("CT Dlubal - Export & Import Manager")
-        self.root.geometry("850x900")
+        self.root.title("CT Dlubal")
+        self.root.geometry("540x510")
         
         # Apply modern theme
         sv_ttk.set_theme("light")
         
         # Style customization
         style = ttk.Style()
-        style.configure("Accent.TButton", font=("Segoe UI", 10, "bold"))
-        style.configure("Header.TLabel", font=("Segoe UI", 18, "bold"))
-        style.configure("Subheader.TLabel", font=("Segoe UI", 11, "bold"))
+        style.configure("Accent.TButton", font=("Segoe UI", 9, "bold"))
+        style.configure("Header.TLabel", font=("Segoe UI", 14, "bold"))
+        style.configure("Subheader.TLabel", font=("Segoe UI", 9, "bold"))
+        style.configure("TCheckbutton", font=("Segoe UI", 8))
         
         # Data variables
         self.input_file = tk.StringVar()
@@ -77,30 +78,33 @@ class DlubalExportGUI:
         messagebox.showinfo("Preferences", "API Key saved successfully.")
 
     def setup_ui(self):
-        # Header with Logo/Title
-        header_frame = ttk.Frame(self.root, padding=(25, 25, 25, 15))
-        header_frame.pack(fill=tk.X)
-        ttk.Label(header_frame, text="COMPAS Timber → Dlubal RFEM/RSTAB", style="Header.TLabel").pack(side=tk.LEFT)
-        
-        # Theme toggle
-        theme_btn = ttk.Button(header_frame, text="Toggle Dark Mode", command=sv_ttk.toggle_theme)
-        theme_btn.pack(side=tk.RIGHT)
+        # Create a container for the top bar (Tabs + Theme button)
+        top_bar = ttk.Frame(self.root)
+        top_bar.pack(fill=tk.X, padx=5, pady=(0, 0))
 
-        # Main Notebook
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=25, pady=(0, 25))
+        # Main Notebook (placed in the top bar area)
+        self.notebook = ttk.Notebook(top_bar)
+        self.notebook.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        # Theme toggle (shifted to same level as tabs)
+        theme_btn = ttk.Button(top_bar, text="Theme", width=7, command=sv_ttk.toggle_theme)
+        theme_btn.pack(side=tk.RIGHT, padx=5, pady=5)
+
+        # Content area (to maintain spacing)
+        content_frame = ttk.Frame(self.root, padding=(10, 0, 10, 10))
+        content_frame.pack(fill=tk.BOTH, expand=True)
 
         # --- TAB 1: MODEL SETUP ---
-        setup_tab = ttk.Frame(self.notebook, padding="25")
-        self.notebook.add(setup_tab, text="1. Model Setup")
+        setup_tab = ttk.Frame(self.notebook, padding="10")
+        self.notebook.add(setup_tab, text="1. Setup")
 
-        # Dropzone
+        # Dropzone (Smaller)
         self.drop_frame = tk.Label(setup_tab, 
-                                  text="DRAG & DROP TIMBER MODEL JSON HERE\n(or click to browse)", 
+                                  text="DRAG & DROP MODEL JSON HERE", 
                                   bg="#f1f3f5", fg="#495057", 
-                                  font=("Segoe UI Semibold", 10),
-                                  relief="groove", bd=2, height=6)
-        self.drop_frame.pack(fill=tk.X, pady=(0, 25))
+                                  font=("Segoe UI Semibold", 9),
+                                  relief="groove", bd=2, height=3)
+        self.drop_frame.pack(fill=tk.X, pady=(0, 10))
         
         if HAS_DND:
             try:
@@ -108,44 +112,42 @@ class DlubalExportGUI:
                 self.drop_frame.dnd_bind('<<Drop>>', self.handle_drop)
             except: pass
         else:
-            self.drop_frame.config(text="CLICK TO BROWSE TIMBER MODEL JSON\n(Drag & Drop not available)")
+            self.drop_frame.config(text="CLICK TO BROWSE JSON")
             
         self.drop_frame.bind("<Button-1>", lambda e: self.browse_input())
 
-        # Selected File Info
+        # Selected File Info (Compact)
         file_info_frame = ttk.Frame(setup_tab)
-        file_info_frame.pack(fill=tk.X, pady=(0, 25))
-        ttk.Label(file_info_frame, text="Source Model Path:", style="Subheader.TLabel").pack(anchor=tk.W)
-        self.file_label = ttk.Label(file_info_frame, textvariable=self.input_file, foreground="#adb5bd", wraplength=750)
-        self.file_label.pack(anchor=tk.W, pady=5)
+        file_info_frame.pack(fill=tk.X, pady=(0, 10))
+        self.file_label = ttk.Label(file_info_frame, textvariable=self.input_file, 
+                                   font=("Segoe UI", 8), foreground="#adb5bd", wraplength=480)
+        self.file_label.pack(anchor=tk.W)
 
-        # Settings
-        settings_grid = ttk.Frame(setup_tab)
-        settings_grid.pack(fill=tk.BOTH, expand=True)
+        # Settings - Vertical Stacked
+        settings_container = ttk.Frame(setup_tab)
+        settings_container.pack(fill=tk.BOTH, expand=True)
 
-        # Left Column: Global Parameters
-        left_col = ttk.Frame(settings_grid)
-        left_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 15))
+        # 1. Materials
+        mat_frame = ttk.LabelFrame(settings_container, text="Materials", padding="8")
+        mat_frame.pack(fill=tk.X, pady=(0, 10))
+        ttk.Combobox(mat_frame, textvariable=self.material_preset, 
+                     values=["C16", "C24", "C30", "GL24h", "GL28h", "GL32h"],
+                     font=("Segoe UI", 9)).pack(fill=tk.X)
 
-        mat_frame = ttk.LabelFrame(left_col, text="Materials", padding="20")
-        mat_frame.pack(fill=tk.X, pady=(0, 20))
-        ttk.Label(mat_frame, text="Target Timber Quality:").pack(anchor=tk.W, pady=(0, 5))
-        ttk.Combobox(mat_frame, textvariable=self.material_preset, values=["C16", "C24", "C30", "GL24h", "GL28h", "GL32h"]).pack(fill=tk.X)
+        # 2. Supports
+        supp_frame = ttk.LabelFrame(settings_container, text="Supports", padding="5")
+        supp_frame.pack(fill=tk.X, pady=(0, 10))
+        supp_inner = ttk.Frame(supp_frame)
+        supp_inner.pack(fill=tk.X)
+        for i, (label, var) in enumerate([("uX", self.lock_ux), ("uY", self.lock_uy), ("uZ", self.lock_uz), 
+                                         ("rX", self.lock_rx), ("rY", self.lock_ry), ("rZ", self.lock_rz)]):
+            ttk.Checkbutton(supp_inner, text=label, variable=var).grid(row=0, column=i, padx=2, sticky=tk.W)
 
-        supp_frame = ttk.LabelFrame(left_col, text="Base Support Boundary Conditions", padding="20")
-        supp_frame.pack(fill=tk.X)
-        for label, var in [("Fixed uX", self.lock_ux), ("Fixed uY", self.lock_uy), ("Fixed uZ", self.lock_uz), 
-                          ("Fixed rX", self.lock_rx), ("Fixed rY", self.lock_ry), ("Fixed rZ", self.lock_rz)]:
-            ttk.Checkbutton(supp_frame, text=label, variable=var).pack(anchor=tk.W, pady=3)
-
-        # Right Column: Load Case Filter
-        right_col = ttk.Frame(settings_grid)
-        right_col.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(15, 0))
-
-        lc_main_frame = ttk.LabelFrame(right_col, text="Active Load Cases", padding="20")
-        lc_main_frame.pack(fill=tk.BOTH, expand=True)
+        # 3. Load Cases
+        lc_main_frame = ttk.LabelFrame(settings_container, text="Load Cases", padding="8")
+        lc_main_frame.pack(fill=tk.X, pady=(0, 5))
         
-        canvas = tk.Canvas(lc_main_frame, highlightthickness=0, bg="white")
+        canvas = tk.Canvas(lc_main_frame, highlightthickness=0, bg="white", height=60)
         scrollbar = ttk.Scrollbar(lc_main_frame, orient="vertical", command=canvas.yview)
         self.load_cases_container = ttk.Frame(canvas)
 
@@ -155,38 +157,36 @@ class DlubalExportGUI:
         
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        ttk.Label(self.load_cases_container, text="(Waiting for model...)").pack(pady=20)
+        ttk.Label(self.load_cases_container, text="- none -", font=("Segoe UI", 8)).pack(pady=5)
 
         # --- TAB 2: WORKFLOW ---
-        export_tab = ttk.Frame(self.notebook, padding="40")
-        self.notebook.add(export_tab, text="2. Workflow / Export")
+        export_tab = ttk.Frame(self.notebook, padding="20")
+        self.notebook.add(export_tab, text="2. Workflow")
 
-        saf_frame = ttk.LabelFrame(export_tab, text="Standard Analysis Format (SAF)", padding="30")
-        saf_frame.pack(fill=tk.X, pady=(0, 30))
-        ttk.Label(saf_frame, text="Exports a bit-perfect SAF v1.0.5 file for RSTAB/RFEM import.").pack(anchor=tk.W, pady=(0, 15))
-        ttk.Button(saf_frame, text="GENERATE SAF EXCEL FILE", style="Accent.TButton", command=self.browse_output_and_run).pack(fill=tk.X, ipady=15)
+        saf_frame = ttk.LabelFrame(export_tab, text="SAF Export", padding="15")
+        saf_frame.pack(fill=tk.X, pady=(0, 15))
+        ttk.Button(saf_frame, text="GENERATE SAF FILE", style="Accent.TButton", command=self.browse_output_and_run).pack(fill=tk.X, ipady=10)
 
-        grpc_frame = ttk.LabelFrame(export_tab, text="Direct Dlubal Live Sync (API)", padding="30")
+        grpc_frame = ttk.LabelFrame(export_tab, text="Dlubal API", padding="15")
         grpc_frame.pack(fill=tk.X)
-        ttk.Label(grpc_frame, text="Streams the model directly into an active RFEM session via the gRPC interface.").pack(anchor=tk.W, pady=(0, 15))
-        ttk.Button(grpc_frame, text="PUSH LIVE TO ACTIVE MODEL", command=lambda: self.start_process("gRPC")).pack(fill=tk.X, ipady=15)
+        ttk.Button(grpc_frame, text="PUSH LIVE", command=lambda: self.start_process("gRPC")).pack(fill=tk.X, ipady=10)
 
         # --- TAB 3: PREFERENCES ---
-        prefs_tab = ttk.Frame(self.notebook, padding="40")
-        self.notebook.add(prefs_tab, text="3. Preferences")
-        api_frame = ttk.LabelFrame(prefs_tab, text="Dlubal API Settings", padding="30")
+        prefs_tab = ttk.Frame(self.notebook, padding="20")
+        self.notebook.add(prefs_tab, text="3. Config")
+        api_frame = ttk.LabelFrame(prefs_tab, text="API Settings", padding="15")
         api_frame.pack(fill=tk.X)
-        ttk.Label(api_frame, text="Machine Key / API Token:").pack(anchor=tk.W, pady=(0, 5))
+        ttk.Label(api_frame, text="Key:").pack(anchor=tk.W)
         ttk.Entry(api_frame, textvariable=self.api_key, show="*").pack(fill=tk.X, pady=5)
-        ttk.Button(prefs_tab, text="Save Global Preferences", command=self.save_prefs).pack(anchor=tk.E, pady=30)
+        ttk.Button(prefs_tab, text="Save", command=self.save_prefs).pack(anchor=tk.E, pady=15)
 
         # Footer
-        footer = ttk.Frame(self.root, padding=(25, 15, 25, 25))
+        footer = ttk.Frame(self.root, padding=(15, 8, 15, 12))
         footer.pack(side=tk.BOTTOM, fill=tk.X)
         self.progress = ttk.Progressbar(footer, orient=tk.HORIZONTAL, mode='determinate')
-        self.progress.pack(fill=tk.X, pady=(0, 15))
-        ttk.Label(footer, textvariable=self.status_var).pack(side=tk.LEFT)
-        ttk.Label(footer, text="ct_dlubal | Powered by COMPAS", foreground="#adb5bd").pack(side=tk.RIGHT)
+        self.progress.pack(fill=tk.X, pady=(0, 8))
+        ttk.Label(footer, textvariable=self.status_var, font=("Segoe UI", 8)).pack(side=tk.LEFT)
+        ttk.Label(footer, text="ct_dlubal", foreground="#adb5bd", font=("Segoe UI", 8)).pack(side=tk.RIGHT)
 
     def handle_drop(self, event):
         path = event.data.strip('{}')
@@ -283,3 +283,10 @@ if __name__ == "__main__":
         root = tk.Tk()
     app = DlubalExportGUI(root)
     root.mainloop()
+
+
+
+
+"""
+$env:PYTHONPATH = "src"; & ".venv_parallels/Scripts/python.exe" src/ct_dlubal/gui.py
+"""
