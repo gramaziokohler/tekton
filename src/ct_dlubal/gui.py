@@ -43,11 +43,30 @@ class DropZone(QFrame):
             }
         """)
         
-        layout = QVBoxLayout(self)
-        self.label = QLabel("DRAG & DROP MODEL JSON HERE\n(or click to browse)")
-        self.label.setAlignment(Qt.AlignCenter)
-        self.label.setFont(QFont("Segoe UI Semibold", 9))
-        layout.addWidget(self.label)
+    def set_content(self, text, is_file=False):
+        self.label.setText(text)
+        if is_file:
+            self.setStyleSheet("""
+                DropZone {
+                    background-color: #ffffff;
+                    border: 1px solid #0078d4;
+                    border-radius: 6px;
+                    color: #0078d4;
+                }
+            """)
+        else:
+            self.setStyleSheet("""
+                DropZone {
+                    background-color: #f8f9fa;
+                    border: 2px dashed #dee2e6;
+                    border-radius: 6px;
+                    color: #6c757d;
+                }
+                DropZone:hover {
+                    background-color: #e9ecef;
+                    border-color: #adb5bd;
+                }
+            """)
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -169,17 +188,36 @@ class DlubalExportGUI(QMainWindow):
         setup_layout.addWidget(supp_group)
 
         # 5. Load Cases
-        lc_group = QGroupBox("Load Cases")
+        lc_group = QGroupBox("Select Load Cases for Export")
         lc_layout = QVBoxLayout(lc_group)
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
-        self.scroll.setFixedHeight(80)
+        self.scroll.setFixedHeight(120)
         self.scroll.setStyleSheet("background: white; border: none;")
         self.lc_container = QWidget()
         self.lc_inner_layout = QVBoxLayout(self.lc_container)
         self.lc_inner_layout.setContentsMargins(5, 5, 5, 5)
         self.lc_inner_layout.setSpacing(2)
-        self.lc_inner_layout.addWidget(QLabel("- none -"))
+        
+        # User selectable load cases instead of model parsing
+        self.load_cases_vars = {}
+        standard_cases = [
+            "1: Self Weight",
+            "2: Permanent",
+            "3: Live Load",
+            "4: Snow",
+            "5: Wind +X",
+            "6: Wind -X",
+            "7: Wind +Y",
+            "8: Wind -Y"
+        ]
+        
+        for name in standard_cases:
+            cb = QCheckBox(name)
+            self.lc_inner_layout.addWidget(cb)
+            self.load_cases_vars[name] = cb
+            
+        self.lc_inner_layout.addStretch()
         self.scroll.setWidget(self.lc_container)
         lc_layout.addWidget(self.scroll)
         setup_layout.addWidget(lc_group)
@@ -263,28 +301,15 @@ class DlubalExportGUI(QMainWindow):
     def handle_file_loaded(self, path):
         self.input_path = path
         self.path_label.setText(path)
-        self.status_label.setText("Reading model...")
         
-        # Clear load cases
-        for i in reversed(range(self.lc_inner_layout.count())): 
-            self.lc_inner_layout.itemAt(i).widget().deleteLater()
+        # Update DropZone to show current filename
+        filename = os.path.basename(path)
+        self.drop_zone.set_content(f"CURRENT MODEL: {filename}\n(Click to change)", is_file=True)
         
-        self.load_cases_vars = {}
+        self.status_label.setText("Model loaded successfully.")
         try:
             with open(path, 'r') as f:
                 self.model_data = json.load(f)
-            
-            lcs = self.model_data.get('load_cases', self.model_data.get('structural_model', {}).get('load_cases', []))
-            if not lcs:
-                self.lc_inner_layout.addWidget(QLabel("No load cases found."))
-            else:
-                for lc in lcs:
-                    name = lc.get('name', f"LC {lc.get('id')}")
-                    cb = QCheckBox(name)
-                    cb.setChecked(True)
-                    self.lc_inner_layout.addWidget(cb)
-                    self.load_cases_vars[name] = cb
-            self.status_label.setText("Model loaded successfully.")
         except Exception as e:
             self.status_label.setText(f"Error: {str(e)}")
 
