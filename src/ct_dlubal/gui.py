@@ -190,6 +190,7 @@ class DlubalExportGUI(QMainWindow):
         left_col.addStretch()
         right_col.addStretch()
         setup_l.addWidget(lc_group)
+        setup_l.addStretch() # <- remove if want to revert
         self.tabs.addTab(setup_tab, "1. Setup")
 
         # Tab 2: Workflow
@@ -203,6 +204,7 @@ class DlubalExportGUI(QMainWindow):
         saf_btn.setFixedHeight(40)
         saf_btn.clicked.connect(self.run_saf_export)
         saf_l.addWidget(saf_btn)
+
         work_l.addWidget(saf_g)
 
         grpc_g = QGroupBox("Dlubal Live Sync")
