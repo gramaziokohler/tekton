@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QFileDialog, QMessageBox, QProgressBar, QLineEdit,
                              QGroupBox, QTextEdit, QStyle)
 from PySide6.QtCore import Qt, Signal, QSize, QObject
-from PySide6.QtGui import QFont, QIcon, QPalette, QColor, QTextCursor, QPainter, QPen
+from PySide6.QtGui import QFont, QIcon, QPalette, QColor, QTextCursor, QPainter, QPen, QPixmap
 
 # Stream class to catch stdout/stderr
 class ConsoleStream(QObject):
@@ -32,6 +32,31 @@ except ImportError:
     from ct_dlubal.dlubal.importer import DlubalImporter
 
 CONFIG_FILE = os.path.expanduser("~/.ct_dlubal_prefs.json")
+
+
+def build_app_icon():
+    """Create a subtle app icon in-memory (no external file needed)."""
+    pixmap = QPixmap(64, 64)
+    pixmap.fill(Qt.transparent)
+
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.Antialiasing, True)
+
+    # Soft background tile
+    painter.setPen(Qt.NoPen)
+    painter.setBrush(QColor("#eef1f4"))
+    painter.drawRoundedRect(4, 4, 56, 56, 10, 10)
+
+    # Minimal "timber" bars + engineering accent
+    painter.setBrush(QColor("#8aa0b2"))
+    painter.drawRoundedRect(15, 14, 10, 36, 3, 3)
+    painter.drawRoundedRect(29, 14, 10, 36, 3, 3)
+
+    painter.setBrush(QColor("#0078d4"))
+    painter.drawRoundedRect(43, 14, 6, 36, 2, 2)
+
+    painter.end()
+    return QIcon(pixmap)
 
 class DropZone(QFrame):
     fileDropped = Signal(str)
@@ -268,6 +293,7 @@ class DlubalExportGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("CT Dlubal")
+        self.setWindowIcon(build_app_icon())
         self.setMinimumSize(540, 720)
         self.resize(540, 720)
 
@@ -621,7 +647,15 @@ class DlubalExportGUI(QMainWindow):
         self._write_prefs(show_message=True)
 
 if __name__ == "__main__":
+    if os.name == "nt":
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ct_dlubal.gui")
+        except Exception:
+            pass
+
     app = QApplication(sys.argv)
+    app.setWindowIcon(build_app_icon())
     w = DlubalExportGUI()
     w.show()
     sys.exit(app.exec())
