@@ -2,13 +2,15 @@ import sys
 import os
 import json
 import threading
+import math
+import subprocess
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QTabWidget, QPushButton, QLabel, 
                              QComboBox, QCheckBox, QScrollArea, QFrame, 
                              QFileDialog, QMessageBox, QProgressBar, QLineEdit,
-                             QGroupBox, QTextEdit)
+                             QGroupBox, QTextEdit, QStyle)
 from PySide6.QtCore import Qt, Signal, QSize, QObject
-from PySide6.QtGui import QFont, QIcon, QPalette, QColor, QTextCursor
+from PySide6.QtGui import QFont, QIcon, QPalette, QColor, QTextCursor, QPainter, QPen
 
 # Stream class to catch stdout/stderr
 class ConsoleStream(QObject):
@@ -88,12 +90,186 @@ class DropZone(QFrame):
             path, _ = QFileDialog.getOpenFileName(self, "Open Model JSON", "", "JSON Files (*.json)")
             if path: self.fileDropped.emit(path)
 
+
+class Preview3DWidget(QWidget):
+    """Simple wireframe preview with mouse rotate and wheel zoom."""
+
+    def __init__(self):
+        super().__init__()
+        self.setMinimumHeight(170)
+        self.setStyleSheet("background-color: #f8f9fa; border: 1px solid #dee2e6;")
+
+        self.nodes = {}
+        self.edges = []
+        self.center = (0.0, 0.0, 0.0)
+
+        self.rot_x = -0.55
+        self.rot_y = 0.55
+        self.zoom = 1.0
+        self.last_pos = None
+
+    def set_model(self, model_dict):
+        self.nodes = {}
+        self.edges = []
+
+        if not model_dict:
+            self.update()
+            return
+
+        # Format A: neutral structural_model with nodes/members
+        data = model_dict.get("structural_model", model_dict)
+        nodes = data.get("nodes", []) if isinstance(data, dict) else []
+        members = data.get("members", []) if isinstance(data, dict) else []
+
+        if nodes and members:
+            for n in nodes:
+                p = n.get("point", [0.0, 0.0, 0.0])
+                if isinstance(p, (list, tuple)) and len(p) >= 3:
+                    self.nodes[n.get("id")] = (float(p[0]), float(p[1]), float(p[2]))
+
+            for m in members:
+                n1 = m.get("node_start")
+                n2 = m.get("node_end")
+                if n1 in self.nodes and n2 in self.nodes:
+                    self.edges.append((n1, n2))
+        else:
+            # Format B: compas_timber model with elements/Beam and frame/xaxis/length
+            model_data = model_dict.get("data", {}) if isinstance(model_dict, dict) else {}
+            elements = model_data.get("elements", {}) if isinstance(model_data, dict) else {}
+
+            idx = 1
+            for element in elements.values():
+                edata = element.get("data", {}) if isinstance(element, dict) else {}
+                frame = edata.get("frame", {}) if isinstance(edata, dict) else {}
+                fdata = frame.get("data", {}) if isinstance(frame, dict) else {}
+                point = fdata.get("point")
+                xaxis = fdata.get("xaxis")
+                length = edata.get("length")
+
+                if not (
+                    isinstance(point, (list, tuple))
+                    and isinstance(xaxis, (list, tuple))
+                    and len(point) >= 3
+                    and len(xaxis) >= 3
+                    and isinstance(length, (int, float))
+                ):
+                    continue
+
+                p0 = (float(point[0]), float(point[1]), float(point[2]))
+                p1 = (
+                    p0[0] + float(xaxis[0]) * float(length),
+                    p0[1] + float(xaxis[1]) * float(length),
+                    p0[2] + float(xaxis[2]) * float(length),
+                )
+
+                n1 = idx
+                n2 = idx + 1
+                self.nodes[n1] = p0
+                self.nodes[n2] = p1
+                self.edges.append((n1, n2))
+                idx += 2
+
+        self._fit_to_model()
+        self.update()
+
+    def _fit_to_model(self):
+        if not self.nodes:
+            self.center = (0.0, 0.0, 0.0)
+            self.zoom = 1.0
+            return
+
+        xs = [p[0] for p in self.nodes.values()]
+        ys = [p[1] for p in self.nodes.values()]
+        zs = [p[2] for p in self.nodes.values()]
+        self.center = (
+            (min(xs) + max(xs)) * 0.5,
+            (min(ys) + max(ys)) * 0.5,
+            (min(zs) + max(zs)) * 0.5,
+        )
+
+        span = max(max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs), 1e-6)
+        self.zoom = 1.6 / span
+
+    def _project(self, x, y, z, w, h):
+        cx, cy, cz = self.center
+        x -= cx
+        y -= cy
+        z -= cz
+
+        # Z-up projection:
+        # 1) rotate around world Z (azimuth)
+        cos_a = math.cos(self.rot_y)
+        sin_a = math.sin(self.rot_y)
+        x1 = x * cos_a - y * sin_a
+        y1 = x * sin_a + y * cos_a
+        z1 = z
+
+        # 2) rotate around world X (elevation)
+        cos_e = math.cos(self.rot_x)
+        sin_e = math.sin(self.rot_x)
+        y2 = y1 * cos_e - z1 * sin_e
+        z2 = y1 * sin_e + z1 * cos_e
+
+        scale = min(w, h) * 0.42 * self.zoom
+        sx = w * 0.5 + x1 * scale
+        sy = h * 0.5 - z2 * scale
+        return sx, sy
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+
+        w = self.width()
+        h = self.height()
+
+        if not self.nodes or not self.edges:
+            painter.setPen(QPen(QColor("#adb5bd"), 1))
+            painter.drawText(self.rect(), Qt.AlignCenter, "3D preview appears after model load")
+            return
+
+        pen = QPen(QColor("#2f3e4f"), 1.5)
+        painter.setPen(pen)
+
+        projected = {}
+        for node_id, p in self.nodes.items():
+            projected[node_id] = self._project(p[0], p[1], p[2], w, h)
+
+        for n1, n2 in self.edges:
+            p1 = projected.get(n1)
+            p2 = projected.get(n2)
+            if p1 and p2:
+                painter.drawLine(int(p1[0]), int(p1[1]), int(p2[0]), int(p2[1]))
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.last_pos = event.position()
+
+    def mouseMoveEvent(self, event):
+        if self.last_pos is None:
+            return
+        pos = event.position()
+        dx = pos.x() - self.last_pos.x()
+        dy = pos.y() - self.last_pos.y()
+        self.rot_y -= dx * 0.01
+        self.rot_x -= dy * 0.01
+        self.last_pos = pos
+        self.update()
+
+    def mouseReleaseEvent(self, event):
+        self.last_pos = None
+
+    def wheelEvent(self, event):
+        delta = event.angleDelta().y()
+        factor = 1.0 + (0.1 if delta > 0 else -0.1)
+        self.zoom = max(0.0005, min(self.zoom * factor, 500.0))
+        self.update()
+
 class DlubalExportGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("CT Dlubal")
-        self.setMinimumSize(540, 620)
-        self.resize(540, 620)
+        self.setMinimumSize(540, 720)
+        self.resize(540, 720)
 
         self.setStyleSheet("""
             QMainWindow { background-color: #ffffff; }
@@ -115,6 +291,8 @@ class DlubalExportGUI(QMainWindow):
         """)
 
         self.input_path = ""
+        self.last_model_path = ""
+        self._full_path_text = "No file selected."
         self.model_data = None
         self.load_cases_vars = {}
         self.setup_ui()
@@ -137,10 +315,31 @@ class DlubalExportGUI(QMainWindow):
         self.drop_zone.fileDropped.connect(self.handle_file_loaded)
         setup_l.addWidget(self.drop_zone)
 
+        path_row = QHBoxLayout()
         self.path_label = QLabel("No file selected.")
         self.path_label.setStyleSheet("color: #adb5bd; font-size: 10px;")
-        self.path_label.setWordWrap(True)
-        setup_l.addWidget(self.path_label)
+        self.path_label.setWordWrap(False)
+
+        self.path_reload_btn = QPushButton()
+        self.path_reload_btn.setToolTip("Reload previously used model")
+        self.path_reload_btn.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
+        self.path_reload_btn.setFixedWidth(24)
+        self.path_reload_btn.setFixedHeight(20)
+        self.path_reload_btn.setVisible(False)
+        self.path_reload_btn.clicked.connect(self.reload_last_model)
+
+        self.path_open_btn = QPushButton()
+        self.path_open_btn.setToolTip("Show file in Explorer")
+        self.path_open_btn.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
+        self.path_open_btn.setFixedWidth(24)
+        self.path_open_btn.setFixedHeight(20)
+        self.path_open_btn.setEnabled(False)
+        self.path_open_btn.clicked.connect(self.open_model_in_explorer)
+
+        path_row.addWidget(self.path_label, 1)
+        path_row.addWidget(self.path_reload_btn, 0)
+        path_row.addWidget(self.path_open_btn, 0)
+        setup_l.addLayout(path_row)
 
         mat_group = QGroupBox("Materials")
         mat_l = QVBoxLayout(mat_group)
@@ -190,6 +389,13 @@ class DlubalExportGUI(QMainWindow):
         left_col.addStretch()
         right_col.addStretch()
         setup_l.addWidget(lc_group)
+
+        preview_group = QGroupBox("3D Preview")
+        preview_layout = QVBoxLayout(preview_group)
+        self.preview_3d = Preview3DWidget()
+        preview_layout.addWidget(self.preview_3d)
+        setup_l.addWidget(preview_group)
+
         setup_l.addStretch() # <- remove if want to revert
         self.tabs.addTab(setup_tab, "1. Setup")
 
@@ -271,14 +477,68 @@ class DlubalExportGUI(QMainWindow):
         self.console_output.insertPlainText(text)
         self.console_output.moveCursor(QTextCursor.End)
 
+    def _write_prefs(self, show_message=False):
+        prefs = {
+            "api_key": self.api_input.text(),
+            "last_model_path": self.last_model_path,
+        }
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(prefs, f)
+        if show_message:
+            QMessageBox.information(self, "Success", "Saved.")
+
+    def _set_model_path_text(self, path_text):
+        self._full_path_text = path_text
+        metrics = self.path_label.fontMetrics()
+        available = max(120, self.path_label.width() - 6)
+        elided = metrics.elidedText(path_text, Qt.ElideRight, available)
+        self.path_label.setText(elided)
+        self.path_label.setToolTip(path_text)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._set_model_path_text(self._full_path_text)
+
+    def open_model_in_explorer(self):
+        if not self.input_path or not os.path.exists(self.input_path):
+            return
+        try:
+            if os.name == "nt":
+                subprocess.Popen(["explorer", "/select,", os.path.normpath(self.input_path)])
+            else:
+                folder = os.path.dirname(self.input_path)
+                os.startfile(folder)
+        except Exception as exc:
+            print(f"Could not open Explorer: {exc}")
+
+    def reload_last_model(self):
+        if not self.last_model_path:
+            return
+        if not os.path.exists(self.last_model_path):
+            self.status_label.setText("Previous model path does not exist anymore.")
+            self.path_reload_btn.setVisible(False)
+            return
+        self.handle_file_loaded(self.last_model_path)
+
     def handle_file_loaded(self, path):
         self.input_path = path
-        self.path_label.setText(path)
+        self.last_model_path = path
+        self._set_model_path_text(path)
+        self.path_open_btn.setEnabled(True)
+        self.path_reload_btn.setVisible(False)
         filename = os.path.basename(path)
         self.drop_zone.set_content(f"CURRENT MODEL: {filename}\n(Click to change)", True)
         self.status_label.setText("Model loaded.")
         try:
-            with open(path, "r") as f: self.model_data = json.load(f)
+            with open(path, "r") as f:
+                self.model_data = json.load(f)
+            self.preview_3d.set_model(self.model_data)
+            self._write_prefs(show_message=False)
+            seg_count = len(self.preview_3d.edges)
+            if seg_count > 0:
+                self.status_label.setText(f"Model loaded. Preview segments: {seg_count}")
+            else:
+                self.status_label.setText("Model loaded, but no drawable preview geometry found.")
         except Exception as e: self.status_label.setText(f"Error: {e}")
 
     def create_model_from_ui(self):
@@ -351,12 +611,14 @@ class DlubalExportGUI(QMainWindow):
         if os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
-                    self.api_input.setText(json.load(f).get("api_key", ""))
+                    prefs = json.load(f)
+                    self.api_input.setText(prefs.get("api_key", ""))
+                    self.last_model_path = prefs.get("last_model_path", "")
+                    self.path_reload_btn.setVisible(bool(self.last_model_path))
             except: pass
 
     def save_prefs(self):
-        with open(CONFIG_FILE, "w") as f: json.dump({"api_key": self.api_input.text()}, f)
-        QMessageBox.information(self, "Success", "Saved.")
+        self._write_prefs(show_message=True)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
