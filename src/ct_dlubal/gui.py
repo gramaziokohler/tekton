@@ -22,10 +22,12 @@ class ConsoleStream(QObject):
 try:
     from ct_dlubal.core.model import StructuralModel
     from ct_dlubal.exporter.formats.saf import SAFExporter
+    from ct_dlubal.dlubal.importer import DlubalImporter
 except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
     from ct_dlubal.core.model import StructuralModel
     from ct_dlubal.exporter.formats.saf import SAFExporter
+    from ct_dlubal.dlubal.importer import DlubalImporter
 
 CONFIG_FILE = os.path.expanduser("~/.ct_dlubal_prefs.json")
 
@@ -90,8 +92,8 @@ class DlubalExportGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("CT Dlubal")
-        self.setMinimumSize(540, 580)
-        self.resize(540, 580)
+        self.setMinimumSize(540, 620)
+        self.resize(540, 620)
 
         self.setStyleSheet("""
             QMainWindow { background-color: #ffffff; }
@@ -160,23 +162,33 @@ class DlubalExportGUI(QMainWindow):
 
         lc_group = QGroupBox("Select Load Cases for Export")
         lc_l = QVBoxLayout(lc_group)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFixedHeight(100)
-        scroll.setStyleSheet("background: white; border: none;")
-        self.lc_cont = QWidget()
-        self.lc_inner = QVBoxLayout(self.lc_cont)
-        self.lc_inner.setContentsMargins(5, 5, 5, 5)
-        self.lc_inner.setSpacing(2)
         
-        standard_cases = ["1: Self Weight", "2: Permanent", "3: Live Load", "4: Snow", "5: Wind +X", "6: Wind -X", "7: Wind +Y", "8: Wind -Y"]
-        for name in standard_cases:
+        # Grid layout for 2 columns of checkboxes
+        lc_cols = QHBoxLayout()
+        left_col = QVBoxLayout()
+        right_col = QVBoxLayout()
+        lc_cols.addLayout(left_col)
+        lc_cols.addLayout(right_col)
+        lc_l.addLayout(lc_cols)
+        
+        self.load_cases_vars = {}
+        standard_cases = [
+            "1: Self Weight", "2: Permanent",
+            "3: Live Load", "4: Snow",
+            "5: Wind +X", "6: Wind -X",
+            "7: Wind +Y", "8: Wind -Y"
+        ]
+        
+        for i, name in enumerate(standard_cases):
             cb = QCheckBox(name)
-            self.lc_inner.addWidget(cb)
             self.load_cases_vars[name] = cb
-        self.lc_inner.addStretch()
-        scroll.setWidget(self.lc_cont)
-        lc_l.addWidget(scroll)
+            if i % 2 == 0:
+                left_col.addWidget(cb)
+            else:
+                right_col.addWidget(cb)
+            
+        left_col.addStretch()
+        right_col.addStretch()
         setup_l.addWidget(lc_group)
         self.tabs.addTab(setup_tab, "1. Setup")
 
@@ -197,7 +209,7 @@ class DlubalExportGUI(QMainWindow):
         grpc_l = QVBoxLayout(grpc_g)
         grpc_btn = QPushButton("PUSH TO RFEM/RSTAB")
         grpc_btn.setFixedHeight(40)
-        grpc_btn.clicked.connect(lambda: print("gRPC Live Sync started..."))
+        grpc_btn.clicked.connect(self.run_grpc_sync)
         grpc_l.addWidget(grpc_btn)
         work_l.addWidget(grpc_g)
         
@@ -208,7 +220,7 @@ class DlubalExportGUI(QMainWindow):
         self.console_output.setReadOnly(True)
         self.console_output.setFont(QFont("Consolas", 8))
         self.console_output.setStyleSheet("background-color: #f8f9fa; border: 1px solid #dee2e6;")
-        self.console_output.setFixedHeight(120)
+        self.console_output.setFixedHeight(140)
         console_l.addWidget(self.console_output)
         work_l.addWidget(console_g)
         
@@ -267,31 +279,71 @@ class DlubalExportGUI(QMainWindow):
             with open(path, "r") as f: self.model_data = json.load(f)
         except Exception as e: self.status_label.setText(f"Error: {e}")
 
+    def create_model_from_ui(self):
+        """Helper to build the structural model based on model_data and UI toggle settings."""
+        if not self.model_data: return None
+        
+        # NOTE: Using direct dict access because model_data IS the json dict.
+        # If the StructuralModel dataclass doesnt have a helper, we instantiate it manually.
+        from compas.geometry import Point, Vector
+        from ct_dlubal.core.model import StructuralNode, StructuralMember, StructuralSection, StructuralSupport, StructuralLoadCase
+        
+        data = self.model_data
+        if "structural_model" in data: data = data["structural_model"]
+        
+        nodes = [StructuralNode(id=n["id"], point=Point(*n["point"])) for n in data.get("nodes", [])]
+        members = [StructuralMember(id=m["id"], node_start=m["node_start"], node_end=m["node_end"], section_id=m["section_id"], orientation_vector=Vector(*m.get("orientation_vector", [0,0,1]))) for m in data.get("members", [])]
+        sections = [StructuralSection(id=s["id"], name=s["name"], material_id=s["material_id"], width=s.get("width", 0), height=s.get("height", 0)) for s in data.get("sections", [])]
+        
+        # Map Materials from UI
+        materials = {mat_id: self.mat_combo.currentText() for mat_id in data.get("materials", {})}
+        
+        # Build Supports from UI toggles
+        inf = float("inf")
+        ui_ux = inf if self.supp_checks["uX"].isChecked() else 0.0
+        ui_uy = inf if self.supp_checks["uY"].isChecked() else 0.0
+        ui_uz = inf if self.supp_checks["uZ"].isChecked() else 0.0
+        ui_rx = inf if self.supp_checks["rX"].isChecked() else 0.0
+        ui_ry = inf if self.supp_checks["rY"].isChecked() else 0.0
+        ui_rz = inf if self.supp_checks["rZ"].isChecked() else 0.0
+        
+        supports = []
+        for s in data.get("supports", []):
+            supports.append(StructuralSupport(id=s["id"], nodes=s["nodes"], ux=ui_ux, uy=ui_uy, uz=ui_uz, rx=ui_rx, ry=ui_ry, rz=ui_rz))
+            
+        # Filter Load Cases from UI
+        active_names = [n for n, cb in self.load_cases_vars.items() if cb.isChecked()]
+        all_lcs = [StructuralLoadCase(id=i+1, name=name) for i, name in enumerate(active_names)]
+        
+        return StructuralModel(nodes=nodes, members=members, sections=sections, supports=supports, materials=materials, load_cases=all_lcs)
+
     def run_saf_export(self):
         if not self.input_path: return
         out, _ = QFileDialog.getSaveFileName(self, "Save SAF", self.input_path.replace(".json", ".saf"), "SAF Files (*.saf)")
         if not out: return
         try:
             self.progress.setValue(30)
-            model = StructuralModel.from_json(self.model_data)
-            print(f"Exporting model to {os.path.basename(out)}...")
-            for sid in model.materials: model.materials[sid] = self.mat_combo.currentText()
-            active = [n for n, cb in self.load_cases_vars.items() if cb.isChecked()]
-            model.load_cases = [lc for lc in model.load_cases if lc.name in active]
-            inf = float("inf")
-            for s in model.supports:
-                s.ux = inf if self.supp_checks["uX"].isChecked() else 0.0
-                s.uy = inf if self.supp_checks["uY"].isChecked() else 0.0
-                s.uz = inf if self.supp_checks["uZ"].isChecked() else 0.0
-                s.rx = inf if self.supp_checks["rX"].isChecked() else 0.0
-                s.ry = inf if self.supp_checks["rY"].isChecked() else 0.0
-                s.rz = inf if self.supp_checks["rZ"].isChecked() else 0.0
-            if SAFExporter(model).export(out):
+            print(f"Exporting SAF to {os.path.basename(out)}...")
+            model = self.create_model_from_ui()
+            if model and SAFExporter(model).export(out):
                 self.progress.setValue(100)
                 print("Export finished successfully.")
                 QMessageBox.information(self, "Success", "Export complete.")
         except Exception as e: print(f"ERROR: {e}")
         finally: self.progress.setValue(0)
+
+    def run_grpc_sync(self):
+        if not self.input_path: return
+        try:
+            print("Starting gRPC Live Sync...")
+            model = self.create_model_from_ui()
+            if not model: return
+            
+            importer = DlubalImporter(api_key=self.api_input.text(), material_preset=self.mat_combo.currentText())
+            if importer.run(model):
+                print("gRPC Push successful.")
+                QMessageBox.information(self, "Success", "Live Sync finished.")
+        except Exception as e: print(f"ERROR: {e}")
 
     def load_prefs(self):
         if os.path.exists(CONFIG_FILE):
