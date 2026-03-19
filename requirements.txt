@@ -1,7 +1,7 @@
 # python 3.12
 
 compas >= 2
-compas_timber == 2.0.0-dev0
+compas_timber @ git+https://github.com/gramaziokohler/compas_timber.git@structural_graph
 dlubal-api == 2.13.8
 openpyxl
 dotenv
