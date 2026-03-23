@@ -20,6 +20,7 @@
 - [ ] Auto-generate loads by geometry.
 - [ ] Auto-generate loads according to norms.
 - [ ] Get supports via timber model attributes (replace near-Z heuristic).
+- [ ] support plates, line connections, line loads, and all associated elements
 
 ## Open (GUI)
 - [ ] Unit systems.
