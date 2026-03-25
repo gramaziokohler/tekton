@@ -16,6 +16,7 @@ class SectionLibrary:
     """Will keep track of created sections to avoid duplicates. Sections are defined by their dimensions and shape type."""
 
     def __init__(self):
+        self.model_sections = None
         self.sections_map = {}
         self._section_id_counter = 1
 
@@ -26,6 +27,7 @@ class SectionLibrary:
         sec_id = self._section_id_counter
 
         section = StructuralSection(id=sec_id, name=name, width=width, height=height, shape_type=shape, material_id=material_id)
+        self.model_sections.append(section)
         self.sections_map[(width, height, shape)] = section
         self._section_id_counter += 1
         return section
@@ -55,6 +57,7 @@ class TimberToStructural:
             timber_model.create_beam_structural_segments()
 
         model = StructuralModel()
+        self.sections_library.model_sections = model.sections  # Damit die SectionLibrary direkt in das Model schreibt
         model.materials[1] = self.material_name
 
         structural_graph = build_structural_graph(timber_model)
@@ -86,9 +89,7 @@ class TimberToStructural:
 
             w, h = segment.cross_section
             shape = "rectangular"
-            section = self._sections_library.get_or_create_section(w, h, shape, material_id=1)
-
-            model.sections.append(StructuralSection(id=section.id, name=section.name, width=w, height=h, shape_type=shape, material_id=1))
+            section = self.sections_library.get_or_create_section(w, h, shape, material_id=1)
 
             # Wir geben den vollen Orientierungs-Vektor (Y-Achse) ans neutrale Modell weiter
             # Das ist 100% agnostisch!
@@ -98,8 +99,7 @@ class TimberToStructural:
             self._member_id_counter += 1
 
     def _add_connectors(self, model, structural_graph):
-        rigid_section = self._sections_library.create_section("Rigid", 0, 0, "rectangular", material_id=1)
-        model.sections.append(rigid_section)
+        rigid_section = self.sections_library.create_section("Rigid", 0, 0, "rectangular", material_id=1)
 
         for n1, n2 in structural_graph.connector_edges:
             # Bestimme den Typ basierend auf connector_mode
