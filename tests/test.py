@@ -1,20 +1,8 @@
 import sys
 import os
 
-# Dev: Ensure local compas_timber and ct_dlubal are in path first
-CT_SRC = r"C:\path\to\compas_timber\src"
-DL_SRC = r"C:\path\to\ct_dlubal\src"
-
-#for p in [DL_SRC]:
-#    if p not in sys.path:
-#        sys.path.insert(0, p)
-
 import compas
 from compas.data import json_load
-
-# IMPORTANT: Ensure the Dlubal gRPC python package path is available
-# (Adjust this path if the RFEM 6 bin folder is different)
-#sys.path.append(r"C:\Program Files\Dlubal\RSTAB 9.12\bin\Lib\site-packages")
 
 import ct_dlubal
 
@@ -23,8 +11,11 @@ from dotenv import load_dotenv
 load_dotenv() # Loads variables from .env into environment
 
 MY_API_KEY = os.getenv("DLUBAL_API_KEY")
-APP_TYPE = "rstab" # or "rstab"
-TIMBER_MODEL_PATH = r"C:\path\to\ct_dlubal\tests\timber-models\timber_model-rotated-beams-4.json"
+APP_TYPE = "rfem" # or "rstab"
+
+HERE = os.path.dirname(__file__)
+
+TIMBER_MODEL_PATH = os.path.join(HERE, "timber-models", "timber_model-rotated-beams-4.json")
 
 # =================================================
 # ============= MAIN EXECUTION BLOCK ==============
