@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv() # Loads variables from .env into environment
 
 MY_API_KEY = os.getenv("DLUBAL_API_KEY")
-APP_TYPE = "rfem" # or "rstab"
+APP_TYPE = "rstab" # or "rstab"
 
 HERE = os.path.dirname(__file__)
 
