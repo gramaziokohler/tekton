@@ -522,6 +522,8 @@ class DlubalExportGUI(QMainWindow):
         prefs = {
             "api_key": self.api_input.text(),
             "last_model_path": self.last_model_path,
+            "target_app": self.app_selector.currentText(),
+            "delete_all": self.delete_all_check.isChecked(),
         }
         with open(CONFIG_FILE, "w") as f:
             json.dump(prefs, f)
@@ -664,6 +666,14 @@ class DlubalExportGUI(QMainWindow):
                     self.api_input.setText(prefs.get("api_key", ""))
                     self.last_model_path = prefs.get("last_model_path", "")
                     self.path_reload_btn.setVisible(bool(self.last_model_path))
+                    
+                    # Restore Sync settings
+                    target_app = prefs.get("target_app", "RFEM")
+                    idx = self.app_selector.findText(target_app)
+                    if idx >= 0:
+                        self.app_selector.setCurrentIndex(idx)
+                    
+                    self.delete_all_check.setChecked(prefs.get("delete_all", False))
             except: pass
 
     def save_prefs(self):
