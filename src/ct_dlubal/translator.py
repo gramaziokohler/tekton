@@ -40,14 +40,18 @@ class SectionLibrary:
         return self.sections_map[key]
 
 
+def node_to_id(node):
+    # dlubal apparantly doesn't do zero-based ids
+    # TODO: consider a different approach to id management, this is a bit hacky
+    return int(node) + 1
+
 class TimberToStructural:
     """Konvertiert ein compas_timber Model in ein neutrales StructuralModel"""
 
     def __init__(self, connector_mode="rigid", material_name="C24"):
         self.connector_mode = connector_mode
-        self.node_manager = NodeManager()
         self.material_name = material_name
-        self._sections_library = SectionLibrary()
+        self.sections_library = SectionLibrary()
         self._member_id_counter = 1
 
     def translate(self, timber_model) -> StructuralModel:
@@ -95,7 +99,7 @@ class TimberToStructural:
             # Das ist 100% agnostisch!
             y_vector = Vector(*segment.frame.yaxis)
 
-            model.members.append(StructuralMember(id=self._member_id_counter, node_start=n1, node_end=n2, section_id=section.id, orientation_vector=y_vector))
+            model.members.append(StructuralMember(id=self._member_id_counter, node_start=node_to_id(n1), node_end=node_to_id(n2), section_id=section.id, orientation_vector=y_vector))
             self._member_id_counter += 1
 
     def _add_connectors(self, model, structural_graph):
@@ -106,14 +110,14 @@ class TimberToStructural:
             m_type = "RIGID" if self.connector_mode == "rigid" else "COUPLING"
 
             model.members.append(
-                StructuralMember(id=self._member_id_counter, node_start=n1, node_end=n2, section_id=rigid_section.id, is_rigid=(m_type == "RIGID"), member_type=m_type)
+                StructuralMember(id=self._member_id_counter, node_start=node_to_id(n1), node_end=node_to_id(n2), section_id=rigid_section.id, is_rigid=(m_type == "RIGID"), member_type=m_type)
             )
             self._member_id_counter += 1  # TODO: this could be more neatly handled by the StructuralModel class itself.
 
     def _add_nodes(self, model, structural_graph):
         for node in structural_graph.nodes:
             point = structural_graph.node_point(node)
-            model.nodes.append(StructuralNode(id=node, point=point))
+            model.nodes.append(StructuralNode(id=node_to_id(node), point=point))
 
     def _add_support_nodes(self, model):
         base_nodes = self._get_support_nodes(model)
