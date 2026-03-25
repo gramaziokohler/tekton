@@ -469,16 +469,18 @@ class DlubalExportGUI(QMainWindow):
         self.console_output.setReadOnly(True)
         self.console_output.setFont(QFont("Consolas", 8))
         self.console_output.setStyleSheet("background-color: #f8f9fa; border: 1px solid #dee2e6;")
-        self.console_output.setFixedHeight(140)
+        # Remove fixed height to allow expansion
+        # self.console_output.setFixedHeight(140)
         console_l.addWidget(self.console_output)
-        work_l.addWidget(console_g)
+        work_l.addWidget(console_g, 1) # Give it a stretch factor of 1 to expand
         
         self.stream = ConsoleStream()
         self.stream.message.connect(self.update_console)
         sys.stdout = self.stream
         sys.stderr = self.stream
         
-        work_l.addStretch()
+        # Remove or minimize work_l.addStretch() to avoid redundant space at the bottom
+        # work_l.addStretch()
         self.tabs.addTab(work_tab, "2. Workflow")
 
         # Tab 3: Config
@@ -588,13 +590,40 @@ class DlubalExportGUI(QMainWindow):
         """Helper to build the structural model based on model_data and UI toggle settings."""
         if not self.model_data: return None
         
-        # NOTE: Using direct dict access because model_data IS the json dict.
-        # If the StructuralModel dataclass doesnt have a helper, we instantiate it manually.
+        # Use the same translator logic as test.py if model_data is a timber model
+        # Otherwise, if it's already a structural model (neutral), we use direct mapping.
+        data = self.model_data
+        
+        # If it's a timber_model (likely from your .json), we use the Translator!
+        # This matches the behavior of test.py and ensures all segments/nodes are generated.
+        # We use compas.data.json_load to ensure it is decoded into a TimberModel object.
+        if "beams" in data or ("dtype" in data and "compas_timber" in data["dtype"]):
+            from compas.data import json_load
+            from ct_dlubal.translator import TimberToStructural
+            
+            # If data is a dict, we need to convert it to a TimberModel object
+            # because the translator expects a model object with a .beams attribute.
+            if isinstance(data, dict):
+                import json
+                import compas.data
+                # Re-decoding via string is the safest way to trigger the compas DataDecoder
+                timber_model = json.loads(json.dumps(data), cls=compas.data.DataDecoder)
+            else:
+                timber_model = data
+
+            print("Using TimberToStructural translator...")
+            translator = TimberToStructural(connector_mode="rigid", material_name=self.mat_combo.currentText())
+            model = translator.translate(timber_model)
+            
+            # Apply UI Supports over the translator defaults if needed
+            # (The translator adds supports at Z~0, we can override if UI checks are specific)
+            return model
+
+        # Fallback for already translated/neutral structural models
+        if "structural_model" in data: data = data["structural_model"]
+        
         from compas.geometry import Point, Vector
         from ct_dlubal.core.model import StructuralNode, StructuralMember, StructuralSection, StructuralSupport, StructuralLoadCase
-        
-        data = self.model_data
-        if "structural_model" in data: data = data["structural_model"]
         
         nodes = [StructuralNode(id=n["id"], point=Point(*n["point"])) for n in data.get("nodes", [])]
         members = [StructuralMember(id=m["id"], node_start=m["node_start"], node_end=m["node_end"], section_id=m["section_id"], orientation_vector=Vector(*m.get("orientation_vector", [0,0,1]))) for m in data.get("members", [])]
