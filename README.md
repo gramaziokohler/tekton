@@ -56,3 +56,11 @@ please check out the online documentation here: [ct_dlubal docs](https://gramazi
 ## Issue Tracker
 
 If you find a bug or if you have a problem with running the code, please file an issue on the [Issue Tracker](https://github.com/gramaziokohler/ct_dlubal/issues).
+
+
+
+## Run GUI
+
+```
+cmd /c "set PYTHONPATH=src && C:\path\to\ct_dlubal\.venv_parallels\Scripts\python.exe -m ct_dlubal.gui"
+```

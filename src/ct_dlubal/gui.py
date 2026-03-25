@@ -441,6 +441,21 @@ class DlubalExportGUI(QMainWindow):
 
         grpc_g = QGroupBox("Dlubal Live Sync")
         grpc_l = QVBoxLayout(grpc_g)
+        
+        # New Settings for gRPC Sync
+        sync_settings_l = QHBoxLayout()
+        sync_settings_l.addWidget(QLabel("Target App:"))
+        self.app_selector = QComboBox()
+        self.app_selector.addItems(["RFEM", "RSTAB"])
+        self.app_selector.setCurrentText("RFEM")
+        sync_settings_l.addWidget(self.app_selector)
+        
+        self.delete_all_check = QCheckBox("Delete all before sync")
+        sync_settings_l.addWidget(self.delete_all_check)
+        sync_settings_l.addStretch()
+        
+        grpc_l.addLayout(sync_settings_l)
+
         grpc_btn = QPushButton("PUSH TO RFEM/RSTAB")
         grpc_btn.setFixedHeight(40)
         grpc_btn.clicked.connect(self.run_grpc_sync)
@@ -623,11 +638,19 @@ class DlubalExportGUI(QMainWindow):
     def run_grpc_sync(self):
         if not self.input_path: return
         try:
-            print("Starting gRPC Live Sync...")
+            target_app = self.app_selector.currentText().lower()
+            delete_existing = self.delete_all_check.isChecked()
+            
+            print(f"Starting gRPC Live Sync for {target_app}...")
             model = self.create_model_from_ui()
             if not model: return
             
-            importer = DlubalImporter(api_key=self.api_input.text(), material_preset=self.mat_combo.currentText())
+            importer = DlubalImporter(
+                app_type=target_app, 
+                api_key=self.api_input.text(), 
+                material_preset=self.mat_combo.currentText(),
+                delete_all=delete_existing
+            )
             if importer.run(model):
                 print("gRPC Push successful.")
                 QMessageBox.information(self, "Success", "Live Sync finished.")
