@@ -3,25 +3,220 @@
 
 # Column order and names for all sheets except Model and Project (which are vertical)
 SHEETS = {
-    'StructuralMaterial': [
-        'Name', 'Type', 'Subtype', 'Quality', 'Unit mass [kg/m3]', 'E modulus [MPa]', 'G modulus [MPa]', 'Poisson Coefficient', 'Thermal expansion [1/K]', 'Design properties', 'Id'
-    ],
-    'StructuralCrossSection': [
-        'Name', 'Material', 'Cross-section type', 'Shape', 'Parameters [mm]', 'Profile', 'Form code', 'Description ID of the profile', 'A [m2]', 'Iy [m4]', 'Iz [m4]', 'It [m4]', 'Iw [m6]', 'Wply [m3]', 'Wplz [m3]', 'Id'
-    ],
-    'StructuralPointConnection': [
-        'Name', 'Coordinate X [m]', 'Coordinate Y [m]', 'Coordinate Z [m]', 'Id'
-    ],
-    'StructuralCurveMember': [
-        'Name', 'Type', 'Cross section', 'Arbitrary definition', 'Nodes', 'Segments', 'Begin node', 'End node', 'Internal nodes', 'Length [m]', 'Geometrical shape', 'Parent ID', 'LCS', 'LCS Rotation [deg]', 'Coordinate X [m]', 'Coordinate Y [m]', 'Coordinate Z [m]', 'System line', 'Eccentricity ey [mm]', 'Eccentricity ez [mm]', 'Layer', 'Behaviour in analysis', 'Color', 'Id'
-    ],
-    'StructuralPointSupport': [
-        'Name', 'Point connection', 'Support Condition X', 'Support Condition Y', 'Support Condition Z', 'Support Condition Rx', 'Support Condition Ry', 'Support Condition Rz'
-    ],
-    'StructuralLoadGroup': [
-        'Name', 'Action category', 'Id'
-    ],
-    'StructuralLoadCase': [
-        'Name', 'Description', 'Action category', 'Variable load type', 'Id'
-    ],
+  "StructuralMaterial": [
+    "Name",
+    "Type",
+    "Subtype",
+    "Quality",
+    "Unit mass [kg/m3]",
+    "E modulus [MPa]",
+    "G modulus [MPa]",
+    "Poisson Coefficient",
+    "Thermal expansion [1/K]",
+    "Design properties",
+    "Id"
+  ],
+  "StructuralCrossSection": [
+    "Name",
+    "Material",
+    "Cross-section type",
+    "Shape",
+    "Parameters [mm]",
+    "Profile",
+    "Form code",
+    "Description ID of the profile",
+    "A [m2]",
+    "Iy [m4]",
+    "Iz [m4]",
+    "It [m4]",
+    "Iw [m6]",
+    "Wply [m3]",
+    "Wplz [m3]",
+    "Id"
+  ],
+  "StructuralPointConnection": [
+    "Name",
+    "Coordinate X [m]",
+    "Coordinate Y [m]",
+    "Coordinate Z [m]",
+    "Id"
+  ],
+  "StructuralCurveEdge": [
+    "Name",
+    "2D member",
+    "Nodes",
+    "Segments",
+    "Id"
+  ],
+  "StructuralCurveMember": [
+    "Name",
+    "Type",
+    "Cross section",
+    "Arbitrary definition",
+    "Nodes",
+    "Segments",
+    "Begin node",
+    "End node",
+    "Internal nodes",
+    "Length [m]",
+    "Geometrical shape",
+    "Parent ID",
+    "LCS",
+    "LCS Rotation [deg]",
+    "Coordinate X [m]",
+    "Coordinate Y [m]",
+    "Coordinate Z [m]",
+    "System line",
+    "Eccentricity ey [mm]",
+    "Eccentricity ez [mm]",
+    "Layer",
+    "Behaviour in analysis",
+    "Color",
+    "Id"
+  ],
+  "StructuralSurfaceMember": [
+    "Name",
+    "Type",
+    "Material",
+    "Thickness type",
+    "Thickness [mm]",
+    "System plane at",
+    "Nodes",
+    "Internal nodes",
+    "Edges",
+    "Parent ID",
+    "Layer",
+    "LCS Type",
+    "Coordinate X [m]",
+    "Coordinate Y [m]",
+    "Coordinate Z [m]",
+    "LCS Rotation [deg]",
+    "Eccentricity ez [mm]",
+    "Shape",
+    "Behavior in analysis",
+    "Color",
+    "Id"
+  ],
+  "StructuralSurfaceMemberOpening": [
+    "Name",
+    "2D Member",
+    "Nodes",
+    "Edges",
+    "Id"
+  ],
+  "StructuralStorey": [
+    "Name",
+    "Height level [m]",
+    "Id"
+  ],
+  "StructuralPointSupport": [
+    "Name",
+    "Type",
+    "Node",
+    "ux",
+    "uy",
+    "uz",
+    "fix",
+    "fiy",
+    "fiz",
+    "Stiffness X [MN/m]",
+    "Stiffness Y [MN/m]",
+    "Stiffness Z [MN/m]",
+    "Stiffness Fix [MNm/rad]",
+    "Stiffness Fiy [MNm/rad]",
+    "Stiffness Fiz [MNm/rad]",
+    "Id"
+  ],
+  "StructuralEdgeConnection": [
+    "Name",
+    "Type",
+    "2D Member",
+    "Edge",
+    "ux",
+    "uy",
+    "uz",
+    "fix",
+    "fiy",
+    "fiz",
+    "Stiffness X [MN/m2]",
+    "Stiffness Y [MN/m2]",
+    "Stiffness Z [MN/m2]",
+    "Stiffness Fix [MNm/rad/m]",
+    "Stiffness Fiy [MNm/rad/m]",
+    "Stiffness Fiz [MNm/rad/m]",
+    "Coordinate system",
+    "Coordinate definition",
+    "Origin",
+    "Start point [m]",
+    "End point [m]",
+    "Id"
+  ],
+  "RelConnectsRigidLink": [
+    "Name",
+    "Nodes",
+    "Hinge position",
+    "ux",
+    "uy",
+    "uz",
+    "fix",
+    "fiy",
+    "fiz",
+    "Stiffness X [MN/m]",
+    "Resistance X [MN]",
+    "Stiffness Y [MN/m]",
+    "Resistance Y [MN]",
+    "Stiffness Z [MN/m]",
+    "Resistance Z [MN]",
+    "Stiffness Fix [MNm/rad]",
+    "Resistance Fix [MNm]",
+    "Stiffness Fiy [MNm/rad]",
+    "Resistance Fiy [MNm]",
+    "Stiffness Fiz [MNm/rad]",
+    "Resistance Fiz [MNm]",
+    "Id"
+  ],
+  "RelConnectsRigidMember": [
+    "Name",
+    "Node",
+    "2D Members",
+    "Edges",
+    "Internal edge",
+    "1D Members",
+    "Type",
+    "ux",
+    "uy",
+    "uz",
+    "fix",
+    "fiy",
+    "fiz",
+    "Stiffness X [MN/m2]",
+    "Resistance X [MN/m]",
+    "Stiffness Y [MN/m2]",
+    "Resistance Y [MN/m]",
+    "Stiffness Z [MN/m2]",
+    "Resistance Z [MN/m]",
+    "Stiffness Fix [MNm/rad/m]",
+    "Resistance Fix [MNm/m]",
+    "Stiffness Fiy [MNm/rad/m]",
+    "Resistance Fiy [MNm/m]",
+    "Stiffness Fiz [MNm/rad/m]",
+    "Resistance Fiz [MNm/m]",
+    "Id"
+  ],
+  "StructuralLoadGroup": [
+    "Name",
+    "Load group type",
+    "Relation",
+    "Load type",
+    "Id"
+  ],
+  "StructuralLoadCase": [
+    "Name",
+    "Description",
+    "Action type",
+    "Load group",
+    "Load type",
+    "Duration",
+    "Id"
+  ]
 }

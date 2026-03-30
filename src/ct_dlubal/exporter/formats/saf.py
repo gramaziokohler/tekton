@@ -55,10 +55,10 @@ class SAFExporter(BaseExporter):
         # 2. Materials Sheet
         materials_data = []
         for mat_id, mat_name in self.model.materials.items():
-            materials_data.append({
+            data = {
                 'Name': f"MAT{mat_id}",
                 'Type': 'Timber',
-                'Subtype': 'Vollholz',
+                'Subtype': 'Timber',
                 'Quality': mat_name,
                 'Unit mass [kg/m3]': 420.0,
                 'E modulus [MPa]': 11000.0,
@@ -67,7 +67,8 @@ class SAFExporter(BaseExporter):
                 'Thermal expansion [1/K]': 0.0,
                 'Design properties': '',
                 'Id': f"MAT{mat_id}"
-            })
+            }
+            materials_data.append({col: data.get(col, '') for col in SHEETS['StructuralMaterial']})
         df_materials = pd.DataFrame(materials_data)
 
         # 3. Sections Sheet
@@ -75,7 +76,7 @@ class SAFExporter(BaseExporter):
         for i, sec in enumerate(self.model.sections):
             guid = f"sec-guid-{i}"
             mat_name = f"MAT{sec.material_id}"
-            sections_data.append({
+            data = {
                 'Name': sec.name,
                 'Material': mat_name,
                 'Cross-section type': 'Parametric',
@@ -92,19 +93,21 @@ class SAFExporter(BaseExporter):
                 'Wply [m3]': 0.0,
                 'Wplz [m3]': 0.0,
                 'Id': guid
-            })
+            }
+            sections_data.append({col: data.get(col, '') for col in SHEETS['StructuralCrossSection']})
         df_sections = pd.DataFrame(sections_data)
 
         # 4. Nodes (Point Connections)
         nodes_data = []
         for node in self.model.nodes:
-            nodes_data.append({
+            data = {
                 'Name': str(node.id),
                 'Coordinate X [m]': round(float(node.point.x), 6),
                 'Coordinate Y [m]': round(float(node.point.y), 6),
                 'Coordinate Z [m]': round(-float(node.point.z), 6), # Invert Z
                 'Id': f"node-guid-{node.id}"
-            })
+            }
+            nodes_data.append({col: data.get(col, '') for col in SHEETS['StructuralPointConnection']})
         df_nodes = pd.DataFrame(nodes_data)
 
         # 5. Members (Curve Members)
@@ -133,7 +136,7 @@ class SAFExporter(BaseExporter):
                 beta_deg = math.degrees(beta_rad)
                 length = p1.distance_to_point(p2)
 
-            members_data.append({
+            data = {
                 'Name': f"CM{mem.id}",
                 'Type': 'Beam' if not mem.is_rigid else 'Rigid',
                 'Cross section': section_name,
@@ -158,7 +161,8 @@ class SAFExporter(BaseExporter):
                 'Behaviour in analysis': 'Standard',
                 'Color': '',
                 'Id': f"mem-guid-{i}"
-            })
+            }
+            members_data.append({col: data.get(col, '') for col in SHEETS['StructuralCurveMember']})
         df_members = pd.DataFrame(members_data)
 
         # 6. Supports
@@ -166,30 +170,51 @@ class SAFExporter(BaseExporter):
         for supp in self.model.supports:
             is_inf = lambda x: x == float('inf') or x > 1e10
             for node_id in supp.nodes:
-                supports_data.append({
+                stiff_x = "INF" if is_inf(supp.ux) else "0"
+                stiff_y = "INF" if is_inf(supp.uy) else "0"
+                stiff_z = "INF" if is_inf(supp.uz) else "0"
+                stiff_rx = "INF" if is_inf(supp.rx) else "0"
+                stiff_ry = "INF" if is_inf(supp.ry) else "0"
+                stiff_rz = "INF" if is_inf(supp.rz) else "0"
+                
+                support_data = {
                     'Name': f"S_{supp.id}_{node_id}",
-                    'Point connection': str(node_id),
-                    'Support Condition X': 'Fixed' if is_inf(supp.ux) else 'Free',
-                    'Support Condition Y': 'Fixed' if is_inf(supp.uy) else 'Free',
-                    'Support Condition Z': 'Fixed' if is_inf(supp.uz) else 'Free',
-                    'Support Condition Rx': 'Fixed' if is_inf(supp.rx) else 'Free',
-                    'Support Condition Ry': 'Fixed' if is_inf(supp.ry) else 'Free',
-                    'Support Condition Rz': 'Fixed' if is_inf(supp.rz) else 'Free'
-                })
+                    'Type': 'General',
+                    'Node': str(node_id),
+                    'ux': "Fixed" if is_inf(supp.ux) else "Free",
+                    'uy': "Fixed" if is_inf(supp.uy) else "Free",
+                    'uz': "Fixed" if is_inf(supp.uz) else "Free",
+                    'fix': "Fixed" if is_inf(supp.rx) else "Free",
+                    'fiy': "Fixed" if is_inf(supp.ry) else "Free",
+                    'fiz': "Fixed" if is_inf(supp.rz) else "Free",
+                    'Stiffness X [MN/m]': stiff_x,
+                    'Stiffness Y [MN/m]': stiff_y,
+                    'Stiffness Z [MN/m]': stiff_z,
+                    'Stiffness Fix [MNm/rad]': stiff_rx,
+                    'Stiffness Fiy [MNm/rad]': stiff_ry,
+                    'Stiffness Fiz [MNm/rad]': stiff_rz,
+                    'Id': f"S_{supp.id}_{node_id}"
+                }
+                # Ensure all columns match the schema
+                full_support_data = {col: support_data.get(col, '') for col in SHEETS['StructuralPointSupport']}
+                supports_data.append(full_support_data)
         df_supports = pd.DataFrame(supports_data)
 
         # 7. Loading (Groups and Cases)
-        df_groups = pd.DataFrame([{'Name': 'G', 'Action category': 'Permanent', 'Id': 'group-guid-1'}])
-        
+        df_groups = pd.DataFrame([{col: {'Name': 'G', 'Load group type': 'Permanent', 'Relation': 'Standard', 'Load type': 'Permanent', 'Id': 'group-guid-1'}.get(col, '') for col in SHEETS['StructuralLoadGroup']}])
+
         lc_data = []
         for i, lc in enumerate(self.model.load_cases):
-            lc_data.append({
+            data = {
                 'Name': lc.name,
                 'Description': f"Exported Case {lc.id}",
-                'Action category': 'Permanent',
-                'Variable load type': 'None',
+                'Action type': 'Permanent',
+                'Load group': 'G',
+                'Load type': 'Self-weight',
+                'Duration': 'Long',
                 'Id': f"lc-guid-{i}"
-            })
+            }
+            lc_data.append({col: data.get(col, '') for col in SHEETS['StructuralLoadCase']})
         df_lc = pd.DataFrame(lc_data)
 
         # Excel Export

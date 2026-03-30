@@ -25,8 +25,13 @@ try:
     from ct_dlubal.core.model import StructuralModel
     from ct_dlubal.exporter.formats.saf import SAFExporter
     from ct_dlubal.dlubal.importer import DlubalImporter
-except ImportError:
-    sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+except (ImportError, KeyError):
+    # Fallback to relative path for developer execution
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(current_dir)
+    if parent_dir not in sys.path:
+        sys.path.append(parent_dir)
+    
     from ct_dlubal.core.model import StructuralModel
     from ct_dlubal.exporter.formats.saf import SAFExporter
     from ct_dlubal.dlubal.importer import DlubalImporter
