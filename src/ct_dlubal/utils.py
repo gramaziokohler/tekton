@@ -3,7 +3,7 @@ from compas.geometry import Frame
 from compas.geometry import Point
 from compas.geometry import Vector
 
-# NodeManager bleibt hier, da er agnostisch ist (Punkte deduplizieren)
+# NodeManager (deprecated)
 class NodeManager:
     # node manager to handle coordinates deduplication
     # rstab can only have one node at a given coordinate, plan is to round coordinates within tolerance

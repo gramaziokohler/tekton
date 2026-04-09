@@ -6,3 +6,4 @@ dlubal-api == 2.13.8
 openpyxl
 dotenv
 numpy
+
