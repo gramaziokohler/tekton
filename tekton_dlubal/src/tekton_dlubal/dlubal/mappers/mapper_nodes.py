@@ -1,4 +1,4 @@
-from ...core.model import StructuralNode
+from tekton_core.core.model import StructuralNode
 
 class NodeMapper:
     """Konvertiert neutrale Knoten in Dlubal PB Objekte"""

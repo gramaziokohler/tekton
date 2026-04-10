@@ -2,20 +2,22 @@ import sys
 import os
 
 import compas
+
 from compas.data import json_load
 
-import ct_dlubal
+import tekton_core
+import tekton_dlubal
 
 # Configuration
 from dotenv import load_dotenv
 load_dotenv() # Loads variables from .env into environment
 
 MY_API_KEY = os.getenv("DLUBAL_API_KEY")
-APP_TYPE = "rstab" # or "rstab"
+APP_TYPE = "rfem" # or "rstab"
 
 HERE = os.path.dirname(__file__)
 
-TIMBER_MODEL_PATH = os.path.join(HERE, "timber-models", "timber_model-rotated-beams-4.json")
+TIMBER_MODEL_PATH = os.path.join(HERE, "timber_model_sticks.json")
 
 # =================================================
 # ============= MAIN EXECUTION BLOCK ==============
@@ -25,7 +27,7 @@ timber_model = json_load(TIMBER_MODEL_PATH)
 
 # 1. TRANSLATION STEP (Timber -> Intermediate Model)
 print("Translating timber model to agnostic structural model...")
-from ct_dlubal.translator import TimberToStructural
+from tekton_core.translator import TimberToStructural
 
 translator = TimberToStructural(connector_mode="rigid", material_name="C24")
 structural_model = translator.translate(timber_model)
@@ -35,7 +37,7 @@ print(f"  -> Generated {len(structural_model.members)} structural members.")
 
 # 2. PUSH STEP (Intermediate Model -> Dlubal)
 print("Initiating Live push to Dlubal...")
-from ct_dlubal.dlubal.importer import DlubalImporter
+from tekton_dlubal.dlubal.importer import DlubalImporter
 
 try:
     importer = DlubalImporter(app_type=APP_TYPE, delete_all=True, api_key=MY_API_KEY, load_cases=["sw", "snow"])
@@ -46,6 +48,7 @@ except Exception as e:
     print(f"Live export failed: {e}")
 
 # 3. (OPTIONAL) SAVE STEP
-# from ct_dlubal.exporter import export_file
-# export_file(structural_model, r"C:\path\to\output.saf", format="SAF")
+# from tekton_saf.exporter.saf import SAFExporter
+# exporter = SAFExporter(structural_model)
+# exporter.export(r"C:\path\to\output.saf")
 

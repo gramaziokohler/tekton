@@ -1,7 +1,7 @@
 import os
 import pandas as pd
-from ct_dlubal.exporter.base import BaseExporter
-from ct_dlubal.exporter.formats.saf_schema import SHEETS
+from tekton_core.exporter.base import BaseExporter
+from tekton_saf.exporter.saf_schema import SHEETS
 
 class SAFExporter(BaseExporter):
     """Exporter für das Structural Analysis Format (SAF) mittels Excel (.xlsx)."""
@@ -24,7 +24,7 @@ class SAFExporter(BaseExporter):
             {'Name': 'Created', 'test-model': ''},
             {'Name': 'Last update', 'test-model': ''},
             {'Name': 'Source type', 'test-model': ''},
-            {'Name': 'Source application', 'test-model': 'CT_Dlubal'},
+            {'Name': 'Source application', 'test-model': 'Tekton SAF'},
             {'Name': 'Source company', 'test-model': ''},
             {'Name': 'Global coordinate system', 'test-model': 'Z vertical'},
             {'Name': 'LCS of cross-section', 'test-model': 'MinusZMinusYX'},
@@ -112,7 +112,8 @@ class SAFExporter(BaseExporter):
 
         # 5. Members (Curve Members)
         members_data = []
-        from ct_dlubal.dlubal.utils import calculate_beta_from_vector
+        from tekton_core.utils import calculate_beta_from_vector
+        # Note: We need a beta calculation here that does not depend on Dlubal
         import math
 
         for i, mem in enumerate(self.model.members):

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from ct_dlubal.core.model import StructuralModel
+from tekton_core.core.model import StructuralModel
 
 class BaseExporter(ABC):
     """Abstract base class for all file-based exporters."""

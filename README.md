@@ -64,3 +64,17 @@ If you find a bug or if you have a problem with running the code, please file an
 ```
 cmd /c "set PYTHONPATH=src && C:\path\to\ct_dlubal\.venv_parallels\Scripts\python.exe -m ct_dlubal.gui"
 ```
+
+
+## Build
+
+```
+pyinstaller --noconsole --onedir ^
+  --add-data "src/ct_dlubal;ct_dlubal" ^
+  --name CT-Dlubal-Sync ^
+  src/ct_dlubal/gui.py
+```
+
+build from spec:
+
+C:\path\to\ct_dlubal\.venv_parallels\Scripts\pyinstaller.exe CT-Dlubal-Sync.spec

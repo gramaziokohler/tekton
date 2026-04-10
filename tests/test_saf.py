@@ -1,37 +1,42 @@
-import os
 import sys
+import os
 
-# Paths setup
-CT_SRC = r"C:\path\to\compas_timber\src"
-DL_SRC = r"C:\path\to\ct_dlubal\src"
-
-for p in [CT_SRC, DL_SRC]:
-    if p not in sys.path:
-        sys.path.insert(0, p)
-
+import compas
 from compas.data import json_load
-from ct_dlubal.translator import TimberToStructural
-from ct_dlubal.exporter import StructuralExporter
 
-# 1. Load Model
-model_path = r"C:\path\to\ct_dlubal\tests\timber-models\timber_model-rotated-beams-3.json"
-print(f"Loading timber model: {model_path}")
-timber_model = json_load(model_path)
+from tekton_core.translator import TimberToStructural
+from tekton_saf.exporter.saf import SAFExporter
+
+# Configuration
+HERE = os.path.dirname(__file__)
+
+TIMBER_MODEL_PATH = os.path.join(HERE, "timber_model_sticks.json")
+SAF_OUTPUT_PATH = os.path.join(HERE, "structural_model_export.saf")
+
+# =================================================
+# ============= MAIN EXECUTION BLOCK ==============
+
+print(f"Loading timber model from: {TIMBER_MODEL_PATH}")
+timber_model = json_load(TIMBER_MODEL_PATH)
 
 if timber_model:
-    # 2. Translate to neutral StructuralModel
-    print("Translating to neutral StructuralModel...")
+    # 1. TRANSLATION STEP (Timber -> Intermediate Model)
+    print("Translating timber model to agnostic structural model...")
     translator = TimberToStructural()
     structural_model = translator.translate(timber_model)
     
-    print(f"Nodes: {len(structural_model.nodes)}")
-    print(f"Members: {len(structural_model.members)}")
+    print(f"  -> Generated {len(structural_model.nodes)} structural nodes.")
+    print(f"  -> Generated {len(structural_model.members)} structural members.")
 
-    # 3. Export to SAF
-    saf_path = r"C:\path\to\ct_dlubal\tests\structural_model_export.saf"
-    print(f"Initiating SAF export to: {saf_path}")
+    # 2. EXPORT STEP (Intermediate Model -> SAF)
+    print(f"Initiating SAF export to: {SAF_OUTPUT_PATH}")
     
-    exporter = StructuralExporter(structural_model)
-    exporter.to_saf(saf_path)
+    try:
+        exporter = SAFExporter(structural_model)
+        exporter.export(SAF_OUTPUT_PATH)
+        print("Successfully exported to SAF!")
+    except Exception as e:
+        print(f"SAF export failed: {e}")
 else:
     print("Failed to load model.")
+

@@ -1,5 +1,5 @@
-from ct_dlubal.dlubal import client
-from ct_dlubal.dlubal.mappers import mapper_nodes, mapper_members, mapper_supports, mapper_loads
+from tekton_dlubal.dlubal import client
+from tekton_dlubal.dlubal.mappers import mapper_nodes, mapper_members, mapper_supports, mapper_loads
 
 # Forward imports for cleaner access in importer.py
 DlubalClient = client.DlubalClient

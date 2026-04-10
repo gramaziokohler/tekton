@@ -2,7 +2,7 @@ from compas.geometry import Vector
 from compas_timber.structural import StructuralSegment
 from compas_timber.structural import build_structural_graph
 
-from ct_dlubal.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralLoadCase
 
 from .core.model import StructuralMember
 from .core.model import StructuralModel

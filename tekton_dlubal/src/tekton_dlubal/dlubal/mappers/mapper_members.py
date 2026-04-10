@@ -1,7 +1,7 @@
 import math
 from compas.geometry import Vector
-from ...core.model import StructuralMember, StructuralSection, StructuralNode
-from ..utils import calculate_beta_from_vector
+from tekton_core.core.model import StructuralMember, StructuralSection, StructuralNode
+from tekton_core.utils import calculate_beta_from_vector
 
 class MemberMapper:
     """Konvertiert neutrale Member/Sections in Dlubal PB Objekte"""

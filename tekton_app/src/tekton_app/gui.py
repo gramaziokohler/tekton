@@ -22,9 +22,9 @@ class ConsoleStream(QObject):
 
 # Core logic imports
 try:
-    from ct_dlubal.core.model import StructuralModel
-    from ct_dlubal.exporter.formats.saf import SAFExporter
-    from ct_dlubal.dlubal.importer import DlubalImporter
+    from tekton_core.core.model import StructuralModel
+    from tekton_saf.exporter.saf import SAFExporter
+    from tekton_dlubal.dlubal.importer import DlubalImporter
 except (ImportError, KeyError):
     # Fallback to relative path for developer execution
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -32,11 +32,11 @@ except (ImportError, KeyError):
     if parent_dir not in sys.path:
         sys.path.append(parent_dir)
     
-    from ct_dlubal.core.model import StructuralModel
-    from ct_dlubal.exporter.formats.saf import SAFExporter
-    from ct_dlubal.dlubal.importer import DlubalImporter
+    from tekton_core.core.model import StructuralModel
+    from tekton_saf.exporter.saf import SAFExporter
+    from tekton_dlubal.dlubal.importer import DlubalImporter
 
-CONFIG_FILE = os.path.expanduser("~/.ct_dlubal_prefs.json")
+CONFIG_FILE = os.path.expanduser("~/.tekton_prefs.json")
 
 
 def build_app_icon():
@@ -514,7 +514,7 @@ class DlubalExportGUI(QMainWindow):
         self.status_label = QLabel("Ready")
         self.status_label.setStyleSheet("color: #6c757d; font-size: 11px;")
         status_row.addWidget(self.status_label)
-        ver_label = QLabel("ct_dlubal v1.1")
+        ver_label = QLabel("Tekton v0.1")
         ver_label.setStyleSheet("color: #adb5bd; font-size: 10px;")
         status_row.addWidget(ver_label, alignment=Qt.AlignRight)
         footer.addLayout(status_row)
@@ -604,7 +604,7 @@ class DlubalExportGUI(QMainWindow):
         # We use compas.data.json_load to ensure it is decoded into a TimberModel object.
         if "beams" in data or ("dtype" in data and "compas_timber" in data["dtype"]):
             from compas.data import json_load
-            from ct_dlubal.translator import TimberToStructural
+            from tekton_core.translator import TimberToStructural
             
             # If data is a dict, we need to convert it to a TimberModel object
             # because the translator expects a model object with a .beams attribute.
@@ -628,7 +628,7 @@ class DlubalExportGUI(QMainWindow):
         if "structural_model" in data: data = data["structural_model"]
         
         from compas.geometry import Point, Vector
-        from ct_dlubal.core.model import StructuralNode, StructuralMember, StructuralSection, StructuralSupport, StructuralLoadCase
+        from tekton_core.core.model import StructuralNode, StructuralMember, StructuralSection, StructuralSupport, StructuralLoadCase
         
         nodes = [StructuralNode(id=n["id"], point=Point(*n["point"])) for n in data.get("nodes", [])]
         members = [StructuralMember(id=m["id"], node_start=m["node_start"], node_end=m["node_end"], section_id=m["section_id"], orientation_vector=Vector(*m.get("orientation_vector", [0,0,1]))) for m in data.get("members", [])]
@@ -717,7 +717,7 @@ if __name__ == "__main__":
     if os.name == "nt":
         try:
             import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ct_dlubal.gui")
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("tekton_app.gui")
         except Exception:
             pass
 
