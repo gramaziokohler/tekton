@@ -10,9 +10,9 @@ authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
 requires-python = ">=3.10"
 dependencies = [
     "PySide6",
-    "tekton-core",
-    "tekton-dlubal",
-    "tekton-saf"
+    "compas_timber_fea",
+    "compas_dlubal",
+    "compas_saf"
 ]
 
 [tool.setuptools]

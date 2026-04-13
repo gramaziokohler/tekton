@@ -1,80 +1,50 @@
-# ct_dlubal
+# Tekton
 
 ## Requirements
 
-The following software and packages are required to use `ct_dlubal`:
+The following software and packages are required to use `tekton`:
 
-- **Python**: version 3.12
-- **Dlubal API**: version 2.13.8
-- **RFEM**: version 6.13
-- **RSTAB**: version 9.13
+- **Python**: version 3.12+
+- **Dlubal API**: version 2.13.8+ (for `compas_dlubal`)
+- **RFEM**: version 6.x / **RSTAB**: version 9.x
 
 ## Installation
 
-Stable releases can be installed from PyPI.
+To install the latest version for development, clone the repository and install the packages in editable mode:
 
 ```bash
-pip install ct_dlubal
+git clone https://github.com/gramaziokohler/tekton.git
+cd tekton
+pip install -e ./compas_timber_fea -e ./compas_dlubal -e ./compas_saf -e ./tekton_app
 ```
 
-To install the latest version for development, do:
-
-```bash
-git clone https://github.com/gramaziokohler/ct_dlubal.git
-cd ct_dlubal
-pip install -e ".[dev]"
-```
 ## Overview & Structure
 
-`ct_dlubal` facilitates the transfer of structural data from COMPAS-based models to Dlubal RFEM and RSTAB. It processes timber-specific geometry (beams and plates) into a neutral `StructuralModel`, which is then translated into Dlubal-compatible objects using the gRPC API. The plugin handles the mapping of nodes, members, supports, and loads, providing a GUI for model preview and synchronization.
+Tekton is a monorepo containing several decoupled packages for structural analysis and BIM synchronization within the COMPAS ecosystem. It facilitates the transfer of structural data from COMPAS-based models to Dlubal RFEM/RSTAB and neutral formats like SAF.
+
+### Monorepo Packages
+
+- **[compas_timber_fea](compas_timber_fea)**: Agnostic bridge that translates [compas_timber](https://github.com/gramaziokohler/compas_timber) models into a neutral `StructuralModel`.
+- **[compas_dlubal](compas_dlubal)**: Reusable Dlubal gRPC client and importer logic.
+- **[compas_saf](compas_saf)**: Reusable [Structural Analysis Format (SAF)](https://www.saf.guide/) Excel exporter.
+- **[tekton_app](tekton_app)**: The user-facing GUI application (PySide6) and CLI tool.
 
 ```text
-src/ct_dlubal/
-├── core/
-│   └── model.py          # Neutral intermediary structural model
-├── dlubal/
-│   ├── client.py         # gRPC connection and session management
-│   ├── importer.py       # Orchestrates data flow into Dlubal
-│   └── mappers/           # Specialized mappers for RFEM objects
-│       ├── mapper_nodes.py
-│       ├── mapper_members.py
-│       ├── mapper_supports.py
-│       └── mapper_loads.py
-├── exporter/
-│   ├── base.py           # Base classes for file exports
-│   └── formats/          # File format implementations (SAF, IFC, XML)
-├── gui.py                # PySide6 interface with 3D preview
-├── translator.py         # COMPAS Timber to StructuralModel logic
-└── utils.py              # Computational and geometry helpers
+tekton/
+├── compas_timber_fea/    # Core translation logic (CT -> FEA)
+├── compas_dlubal/       # Dlubal gRPC integration
+├── compas_saf/          # SAF file export (xlsx)
+├── tekton_app/          # GUI and CLI entry points
+└── tests/               # Integration tests
 ```
 
 ## Documentation
 
 For further "getting started" instructions, a tutorial, examples, and an API reference,
-please check out the online documentation here: [ct_dlubal docs](https://gramaziokohler.github.io/ct_dlubal)
+please check out the online documentation here: [Tekton docs](https://gramaziokohler.github.io/tekton)
 
 ## Issue Tracker
 
-If you find a bug or if you have a problem with running the code, please file an issue on the [Issue Tracker](https://github.com/gramaziokohler/ct_dlubal/issues).
+If you find a bug or if you have a problem with running the code, please file an issue on the [Issue Tracker](https://github.com/gramaziokohler/tekton/issues).
 
 
-
-## Run GUI
-
-```
-cmd /c "set PYTHONPATH=src && C:\path\to\ct_dlubal\.venv_parallels\Scripts\python.exe -m ct_dlubal.gui"
-```
-
-
-## Build
-
-```
-pyinstaller --noconsole --onedir ^
-  --add-data "src/ct_dlubal;ct_dlubal" ^
-  --name CT-Dlubal-Sync ^
-  src/ct_dlubal/gui.py
-```
-
-build from spec:
-
-C:\path\to\ct_dlubal\.venv_parallels\Scripts\pyinstaller.exe CT-Dlubal-Sync.spec

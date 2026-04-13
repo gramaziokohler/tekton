@@ -46,8 +46,8 @@ def main():
 
     if args.output:
         print(f"Exporting to SAF: {args.output}")
-        from tekton_core.translator import TimberToStructural
-        from tekton_saf.exporter.saf import SAFExporter
+        from compas_timber_fea.translator import TimberToStructural
+        from compas_saf.exporter.saf import SAFExporter
         
         translator = TimberToStructural()
         struct_model = translator.translate(timber_model)
@@ -57,8 +57,8 @@ def main():
 
     if args.dlubal:
         print(f"Pushing to Dlubal ({args.app})...")
-        from tekton_core.translator import TimberToStructural
-        from tekton_dlubal.dlubal.importer import DlubalImporter
+        from compas_timber_fea.translator import TimberToStructural
+        from compas_dlubal.dlubal.importer import DlubalImporter
         
         translator = TimberToStructural()
         struct_model = translator.translate(timber_model)

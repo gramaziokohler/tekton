@@ -5,8 +5,8 @@ import compas
 
 from compas.data import json_load
 
-import tekton_core
-import tekton_dlubal
+import compas_timber_fea
+import compas_dlubal
 
 # Configuration
 from dotenv import load_dotenv
@@ -27,7 +27,7 @@ timber_model = json_load(TIMBER_MODEL_PATH)
 
 # 1. TRANSLATION STEP (Timber -> Intermediate Model)
 print("Translating timber model to agnostic structural model...")
-from tekton_core.translator import TimberToStructural
+from compas_timber_fea.translator import TimberToStructural
 
 translator = TimberToStructural(connector_mode="rigid", material_name="C24")
 structural_model = translator.translate(timber_model)
@@ -37,7 +37,7 @@ print(f"  -> Generated {len(structural_model.members)} structural members.")
 
 # 2. PUSH STEP (Intermediate Model -> Dlubal)
 print("Initiating Live push to Dlubal...")
-from tekton_dlubal.dlubal.importer import DlubalImporter
+from compas_dlubal.dlubal.importer import DlubalImporter
 
 try:
     importer = DlubalImporter(app_type=APP_TYPE, delete_all=True, api_key=MY_API_KEY, load_cases=["sw", "snow"])
@@ -48,7 +48,7 @@ except Exception as e:
     print(f"Live export failed: {e}")
 
 # 3. (OPTIONAL) SAVE STEP
-# from tekton_saf.exporter.saf import SAFExporter
+# from compas_saf.exporter.saf import SAFExporter
 # exporter = SAFExporter(structural_model)
 # exporter.export(r"C:\path\to\output.saf")
 
