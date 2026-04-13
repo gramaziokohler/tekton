@@ -1,7 +1,7 @@
 import math
 from compas.geometry import Vector
-from ...core.model import StructuralMember, StructuralSection, StructuralNode
-from ..utils import calculate_beta_from_vector
+from compas_timber_fea.core.model import StructuralMember, StructuralSection, StructuralNode
+from compas_timber_fea.utils import calculate_beta_from_vector
 
 class MemberMapper:
     """Konvertiert neutrale Member/Sections in Dlubal PB Objekte"""

@@ -1,8 +1,8 @@
-from ct_dlubal.dlubal.client import DlubalClient
-from ct_dlubal.dlubal.mappers.mapper_nodes import NodeMapper
-from ct_dlubal.dlubal.mappers.mapper_members import MemberMapper
-from ct_dlubal.dlubal.mappers.mapper_supports import SupportMapper
-from ct_dlubal.dlubal.mappers.mapper_loads import LoadMapper
+from compas_dlubal.dlubal.client import DlubalClient
+from compas_dlubal.dlubal.mappers.mapper_nodes import NodeMapper
+from compas_dlubal.dlubal.mappers.mapper_members import MemberMapper
+from compas_dlubal.dlubal.mappers.mapper_supports import SupportMapper
+from compas_dlubal.dlubal.mappers.mapper_loads import LoadMapper
 # Translator removed here, handled upstream
 
 class DlubalImporter:

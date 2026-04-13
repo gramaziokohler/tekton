@@ -1,9 +1,12 @@
 ********************************************************************************
-ct_dlubal
+Tekton Dlubal
 ********************************************************************************
 
-.. currentmodule:: ct_dlubal
+.. currentmodule:: compas_dlubal
 
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
 
-.. toctree::
-    :maxdepth: 1
+    dlubal.client
+    dlubal.importer

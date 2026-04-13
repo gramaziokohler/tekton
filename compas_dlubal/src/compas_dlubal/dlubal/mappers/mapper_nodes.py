@@ -1,4 +1,4 @@
-from ...core.model import StructuralNode
+from compas_timber_fea.core.model import StructuralNode
 
 class NodeMapper:
     """Konvertiert neutrale Knoten in Dlubal PB Objekte"""

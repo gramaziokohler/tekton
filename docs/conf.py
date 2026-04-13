@@ -6,10 +6,10 @@ import sphinx_compas2_theme
 
 # -- General configuration ------------------------------------------------
 
-project = "ct_dlubal"
+project = "Tekton"
 copyright = "Gramazio Kohler Research"
 author = "Lorin Wiedemeier"
-package = "ct_dlubal"
+package = "tekton"
 organization = "gramaziokohler"
 
 master_doc = "index"

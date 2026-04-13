@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from ct_dlubal.core.model import StructuralModel
+from compas_timber_fea.core.model import StructuralModel
 
 class BaseExporter(ABC):
     """Abstract base class for all file-based exporters."""
