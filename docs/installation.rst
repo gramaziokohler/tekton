@@ -21,7 +21,7 @@ The latest version can be installed from local source.
 
     git clone https://github.com/gramaziokohler/tekton.git
     cd tekton
-    pip install -e ./compas_timber_fea -e ./compas_dlubal -e ./compas_saf -e ./tekton_app
+    pip install -e ./packages/compas_timber_fea -e ./packages/compas_dlubal -e ./packages/compas_saf -e ./packages/tekton_app
 
 
 Development
@@ -33,4 +33,4 @@ To install **Tekton** for development, install from local source with the "dev" 
 
     git clone https://github.com/gramaziokohler/tekton.git
     cd tekton
-    pip install -e ./compas_timber_fea -e ./compas_dlubal -e ./compas_saf -e ./tekton_app -r requirements-dev.txt
+    pip install -e ./packages/compas_timber_fea -e ./packages/compas_dlubal -e ./packages/compas_saf -e ./packages/tekton_app -r requirements-dev.txt

@@ -15,7 +15,7 @@ To install the latest version for development, clone the repository and install 
 ```bash
 git clone https://github.com/gramaziokohler/tekton.git
 cd tekton
-pip install -e ./compas_timber_fea -e ./compas_dlubal -e ./compas_saf -e ./tekton_app
+pip install -e ./packages/compas_timber_fea -e ./packages/compas_dlubal -e ./packages/compas_saf -e ./packages/tekton_app
 ```
 
 ## Overview & Structure
@@ -24,17 +24,18 @@ Tekton is a monorepo containing several decoupled packages for structural analys
 
 ### Monorepo Packages
 
-- **[compas_timber_fea](compas_timber_fea)**: Agnostic bridge that translates [compas_timber](https://github.com/gramaziokohler/compas_timber) models into a neutral `StructuralModel`.
-- **[compas_dlubal](compas_dlubal)**: Reusable Dlubal gRPC client and importer logic.
-- **[compas_saf](compas_saf)**: Reusable [Structural Analysis Format (SAF)](https://www.saf.guide/) Excel exporter.
-- **[tekton_app](tekton_app)**: The user-facing GUI application (PySide6) and CLI tool.
+- **[compas_timber_fea](packages/compas_timber_fea)**: Agnostic bridge that translates [compas_timber](https://github.com/gramaziokohler/compas_timber) models into a neutral `StructuralModel`.
+- **[compas_dlubal](packages/compas_dlubal)**: Reusable Dlubal gRPC client and importer logic.
+- **[compas_saf](packages/compas_saf)**: Reusable [Structural Analysis Format (SAF)](https://www.saf.guide/) Excel exporter.
+- **[tekton_app](packages/tekton_app)**: The user-facing GUI application (PySide6) and CLI tool.
 
 ```text
 tekton/
-├── compas_timber_fea/    # Core translation logic (CT -> FEA)
-├── compas_dlubal/       # Dlubal gRPC integration
-├── compas_saf/          # SAF file export (xlsx)
-├── tekton_app/          # GUI and CLI entry points
+├── packages/
+│   ├── compas_timber_fea/    # Core translation logic (CT -> FEA)
+│   ├── compas_dlubal/       # Dlubal gRPC integration
+│   ├── compas_saf/          # SAF file export (xlsx)
+│   └── tekton_app/          # GUI and CLI entry points
 └── tests/               # Integration tests
 ```
 
