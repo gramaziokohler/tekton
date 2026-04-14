@@ -39,8 +39,26 @@ except (ImportError, KeyError):
 CONFIG_FILE = os.path.expanduser("~/.tekton_prefs.json")
 
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = os.path.join(sys._MEIPASS, 'tekton_app')
+    except Exception:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
+
 def build_app_icon():
-    """Create a subtle app icon in-memory (no external file needed)."""
+    """Load the custom Tekton icon from assets, or fallback if missing."""
+    icon_path_png = resource_path(os.path.join("assets", "tekton.png"))
+    icon_path_svg = resource_path(os.path.join("assets", "tekton.svg"))
+    
+    if os.path.exists(icon_path_png):
+        return QIcon(icon_path_png)
+    elif os.path.exists(icon_path_svg):
+        return QIcon(icon_path_svg)
+    
+    # Fallback minimal icon if files are somehow missing
     pixmap = QPixmap(64, 64)
     pixmap.fill(Qt.transparent)
 
@@ -297,7 +315,7 @@ class Preview3DWidget(QWidget):
 class DlubalExportGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CT Dlubal")
+        self.setWindowTitle("Tekton App")
         self.setWindowIcon(build_app_icon())
         self.setMinimumSize(540, 720)
         self.resize(540, 720)
@@ -717,7 +735,9 @@ if __name__ == "__main__":
     if os.name == "nt":
         try:
             import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("tekton_app.gui")
+            # Use a completely unique App ID to force Windows to use the app's internal icon on the taskbar
+            # instead of grouping it with python.exe or terminal
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("gramaziokohler.tekton.app.1")
         except Exception:
             pass
 
