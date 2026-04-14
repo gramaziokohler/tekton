@@ -39,6 +39,22 @@ tekton/
 └── tests/               # Integration tests
 ```
 
+## Building the Application
+
+If you want to build the standalone executable (`.exe`) of the GUI application, make sure you have the development requirements installed (`pyinstaller` is required):
+
+```bash
+uv pip install -r requirements-dev.txt
+```
+
+Then, from the root of the repository, run:
+
+```bash
+uv run pyinstaller packages/tekton_app/tekton_app.spec
+```
+
+This will create a `dist/` directory at the root of your repository containing the compiled application.
+
 ## Documentation
 
 For further "getting started" instructions, a tutorial, examples, and an API reference,

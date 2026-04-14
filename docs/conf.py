@@ -8,7 +8,7 @@ import sphinx_compas2_theme
 
 project = "Tekton"
 copyright = "Gramazio Kohler Research"
-author = "Lorin Wiedemeier"
+author = "Lorin Wiedemeier, Chen Kasirer"
 package = "tekton"
 organization = "gramaziokohler"
 
