@@ -4,18 +4,27 @@
 
 The following software and packages are required to use `tekton`:
 
-- **Python**: version 3.12+
+- **Python**: version 3.12 (Highly recommended to avoid PyInstaller `.dll` missing errors with newer versions)
 - **Dlubal API**: version 2.13.8+ (for `compas_dlubal`)
 - **RFEM**: version 6.x / **RSTAB**: version 9.x
 
 ## Installation
 
-To install the latest version for development, clone the repository and install the packages in editable mode:
+To install the latest version for development, clone the repository. We recommend using `uv` to manage the virtual environment and enforce Python 3.12:
 
 ```bash
 git clone https://github.com/gramaziokohler/tekton.git
 cd tekton
-pip install -e ./packages/compas_timber_fea -e ./packages/compas_dlubal -e ./packages/compas_saf -e ./packages/tekton_app
+
+# 1. Create a virtual environment specifically with Python 3.12
+uv venv --python 3.12
+
+# 2. Install base and development requirements
+uv pip install -r requirements.txt
+uv pip install -r requirements-dev.txt
+
+# 3. Install local monorepo packages in editable mode
+uv pip install -e ./packages/compas_timber_fea -e ./packages/compas_dlubal -e ./packages/compas_saf -e ./packages/tekton_app
 ```
 
 ## Overview & Structure
@@ -41,19 +50,23 @@ tekton/
 
 ## Building the Application
 
-If you want to build the standalone executable (`.exe`) of the GUI application, make sure you have the development requirements installed (`pyinstaller` is required):
+To build the standalone executable (`.exe`) of the GUI application, ensure your `uv` virtual environment is set up as described in the Installation instructions. 
 
-```bash
-uv pip install -r requirements-dev.txt
-```
-
-Then, from the root of the repository, run:
+From the root of the repository, run:
 
 ```bash
 uv run pyinstaller packages/tekton_app/tekton_app.spec
 ```
 
-This will create a `dist/` directory at the root of your repository containing the compiled application.
+This will create a `dist/` directory at the root of your repository containing the compiled application. *(Note: Building heavily relies on matching Python versions (3.12). If the built app fails to open, double-check that `uv` didn't default to Python 3.13.)*
+
+## Running test.py
+
+Provided you have completed the **Installation** steps above, your environment is ready. Run the test script using:
+
+```bash
+uv run tests/test.py
+```
 
 ## Documentation
 
