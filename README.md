@@ -6,7 +6,7 @@ The following software and packages are required to use `tekton`:
 
 - **Python**: version 3.12 (Highly recommended to avoid PyInstaller `.dll` missing errors with newer versions)
 - **Dlubal API**: version 2.13.8+ (for `compas_dlubal`)
-- **RFEM**: version 6.x / **RSTAB**: version 9.x
+- **RFEM**: version 6.13 / **RSTAB**: version 9.13
 
 ## Installation
 
