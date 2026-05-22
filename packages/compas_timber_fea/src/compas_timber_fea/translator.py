@@ -10,6 +10,9 @@ from .core.model import StructuralModel
 from .core.model import StructuralNode
 from .core.model import StructuralSection
 from .core.model import StructuralSupport
+from .core.model import StructuralThickness
+from .core.model import StructuralSurface
+from .core.model import StructuralSurfaceConnection
 from .utils import NodeManager
 
 
@@ -40,6 +43,33 @@ class SectionLibrary:
             self.create_section(name, width, height, shape, material_id)
         return self.sections_map[key]
 
+class ThicknessLibrary:
+    """Will keep track of created thicknesses to avoid duplicates."""
+
+    def __init__(self):
+        self.model_thicknesses = None
+        self.thicknesses_map = {}
+        self._thickness_id_counter = 1
+
+    def create_thickness(self, name, thickness_val, material_id):
+        key = (thickness_val, material_id)
+        if key in self.thicknesses_map:
+            raise ValueError(f"Thickness {thickness_val} already exists.")
+        t_id = self._thickness_id_counter
+
+        thickness = StructuralThickness(id=t_id, name=name, material_id=material_id, thickness=thickness_val)
+        self.model_thicknesses.append(thickness)
+        self.thicknesses_map[key] = thickness
+        self._thickness_id_counter += 1
+        return thickness
+
+    def get_or_create_thickness(self, thickness_val, material_id):
+        key = (thickness_val, material_id)
+        if key not in self.thicknesses_map:
+            name = f"Thickness {thickness_val:.3f}m"
+            self.create_thickness(name, thickness_val, material_id)
+        return self.thicknesses_map[key]
+
 
 def node_to_id(sg, node):
     # dlubal apparantly doesn't do zero-based ids
@@ -53,6 +83,7 @@ class TimberToStructural:
         self.connector_mode = connector_mode
         self.material_name = material_name
         self.sections_library = SectionLibrary()
+        self.thicknesses_library = ThicknessLibrary()
         self._member_id_counter = 1
 
     def translate(self, timber_model) -> StructuralModel:
@@ -63,6 +94,7 @@ class TimberToStructural:
 
         model = StructuralModel()
         self.sections_library.model_sections = model.sections  # Damit die SectionLibrary direkt in das Model schreibt
+        self.thicknesses_library.model_thicknesses = model.thicknesses
         model.materials[1] = self.material_name
 
         solver = BeamStructuralElementSolver()
@@ -75,6 +107,15 @@ class TimberToStructural:
         self._add_connectors(model, structural_graph)
         # 2. Joints (Connectors)
         self._add_nodes(model, structural_graph)
+
+        if list(timber_model.plates):
+            from compas_timber.structural import PlateStructuralElementSolver
+            print("Generiere strukturelle Flächen...")
+            plate_solver = PlateStructuralElementSolver()
+            surfaces, joints_traversed_plates = plate_solver.add_structural_surfaces(timber_model)
+            connection_lines = plate_solver.add_joint_structural_lines(timber_model, joints_traversed_plates)
+            self._add_plate_surfaces(model, structural_graph, timber_model, surfaces)
+            self._add_plate_connections(model, structural_graph, timber_model, connection_lines)
 
         # Heuristik für Lager: Alle Nodes bei Z~0 bekommen ein Lager (ID 1)
         self._add_support_nodes(model)
@@ -122,6 +163,38 @@ class TimberToStructural:
         for node in structural_graph.nodes():
             point = structural_graph.node_point(node)
             model.nodes.append(StructuralNode(id=node_to_id(structural_graph, node), point=point))
+
+    def _find_or_create_node(self, model, point, tol=1e-3):
+        for n in model.nodes:
+            if n.point.distance_to_point(point) < tol:
+                return n.id
+        new_id = max((n.id for n in model.nodes), default=0) + 1
+        model.nodes.append(StructuralNode(id=new_id, point=point))
+        return new_id
+
+    def _add_plate_surfaces(self, model, structural_graph, timber_model, surfaces):
+        surface_id_counter = 1
+        for surface in surfaces:
+            nodes_ids = []
+            pts = surface.outline.points
+            if pts[0].distance_to_point(pts[-1]) < 1e-3:
+                pts = pts[:-1]
+                
+            for pt in pts:
+                nodes_ids.append(self._find_or_create_node(model, pt))
+            
+            thickness_obj = self.thicknesses_library.get_or_create_thickness(surface.thickness, material_id=1)
+            
+            model.surfaces.append(StructuralSurface(id=surface_id_counter, nodes=nodes_ids, thickness_id=thickness_obj.id))
+            surface_id_counter += 1
+
+    def _add_plate_connections(self, model, structural_graph, timber_model, connection_lines):
+        conn_id_counter = 1
+        for conn_line in connection_lines:
+            id_start = self._find_or_create_node(model, conn_line.line.start)
+            id_end = self._find_or_create_node(model, conn_line.line.end)
+            model.surface_connections.append(StructuralSurfaceConnection(id=conn_id_counter, nodes=[id_start, id_end]))
+            conn_id_counter += 1
 
     def _add_support_nodes(self, model):
         base_nodes = self._get_support_nodes(model)

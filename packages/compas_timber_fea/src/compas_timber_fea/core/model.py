@@ -8,6 +8,24 @@ class StructuralNode:
     point: Point
 
 @dataclass
+class StructuralThickness:
+    id: int
+    name: str # e.g. "Thickness 0.12m"
+    material_id: int
+    thickness: float = 0.0 # in meters
+
+@dataclass
+class StructuralSurface:
+    id: int
+    nodes: List[int]
+    thickness_id: int
+
+@dataclass
+class StructuralSurfaceConnection:
+    id: int
+    nodes: List[int]
+
+@dataclass
 class StructuralSection:
     id: int
     name: str # e.g. "RECT 120/240" (optional, fallback)
@@ -75,3 +93,6 @@ class StructuralModel:
     load_cases: List[StructuralLoadCase] = field(default_factory=list)
     point_loads: List[StructuralPointLoad] = field(default_factory=list)
     member_loads: List[StructuralMemberLoad] = field(default_factory=list)
+    thicknesses: List[StructuralThickness] = field(default_factory=list)
+    surfaces: List[StructuralSurface] = field(default_factory=list)
+    surface_connections: List[StructuralSurfaceConnection] = field(default_factory=list)
