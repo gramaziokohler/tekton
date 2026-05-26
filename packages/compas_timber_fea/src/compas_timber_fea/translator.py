@@ -88,7 +88,7 @@ class TimberToStructural:
 
     def translate(self, timber_model) -> StructuralModel:
         # Sicherstellen, dass die strukturellen Segmente generiert sind
-        if not any(timber_model.get_beam_structural_segments(beam) for beam in timber_model.beams):
+        if timber_model.beams and not any(timber_model.get_beam_structural_segments(beam) for beam in timber_model.beams):
             print("Generiere strukturelle Segmente...")
             timber_model.create_beam_structural_segments()
 

@@ -1,6 +1,9 @@
 import sys
 import os
 
+# Add local compas_timber to sys.path
+sys.path.insert(0, r"C:\path\to\compas_timber\src")
+
 import compas
 from compas.data import json_load
 from dotenv import load_dotenv
@@ -20,7 +23,7 @@ APP_TYPE = "rfem" # or "rstab"
 HERE = os.path.dirname(__file__)
 
 # Use the plates timber model instead of sticks
-TIMBER_MODEL_PATH = os.path.join(HERE, "timber_model_plates.json")
+TIMBER_MODEL_PATH = os.path.join(HERE, "timber_model_plates_2.json")
 
 # =================================================
 # ============= MAIN EXECUTION BLOCK ==============
