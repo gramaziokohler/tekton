@@ -3,6 +3,8 @@ from compas_dlubal.dlubal.mappers.mapper_nodes import NodeMapper
 from compas_dlubal.dlubal.mappers.mapper_members import MemberMapper
 from compas_dlubal.dlubal.mappers.mapper_supports import SupportMapper
 from compas_dlubal.dlubal.mappers.mapper_loads import LoadMapper
+from compas_dlubal.dlubal.mappers.mapper_thicknesses import ThicknessMapper
+from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper
 # Translator removed here, handled upstream
 
 class DlubalImporter:
@@ -30,6 +32,8 @@ class DlubalImporter:
             member_mapper = MemberMapper(conn.api.structure_core, nodes_cache=nodes_cache)
             support_mapper = SupportMapper(conn.api.types_for_nodes)
             load_mapper = LoadMapper(conn.api.loading)
+            thickness_mapper = ThicknessMapper(conn.api.structure_core)
+            surface_mapper = SurfaceMapper(conn.api.structure_core)
 
             # 3. Mapping from neutral -> Dlubal objects
             objects = []
@@ -42,6 +46,10 @@ class DlubalImporter:
             for n in structural_model.nodes:
                 objects.append(node_mapper.map(n))
 
+            # Thicknesses
+            for t in structural_model.thicknesses:
+                objects.append(thickness_mapper.map(t))
+
             # Sections
             for s in structural_model.sections:
                 objects.append(member_mapper.map_section(s))
@@ -49,6 +57,10 @@ class DlubalImporter:
             # Members
             for m in structural_model.members:
                 objects.append(member_mapper.map_member(m))
+
+            # Surfaces
+            for su in structural_model.surfaces:
+                objects.extend(surface_mapper.map(su))
 
             # Supports
             for su in structural_model.supports:
