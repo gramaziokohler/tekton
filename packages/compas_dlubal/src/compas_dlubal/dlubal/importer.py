@@ -18,7 +18,33 @@ class DlubalImporter:
         self.connector_mode = connector_mode
         self.load_cases = load_cases
 
+    def _remove_zero_length_members(self, structural_model, tol=1e-6):
+        nodes_by_id = {node.id: node for node in structural_model.nodes}
+        valid_members = []
+        removed_member_ids = set()
+
+        for member in structural_model.members:
+            start_node = nodes_by_id.get(member.node_start)
+            end_node = nodes_by_id.get(member.node_end)
+
+            if not start_node or not end_node:
+                valid_members.append(member)
+                continue
+
+            if start_node.point.distance_to_point(end_node.point) <= tol:
+                removed_member_ids.add(member.id)
+                continue
+
+            valid_members.append(member)
+
+        if removed_member_ids:
+            structural_model.members = valid_members
+            structural_model.member_loads = [load for load in structural_model.member_loads if load.member_id not in removed_member_ids]
+            print(f"{len(removed_member_ids)} elements with 0 length removed.")
+
     def run(self, structural_model, model_name="Import"):
+        self._remove_zero_length_members(structural_model)
+
         # 1. Connect to Dlubal via Client Module
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
             if self.delete_all:

@@ -122,6 +122,8 @@ class TimberToStructural:
             self._add_plate_surfaces(model, structural_graph)
             self._add_plate_connections(model, structural_graph)
 
+        self._remove_zero_length_members(model)
+
         # Lager nur aus explizit markierten Support-Punkten im TimberModel ableiten.
         self._add_support_nodes(model, structural_graph)
 
@@ -131,6 +133,30 @@ class TimberToStructural:
 
     def _add_load_cases(self, model):
         model.load_cases.append(StructuralLoadCase(id=1, name="Self-Weight", action_category="PERMANENT", self_weight=True))
+
+    def _remove_zero_length_members(self, model, tol=1e-6):
+        nodes_by_id = {node.id: node for node in model.nodes}
+        valid_members = []
+        removed_member_ids = set()
+
+        for member in model.members:
+            start_node = nodes_by_id.get(member.node_start)
+            end_node = nodes_by_id.get(member.node_end)
+
+            if not start_node or not end_node:
+                valid_members.append(member)
+                continue
+
+            if start_node.point.distance_to_point(end_node.point) <= tol:
+                removed_member_ids.add(member.id)
+                continue
+
+            valid_members.append(member)
+
+        if removed_member_ids:
+            model.members = valid_members
+            model.member_loads = [load for load in model.member_loads if load.member_id not in removed_member_ids]
+            print(f"{len(removed_member_ids)} elements with 0 length removed.")
 
     def _get_support_nodes(self, model, structural_graph, tol=1e-4):
         support_node_ids = set()
