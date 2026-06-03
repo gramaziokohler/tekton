@@ -33,6 +33,8 @@ timber_model = json_load(TIMBER_MODEL_PATH)
 
 # 1. TRANSLATION STEP (Timber -> Intermediate Model)
 print("Translating timber model to agnostic structural model...")
+print(f"Number of plates in model: {len(list(timber_model.plates))}")
+print(f"Number of beams in model: {len(list(timber_model.beams))}")
 
 translator = TimberToStructural(connector_mode="rigid", material_name="C24")
 structural_model = translator.translate(timber_model)

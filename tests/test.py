@@ -17,7 +17,8 @@ APP_TYPE = "rfem" # or "rstab"
 
 HERE = os.path.dirname(__file__)
 
-TIMBER_MODEL_PATH = os.path.join(HERE, "timber_model_sticks.json")
+# TIMBER_MODEL_PATH = os.path.join(HERE, "timber_model_sticks.json") 
+TIMBER_MODEL_PATH = os.path.join(HERE, "TimberModel_for_Patrick-Fixed-2.json")
 
 # =================================================
 # ============= MAIN EXECUTION BLOCK ==============
