@@ -122,8 +122,8 @@ class TimberToStructural:
             self._add_plate_surfaces(model, structural_graph)
             self._add_plate_connections(model, structural_graph)
 
-        # Heuristik für Lager: Alle Nodes bei Z~0 bekommen ein Lager (ID 1)
-        self._add_support_nodes(model)
+        # Lager nur aus explizit markierten Support-Punkten im TimberModel ableiten.
+        self._add_support_nodes(model, structural_graph)
 
         # 4. Loads (Static Cases - Default for now)
         self._add_load_cases(model)
@@ -132,9 +132,27 @@ class TimberToStructural:
     def _add_load_cases(self, model):
         model.load_cases.append(StructuralLoadCase(id=1, name="Self-Weight", action_category="PERMANENT", self_weight=True))
 
-    def _get_support_nodes(self, model):
-        # Heuristik: Alle Nodes mit Z ~ 0 bekommen ein Lager
-        return [n.id for n in model.nodes if abs(n.point.z) <= 0.01]
+    def _get_support_nodes(self, model, structural_graph, tol=1e-4):
+        support_node_ids = set()
+
+        for u, v in structural_graph.beam_edges:
+            beam = structural_graph.beam(u, v)
+            support_points = beam.attributes.get("support_points", [])
+
+            if not support_points:
+                continue
+
+            for node in (u, v):
+                node_point = structural_graph.node_point(node)
+
+                for support_point in support_points:
+                    dx = node_point.x - support_point[0]
+                    dy = node_point.y - support_point[1]
+                    dz = node_point.z - support_point[2]
+                    if (dx * dx + dy * dy + dz * dz) ** 0.5 <= tol:
+                        support_node_ids.add(node_to_id(structural_graph, node))
+
+        return sorted(support_node_ids)
 
     def _add_sections_and_members(self, model, structural_graph):
         for n1, n2 in structural_graph.beam_edges:
@@ -199,8 +217,8 @@ class TimberToStructural:
             model.surface_connections.append(StructuralSurfaceConnection(id=conn_id_counter, nodes=[id_start, id_end]))
             conn_id_counter += 1
 
-    def _add_support_nodes(self, model):
-        base_nodes = self._get_support_nodes(model)
+    def _add_support_nodes(self, model, structural_graph):
+        base_nodes = self._get_support_nodes(model, structural_graph)
         if base_nodes:
             # Standardmäßig Pinned Support (Rotation frei, Bewegung gesperrt)
             # inf = gesperrt, 0.0 = frei
@@ -208,7 +226,7 @@ class TimberToStructural:
                 StructuralSupport(
                     id=1,
                     nodes=base_nodes,
-                    name="Auto Pinned Support",
+                    name="Designated Pinned Support",
                     ux=float("inf"),  # X gesperrt
                     uy=float("inf"),  # Y gesperrt
                     uz=float("inf"),  # Z gesperrt
