@@ -1,11 +1,14 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict
+from typing import Any, Dict, List, Optional
 from compas.geometry import Point, Frame, Vector
 
 @dataclass
 class StructuralNode:
     id: int
     point: Point
+    source_element_id: Optional[str] = None
+    source_element_type: Optional[str] = None
+    source_node_id: Optional[str] = None
 
 @dataclass
 class StructuralThickness:
@@ -19,6 +22,9 @@ class StructuralSurface:
     id: int
     nodes: List[int]
     thickness_id: int
+    source_element_id: Optional[str] = None
+    source_element_type: Optional[str] = None
+    source_surface_id: Optional[str] = None
 
 @dataclass
 class StructuralSurfaceConnection:
@@ -45,6 +51,56 @@ class StructuralMember:
     orientation_vector: Vector = field(default_factory=lambda: Vector(0, 0, 1))
     is_rigid: bool = False
     member_type: str = "BEAM" # "BEAM", "RIGID", "COUPLING"
+    source_element_id: Optional[str] = None
+    source_element_type: Optional[str] = None
+    source_segment_id: Optional[str] = None
+
+@dataclass
+class StructuralNodeResult:
+    node_id: int
+    load_case_id: int
+    displacement: Vector = field(default_factory=lambda: Vector(0, 0, 0)) # m
+    rotation: Vector = field(default_factory=lambda: Vector(0, 0, 0)) # rad
+    reaction_force: Optional[Vector] = None # kN
+    reaction_moment: Optional[Vector] = None # kNm
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class StructuralMemberResult:
+    member_id: int
+    load_case_id: int
+    position: float = 0.0 # relative 0.0-1.0 along member
+    axial: float = 0.0 # kN
+    shear_y: float = 0.0 # kN
+    shear_z: float = 0.0 # kN
+    torsion: float = 0.0 # kNm
+    moment_y: float = 0.0 # kNm
+    moment_z: float = 0.0 # kNm
+    displacement: Optional[Vector] = None # m
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class StructuralSurfaceResult:
+    surface_id: int
+    load_case_id: int
+    position: Optional[Point] = None
+    membrane_force_x: float = 0.0 # kN/m
+    membrane_force_y: float = 0.0 # kN/m
+    membrane_force_xy: float = 0.0 # kN/m
+    moment_x: float = 0.0 # kNm/m
+    moment_y: float = 0.0 # kNm/m
+    moment_xy: float = 0.0 # kNm/m
+    displacement: Optional[Vector] = None # m
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class StructuralResultSet:
+    load_case_id: int
+    name: str = ""
+    node_results: Dict[int, StructuralNodeResult] = field(default_factory=dict)
+    member_results: Dict[int, List[StructuralMemberResult]] = field(default_factory=dict)
+    surface_results: Dict[int, List[StructuralSurfaceResult]] = field(default_factory=dict)
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class StructuralSupport:
@@ -96,3 +152,4 @@ class StructuralModel:
     thicknesses: List[StructuralThickness] = field(default_factory=list)
     surfaces: List[StructuralSurface] = field(default_factory=list)
     surface_connections: List[StructuralSurfaceConnection] = field(default_factory=list)
+    results: Dict[int, StructuralResultSet] = field(default_factory=dict)

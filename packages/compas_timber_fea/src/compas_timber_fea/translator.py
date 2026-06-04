@@ -76,6 +76,9 @@ def node_to_id(sg, node):
     # use stable node indices from the graph
     return sg.node_index(node) + 1
 
+def source_id(source):
+    return str(getattr(source, "guid", None) or getattr(source, "id", None) or getattr(source, "name", None) or source)
+
 class TimberToStructural:
     """Konvertiert ein compas_timber Model in ein neutrales StructuralModel"""
 
@@ -193,7 +196,19 @@ class TimberToStructural:
             # Das ist 100% agnostisch!
             y_vector = Vector(*segment.frame.yaxis)
 
-            model.members.append(StructuralMember(id=self._member_id_counter, node_start=node_to_id(structural_graph, n1), node_end=node_to_id(structural_graph, n2), section_id=section.id, orientation_vector=y_vector))
+            beam = structural_graph.beam(n1, n2)
+            model.members.append(
+                StructuralMember(
+                    id=self._member_id_counter,
+                    node_start=node_to_id(structural_graph, n1),
+                    node_end=node_to_id(structural_graph, n2),
+                    section_id=section.id,
+                    orientation_vector=y_vector,
+                    source_element_id=source_id(beam),
+                    source_element_type="beam",
+                    source_segment_id=f"{source_id(beam)}:{source_id(n1)}-{source_id(n2)}",
+                )
+            )
             self._member_id_counter += 1
 
     def _add_connectors(self, model, structural_graph):
@@ -204,14 +219,23 @@ class TimberToStructural:
             m_type = "RIGID" if self.connector_mode == "rigid" else "COUPLING"
 
             model.members.append(
-                StructuralMember(id=self._member_id_counter, node_start=node_to_id(structural_graph, n1), node_end=node_to_id(structural_graph, n2), section_id=rigid_section.id, is_rigid=(m_type == "RIGID"), member_type=m_type)
+                StructuralMember(
+                    id=self._member_id_counter,
+                    node_start=node_to_id(structural_graph, n1),
+                    node_end=node_to_id(structural_graph, n2),
+                    section_id=rigid_section.id,
+                    is_rigid=(m_type == "RIGID"),
+                    member_type=m_type,
+                    source_element_type="connector",
+                    source_segment_id=f"{source_id(n1)}-{source_id(n2)}",
+                )
             )
             self._member_id_counter += 1  # TODO: this could be more neatly handled by the StructuralModel class itself.
 
     def _add_nodes(self, model, structural_graph):
         for node in structural_graph.nodes():
             point = structural_graph.node_point(node)
-            model.nodes.append(StructuralNode(id=node_to_id(structural_graph, node), point=point))
+            model.nodes.append(StructuralNode(id=node_to_id(structural_graph, node), point=point, source_node_id=source_id(node)))
 
     def _find_or_create_node(self, model, point, tol=1e-3):
         for n in model.nodes:
@@ -232,7 +256,16 @@ class TimberToStructural:
             
             thickness_obj = self.thicknesses_library.get_or_create_thickness(surface.thickness, material_id=1)
             
-            model.surfaces.append(StructuralSurface(id=surface_id_counter, nodes=node_ids, thickness_id=thickness_obj.id))
+            model.surfaces.append(
+                StructuralSurface(
+                    id=surface_id_counter,
+                    nodes=node_ids,
+                    thickness_id=thickness_obj.id,
+                    source_element_id=source_id(surface),
+                    source_element_type="plate",
+                    source_surface_id=source_id(surface),
+                )
+            )
             surface_id_counter += 1
 
     def _add_plate_connections(self, model, structural_graph):

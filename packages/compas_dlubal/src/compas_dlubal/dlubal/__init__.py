@@ -1,5 +1,6 @@
 from compas_dlubal.dlubal import client
 from compas_dlubal.dlubal.mappers import mapper_nodes, mapper_members, mapper_supports, mapper_loads
+from compas_dlubal.dlubal.result_reader import DlubalResultReader
 
 # Forward imports for cleaner access in importer.py
 DlubalClient = client.DlubalClient
@@ -8,4 +9,4 @@ MemberMapper = mapper_members.MemberMapper
 SupportMapper = mapper_supports.SupportMapper
 LoadMapper = mapper_loads.LoadMapper
 
-__all__ = ["DlubalClient", "NodeMapper", "MemberMapper", "SupportMapper", "LoadMapper"]
+__all__ = ["DlubalClient", "DlubalResultReader", "NodeMapper", "MemberMapper", "SupportMapper", "LoadMapper"]
