@@ -13,6 +13,7 @@ dependencies = [
     "compas_dlubal",
     "compas_saf",
     "tekton-app",
+    "tekton-gh",
 ]
 
 [project.optional-dependencies]
@@ -29,6 +30,7 @@ compas_timber_fea = { workspace = true }
 compas_dlubal = { workspace = true }
 compas_saf = { workspace = true }
 tekton-app = { workspace = true }
+tekton-gh = { workspace = true }
 # Tekton depends on the compas_timber.structural API, which lives on the
 # structural_graph_plates branch. Keep this revision in sync with
 # requirements.txt. To work against a local checkout instead, see README.

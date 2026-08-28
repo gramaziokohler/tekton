@@ -7,6 +7,8 @@ catalogue of its own.
 
 from google.protobuf import symbol_database
 
+from compas_dlubal.dlubal.conventions import vector_to_dlubal
+
 
 def _message_class(descriptor):
     """Resolve a nested protobuf message class from its descriptor.
@@ -74,13 +76,18 @@ class LoadMapper:
     # -- loads --------------------------------------------------------------
 
     def map_point_load(self, point_load):
-        """Map a nodal force/moment vector to one Dlubal NodalLoad."""
+        """Map a nodal force/moment vector to one Dlubal NodalLoad.
+
+        Vectors are authored in the neutral Z-up space and rotated into
+        Dlubal's Z-down space here - a downward force (negative z) becomes a
+        positive z force in RFEM.
+        """
         if self.Loads is None:
             raise AttributeError("LoadMapper needs the loads module to create nodal loads")
 
         load_type = self._enum(self.Loads.NodalLoad, "load_type", "LOAD_TYPE_COMPONENTS")
-        force = point_load.force
-        moment = point_load.moment
+        force = vector_to_dlubal(point_load.force)
+        moment = vector_to_dlubal(point_load.moment)
 
         load = self.Loads.NodalLoad(
             no=self._next_id(),
@@ -109,10 +116,11 @@ class LoadMapper:
         load_type = self._enum(self.Loads.MemberLoad, "load_type", "LOAD_TYPE_FORCE")
         distribution = self._enum(self.Loads.MemberLoad, "load_distribution", "LOAD_DISTRIBUTION_UNIFORM")
 
+        force = vector_to_dlubal(member_load.force)
         directions = (
-            ("x", member_load.force.x, "LOAD_DIRECTION_GLOBAL_X_OR_USER_DEFINED_U_TRUE_LENGTH"),
-            ("y", member_load.force.y, "LOAD_DIRECTION_GLOBAL_Y_OR_USER_DEFINED_V_TRUE_LENGTH"),
-            ("z", member_load.force.z, "LOAD_DIRECTION_GLOBAL_Z_OR_USER_DEFINED_W_TRUE_LENGTH"),
+            ("x", force.x, "LOAD_DIRECTION_GLOBAL_X_OR_USER_DEFINED_U_TRUE_LENGTH"),
+            ("y", force.y, "LOAD_DIRECTION_GLOBAL_Y_OR_USER_DEFINED_V_TRUE_LENGTH"),
+            ("z", force.z, "LOAD_DIRECTION_GLOBAL_Z_OR_USER_DEFINED_W_TRUE_LENGTH"),
         )
 
         loads = []

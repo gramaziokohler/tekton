@@ -21,6 +21,7 @@ members = [
     "compas-timber-fea",
     "tekton",
     "tekton-app",
+    "tekton-gh",
 ]
 
 [[package]]
@@ -2028,6 +2029,7 @@ dependencies = [
     { name = "compas-saf" },
     { name = "compas-timber-fea" },
     { name = "tekton-app" },
+    { name = "tekton-gh" },
 ]
 
 [package.optional-dependencies]
@@ -2044,6 +2046,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "tekton-app", editable = "packages/tekton_app" },
+    { name = "tekton-gh", editable = "packages/tekton_gh" },
 ]
 provides-extras = ["dev"]
 
@@ -2065,6 +2068,17 @@ requires-dist = [
     { name = "compas-timber-fea", editable = "packages/compas_timber_fea" },
     { name = "pyside6" },
 ]
+
+[[package]]
+name = "tekton-gh"
+version = "0.1.0"
+source = { editable = "packages/tekton_gh" }
+dependencies = [
+    { name = "compas-timber-fea" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "compas-timber-fea", editable = "packages/compas_timber_fea" }]
 
 [[package]]
 name = "tomli"
