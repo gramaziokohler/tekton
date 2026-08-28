@@ -1,9 +1,16 @@
+import math
+
+from compas.geometry import Point
 from compas.geometry import Vector
 from compas_timber.structural import StructuralSegment
 from compas_timber.structural import StructuralGraph
 from compas_timber.structural import BeamStructuralElementSolver
 
 from compas_timber_fea.core.model import StructuralLoadCase
+from compas_timber_fea.core.joint_policy import policy_from_connector_mode
+from compas_timber_fea.core.units import check_section_plausible
+from compas_timber_fea.core.units import check_thickness_plausible
+from compas_timber_fea.core.units import scale_to_meters
 
 from .core.model import StructuralMember
 from .core.model import StructuralModel
@@ -13,7 +20,18 @@ from .core.model import StructuralSupport
 from .core.model import StructuralThickness
 from .core.model import StructuralSurface
 from .core.model import StructuralSurfaceConnection
-from .utils import NodeManager
+
+
+#: Dimensions closer than this (in metres) are treated as the same catalogue
+#: entry. Geometry derived from CAD carries float noise well below a tenth of
+#: a millimetre, which must not produce duplicate sections or thicknesses.
+DIMENSION_TOLERANCE = 1e-5
+
+
+def _dimension_key(*values):
+    """Round dimensions so float noise does not create duplicate entries."""
+    digits = max(0, -int(round(math.log10(DIMENSION_TOLERANCE))))
+    return tuple(round(v, digits) if isinstance(v, (int, float)) else v for v in values)
 
 
 class SectionLibrary:
@@ -25,19 +43,19 @@ class SectionLibrary:
         self._section_id_counter = 1
 
     def create_section(self, name, width, height, shape, material_id):
-        key = (width, height, shape)
+        key = _dimension_key(width, height, shape)
         if key in self.sections_map:
             raise ValueError(f"Section with dimensions {width}x{height} and shape {shape} already exists.")
         sec_id = self._section_id_counter
 
         section = StructuralSection(id=sec_id, name=name, width=width, height=height, shape_type=shape, material_id=material_id)
         self.model_sections.append(section)
-        self.sections_map[(width, height, shape)] = section
+        self.sections_map[key] = section
         self._section_id_counter += 1
         return section
 
     def get_or_create_section(self, width, height, shape, material_id):
-        key = (width, height, shape)
+        key = _dimension_key(width, height, shape)
         if key not in self.sections_map:
             name = f"R_M1 {width}/{height}"
             self.create_section(name, width, height, shape, material_id)
@@ -52,7 +70,7 @@ class ThicknessLibrary:
         self._thickness_id_counter = 1
 
     def create_thickness(self, name, thickness_val, material_id):
-        key = (thickness_val, material_id)
+        key = _dimension_key(thickness_val, material_id)
         if key in self.thicknesses_map:
             raise ValueError(f"Thickness {thickness_val} already exists.")
         t_id = self._thickness_id_counter
@@ -64,7 +82,7 @@ class ThicknessLibrary:
         return thickness
 
     def get_or_create_thickness(self, thickness_val, material_id):
-        key = (thickness_val, material_id)
+        key = _dimension_key(thickness_val, material_id)
         if key not in self.thicknesses_map:
             name = f"Thickness {thickness_val:.3f}m"
             self.create_thickness(name, thickness_val, material_id)
@@ -80,14 +98,40 @@ def source_id(source):
     return str(getattr(source, "guid", None) or getattr(source, "id", None) or getattr(source, "name", None) or source)
 
 class TimberToStructural:
-    """Konvertiert ein compas_timber Model in ein neutrales StructuralModel"""
+    """Konvertiert ein compas_timber Model in ein neutrales StructuralModel.
 
-    def __init__(self, connector_mode="rigid", material_name="C24"):
+    Parameters
+    ----------
+    connector_mode : str
+        How virtual connector segments between non-touching centrelines are
+        modelled: "rigid" or anything else for a hinge-hinge coupling.
+    material_name : str
+        Timber grade applied to the whole model, e.g. "C24".
+    source_units : str
+        Unit of the incoming timber model ("m", "cm", "mm", ...). Geometry is
+        converted to metres once, here at the boundary; see
+        :mod:`compas_timber_fea.core.units`.
+    """
+
+    def __init__(self, connector_mode="rigid", material_name="C24", source_units="m", joint_policy=None):
         self.connector_mode = connector_mode
         self.material_name = material_name
+        self.source_units = source_units
+        self.scale = scale_to_meters(source_units)
+        # The joint policy carries the mechanical idealisation of the timber
+        # joints. Without an explicit one, connector_mode decides, so existing
+        # callers keep their behaviour.
+        self.joint_policy = joint_policy or policy_from_connector_mode(connector_mode)
         self.sections_library = SectionLibrary()
         self.thicknesses_library = ThicknessLibrary()
         self._member_id_counter = 1
+        #: Assumptions and anomalies recorded during the last translate().
+        self.report = []
+
+    def _scaled_point(self, point):
+        if self.scale == 1.0:
+            return point
+        return Point(point.x * self.scale, point.y * self.scale, point.z * self.scale)
 
     def translate(self, timber_model) -> StructuralModel:
         # Sicherstellen, dass die strukturellen Segmente generiert sind
@@ -112,6 +156,8 @@ class TimberToStructural:
         structural_graph = StructuralGraph.from_model(timber_model)
 
         model = StructuralModel()
+        model.source_units = self.source_units
+        self.report = []
         self.sections_library.model_sections = model.sections  # Damit die SectionLibrary direkt in das Model schreibt
         self.thicknesses_library.model_thicknesses = model.thicknesses
         model.materials[1] = self.material_name
@@ -162,7 +208,15 @@ class TimberToStructural:
             print(f"{len(removed_member_ids)} elements with 0 length removed.")
 
     def _get_support_nodes(self, model, structural_graph, tol=1e-4):
+        """Match declared support points against graph nodes.
+
+        Comparison happens in source units, before scaling, so the tolerance
+        keeps its meaning regardless of the model's unit. Points that match no
+        node are recorded in the report rather than dropped silently: a model
+        that reaches analysis without supports is a mechanism.
+        """
         support_node_ids = set()
+        unmatched = 0
 
         for u, v in structural_graph.beam_edges:
             beam = structural_graph.beam(u, v)
@@ -171,15 +225,21 @@ class TimberToStructural:
             if not support_points:
                 continue
 
-            for node in (u, v):
-                node_point = structural_graph.node_point(node)
-
-                for support_point in support_points:
+            for support_point in support_points:
+                matched = False
+                for node in (u, v):
+                    node_point = structural_graph.node_point(node)
                     dx = node_point.x - support_point[0]
                     dy = node_point.y - support_point[1]
                     dz = node_point.z - support_point[2]
                     if (dx * dx + dy * dy + dz * dz) ** 0.5 <= tol:
                         support_node_ids.add(node_to_id(structural_graph, node))
+                        matched = True
+                if not matched:
+                    unmatched += 1
+
+        if unmatched:
+            self.report.append(f"{unmatched} declared support point(s) matched no structural node and were ignored")
 
         return sorted(support_node_ids)
 
@@ -188,9 +248,13 @@ class TimberToStructural:
             segment: StructuralSegment = structural_graph.segment(n1, n2)
             assert segment.cross_section
 
-            w, h = segment.cross_section
+            w, h = (value * self.scale for value in segment.cross_section)
             shape = "rectangular"
             section = self.sections_library.get_or_create_section(w, h, shape, material_id=1)
+
+            problem = check_section_plausible(w, h, units=self.source_units)
+            if problem and problem not in self.report:
+                self.report.append(problem)
 
             # Wir geben den vollen Orientierungs-Vektor (Y-Achse) ans neutrale Modell weiter
             # Das ist 100% agnostisch!
@@ -212,29 +276,48 @@ class TimberToStructural:
             self._member_id_counter += 1
 
     def _add_connectors(self, model, structural_graph):
+        """Turn connector edges into members whose end conditions the joint policy decides.
+
+        A connector edge stands for a real timber joint between two members
+        whose system lines do not meet. Its mechanical behaviour - continuous,
+        hinged, or springy - is the joint's, so the originating joint is read
+        from the graph and passed through the policy.
+        """
         rigid_section = self.sections_library.create_section("Rigid", 0, 0, "rectangular", material_id=1)
+        decisions = {}
 
         for n1, n2 in structural_graph.connector_edges:
-            # Bestimme den Typ basierend auf connector_mode
-            m_type = "RIGID" if self.connector_mode == "rigid" else "COUPLING"
+            joint = structural_graph.joint(n1, n2)
+            release = self.joint_policy.release_for(joint)
 
+            description = self.joint_policy.describe_for(joint)
+            decisions[description] = decisions.get(description, 0) + 1
+
+            is_rigid = release.is_rigid()
             model.members.append(
                 StructuralMember(
                     id=self._member_id_counter,
                     node_start=node_to_id(structural_graph, n1),
                     node_end=node_to_id(structural_graph, n2),
                     section_id=rigid_section.id,
-                    is_rigid=(m_type == "RIGID"),
-                    member_type=m_type,
+                    is_rigid=is_rigid,
+                    member_type="RIGID" if is_rigid else "COUPLING",
+                    release_start=None if is_rigid else release,
+                    release_end=None if is_rigid else release,
                     source_element_type="connector",
                     source_segment_id=f"{source_id(n1)}-{source_id(n2)}",
+                    source_joint_start=source_id(joint) if joint is not None else None,
+                    source_joint_end=source_id(joint) if joint is not None else None,
                 )
             )
             self._member_id_counter += 1  # TODO: this could be more neatly handled by the StructuralModel class itself.
 
+        for description, count in sorted(decisions.items()):
+            self.report.append(f"{count}x {description}")
+
     def _add_nodes(self, model, structural_graph):
         for node in structural_graph.nodes():
-            point = structural_graph.node_point(node)
+            point = self._scaled_point(structural_graph.node_point(node))
             model.nodes.append(StructuralNode(id=node_to_id(structural_graph, node), point=point, source_node_id=source_id(node)))
 
     def _find_or_create_node(self, model, point, tol=1e-3):
@@ -254,7 +337,12 @@ class TimberToStructural:
             # Map structural_graph node keys to sequential IDs
             node_ids = [node_to_id(structural_graph, n) for n in boundary_nodes]
             
-            thickness_obj = self.thicknesses_library.get_or_create_thickness(surface.thickness, material_id=1)
+            thickness_value = surface.thickness * self.scale
+            thickness_obj = self.thicknesses_library.get_or_create_thickness(thickness_value, material_id=1)
+
+            problem = check_thickness_plausible(thickness_value, units=self.source_units)
+            if problem and problem not in self.report:
+                self.report.append(problem)
             
             model.surfaces.append(
                 StructuralSurface(

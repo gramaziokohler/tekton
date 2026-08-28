@@ -55,7 +55,11 @@ class DlubalImporter:
 
             # Initialize Mappers (Software-specific)
             node_mapper = NodeMapper(conn.api.structure_core)
-            member_mapper = MemberMapper(conn.api.structure_core, nodes_cache=nodes_cache)
+            member_mapper = MemberMapper(
+                conn.api.structure_core,
+                nodes_cache=nodes_cache,
+                types_for_members=conn.api.types_for_members,
+            )
             support_mapper = SupportMapper(conn.api.types_for_nodes)
             load_mapper = LoadMapper(conn.api.loading)
             thickness_mapper = ThicknessMapper(conn.api.structure_core)
@@ -79,6 +83,9 @@ class DlubalImporter:
             # Sections
             for s in structural_model.sections:
                 objects.append(member_mapper.map_section(s))
+
+            # Member hinges must exist before the members that reference them.
+            objects.extend(member_mapper.map_hinges_for_members(structural_model.members))
 
             # Members
             for m in structural_model.members:

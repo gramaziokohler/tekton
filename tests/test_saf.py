@@ -1,7 +1,5 @@
-import sys
 import os
 
-import compas
 from compas.data import json_load
 
 from compas_timber_fea.translator import TimberToStructural

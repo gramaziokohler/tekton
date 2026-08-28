@@ -10,22 +10,43 @@ The following software and packages are required to use `tekton`:
 
 ## Installation
 
-To install the latest version for development, clone the repository. We recommend using `uv` to manage the virtual environment and enforce Python 3.12:
+The repository is a `uv` workspace, so one command installs the interpreter
+(pinned to 3.12 via `.python-version`), all four packages, and the dev tools:
 
 ```bash
 git clone https://github.com/gramaziokohler/tekton.git
 cd tekton
 
-# 1. Create a virtual environment specifically with Python 3.12
-uv venv --python 3.12
-
-# 2. Install base and development requirements
-uv pip install -r requirements.txt
-uv pip install -r requirements-dev.txt
-
-# 3. Install local monorepo packages in editable mode
-uv pip install -e ./packages/compas_timber_fea -e ./packages/compas_dlubal -e ./packages/compas_saf -e ./packages/tekton_app
+uv sync --extra dev
 ```
+
+Run anything through `uv run`, which uses that environment:
+
+```bash
+uv run pytest          # automated tests (no RFEM needed)
+uv run ruff check .    # lint
+uv run tekton --help   # CLI
+```
+
+### Working against a local compas_timber checkout
+
+Tekton depends on the `compas_timber.structural` API from the
+`structural_graph_plates` branch, pinned to a fixed revision in
+`pyproject.toml` and `requirements.txt`. To develop against a local clone
+instead, add a source override to the root `pyproject.toml`:
+
+```toml
+[tool.uv.sources]
+compas_timber = { path = "../compas_timber", editable = true }
+```
+
+Then run `uv sync` again. Revert the override before committing.
+
+> **Note:** if the repository lives on a path containing spaces (e.g. iCloud
+> Drive), an incremental `uv sync` can leave the workspace packages
+> unimportable, because the `.pth` entries it writes are not picked up. If
+> `import compas_timber_fea` suddenly fails, recreate the environment with
+> `rm -rf .venv && uv sync --extra dev`.
 
 ## Overview & Structure
 
@@ -45,28 +66,29 @@ tekton/
 │   ├── compas_dlubal/       # Dlubal gRPC integration
 │   ├── compas_saf/          # SAF file export (xlsx)
 │   └── tekton_app/          # GUI and CLI entry points
-└── tests/               # Integration tests
+└── tests/
+    ├── unit/            # Automated tests (run in CI, no RFEM required)
+    └── *.py             # Manual scripts requiring a live RFEM instance
 ```
+
+## Tests
+
+The automated suite runs offline — it builds real Dlubal protobuf messages and
+SAF spreadsheets without connecting to RFEM:
+
+```bash
+uv run pytest
+```
+
+The scripts directly under `tests/` are manual: they need a running
+RFEM/RSTAB instance and a `DLUBAL_API_KEY` (see `.env.example`), and they
+report by printing rather than asserting. Run them individually, e.g.
+`uv run tests/test-roundtrip.py`.
 
 ## Building the Application
 
-To build the standalone executable (`.exe`) of the GUI application, ensure your `uv` virtual environment is set up as described in the Installation instructions. 
-
-From the root of the repository, run:
-
-```bash
-uv run pyinstaller packages/tekton_app/tekton_app.spec
-```
-
-This will create a `dist/` directory at the root of your repository containing the compiled application. *(Note: Building heavily relies on matching Python versions (3.12). If the built app fails to open, double-check that `uv` didn't default to Python 3.13.)*
-
-## Running test.py
-
-Provided you have completed the **Installation** steps above, your environment is ready. Run the test script using:
-
-```bash
-uv run tests/test.py
-```
+Building the standalone executable requires a PyInstaller spec file, which is
+not currently part of the repository.
 
 ## Documentation
 

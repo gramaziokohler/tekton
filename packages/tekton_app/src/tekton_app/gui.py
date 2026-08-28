@@ -1,16 +1,15 @@
 import sys
 import os
 import json
-import threading
 import math
 import subprocess
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QTabWidget, QPushButton, QLabel, 
-                             QComboBox, QCheckBox, QScrollArea, QFrame, 
+                             QComboBox, QCheckBox, QFrame, 
                              QFileDialog, QMessageBox, QProgressBar, QLineEdit,
                              QGroupBox, QTextEdit, QStyle)
-from PySide6.QtCore import Qt, Signal, QSize, QObject
-from PySide6.QtGui import QFont, QIcon, QPalette, QColor, QTextCursor, QPainter, QPen, QPixmap
+from PySide6.QtCore import Qt, Signal, QObject
+from PySide6.QtGui import QFont, QIcon, QColor, QTextCursor, QPainter, QPen, QPixmap
 
 # Stream class to catch stdout/stderr
 class ConsoleStream(QObject):
@@ -255,7 +254,6 @@ class Preview3DWidget(QWidget):
         # 2) rotate around world X (elevation)
         cos_e = math.cos(self.rot_x)
         sin_e = math.sin(self.rot_x)
-        y2 = y1 * cos_e - z1 * sin_e
         z2 = y1 * sin_e + z1 * cos_e
 
         scale = min(w, h) * 0.42 * self.zoom
@@ -621,7 +619,6 @@ class DlubalExportGUI(QMainWindow):
         # This matches the behavior of test.py and ensures all segments/nodes are generated.
         # We use compas.data.json_load to ensure it is decoded into a TimberModel object.
         if "beams" in data or ("dtype" in data and "compas_timber" in data["dtype"]):
-            from compas.data import json_load
             from compas_timber_fea.translator import TimberToStructural
             
             # If data is a dict, we need to convert it to a TimberModel object
@@ -731,7 +728,8 @@ class DlubalExportGUI(QMainWindow):
     def save_prefs(self):
         self._write_prefs(show_message=True)
 
-if __name__ == "__main__":
+def run_gui():
+    """Start the Qt application and show the main window. Does not return."""
     if os.name == "nt":
         try:
             import ctypes
@@ -746,3 +744,7 @@ if __name__ == "__main__":
     w = DlubalExportGUI()
     w.show()
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    run_gui()

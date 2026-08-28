@@ -1,0 +1,62 @@
+[project]
+name = "tekton"
+version = "0.1.0"
+description = "Bridge from COMPAS Timber models to structural analysis software"
+authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
+requires-python = ">=3.10"
+
+# The repository is a monorepo: the real packages live under packages/.
+# This root project exists so the workspace can be locked and installed as a
+# whole (uv sync), and so CI has a single install target.
+dependencies = [
+    "compas_timber_fea",
+    "compas_dlubal",
+    "compas_saf",
+    "tekton-app",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest >=7",
+    "ruff",
+]
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+compas_timber_fea = { workspace = true }
+compas_dlubal = { workspace = true }
+compas_saf = { workspace = true }
+tekton-app = { workspace = true }
+# Tekton depends on the compas_timber.structural API, which lives on the
+# structural_graph_plates branch. Keep this revision in sync with
+# requirements.txt. To work against a local checkout instead, see README.
+compas_timber = { git = "https://github.com/gramaziokohler/compas_timber.git", rev = "83aa5a8fb67d8fc4ff578601e8226361b029ced2" }
+
+[tool.pytest.ini_options]
+# Only tests/unit is collected. Everything else under tests/ is a manual script
+# that needs a running RFEM instance and an API key; those are run by hand.
+testpaths = ["tests/unit"]
+
+[tool.ruff]
+line-length = 180
+target-version = "py310"
+# The Grasshopper scratch scripts under tests/plate-tests are pasted component
+# bodies, not importable modules; linting them is noise.
+extend-exclude = ["tests/plate-tests"]
+
+[tool.ruff.lint]
+# Start with a narrow, high-signal set so CI is meaningful from day one:
+# undefined names, unused imports/variables, syntax-level errors.
+# Widen deliberately rather than accumulating ignored findings.
+select = ["E4", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# The live scripts interleave prints and imports on purpose, so the reader can
+# follow which stage is starting before its dependencies are pulled in.
+"tests/test.py" = ["E402"]
+"tests/test-roundtrip.py" = ["E402"]
+
+[tool.setuptools]
+py-modules = []

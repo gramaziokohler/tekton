@@ -29,7 +29,7 @@ try:
     print("Nodes:", len(fea_model.nodes))
     print("Surfaces:", len(fea_model.surfaces))
     print("Surface Connections:", len(fea_model.surface_connections))
-except Exception as e:
+except Exception:
     import traceback
     traceback.print_exc()
 

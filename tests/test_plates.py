@@ -4,12 +4,9 @@ import os
 # Add local compas_timber to sys.path
 sys.path.insert(0, r"C:\path\to\compas_timber\src")
 
-import compas
 from compas.data import json_load
 from dotenv import load_dotenv
 
-import compas_timber_fea
-import compas_dlubal
 
 from compas_timber_fea.translator import TimberToStructural
 from compas_dlubal.dlubal.importer import DlubalImporter

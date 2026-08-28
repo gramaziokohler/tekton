@@ -15,14 +15,14 @@ class DlubalResultReader:
         self.app_type = app_type
         self.api_key = api_key
 
-    def calculate(self):
+    def calculate(self, skip_warnings=True):
         """Trigger calculation on the active Dlubal model.
 
         Returns the name of the application method that was used. Raises a clear
         AttributeError if no known calculation method is available.
         """
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
-            return self._calculate(conn.application)
+            return self._calculate(conn.application, skip_warnings=skip_warnings)
 
     def inspect(self):
         """Return available Dlubal API/application attributes relevant for results."""
@@ -58,22 +58,16 @@ class DlubalResultReader:
                 )
             return result_sets
 
-    def _calculate(self, application):
-        method_names = (
-            "calculate_all",
-            "calculate",
-            "calculate_all_load_cases",
-            "calculate_selected_load_cases",
-        )
+    def _calculate(self, application, skip_warnings=True):
+        method = getattr(application, "calculate_all", None)
+        if not callable(method):
+            available = self._public_names(application)
+            raise AttributeError(f"No known Dlubal calculation method found. Available application methods: {available}")
 
-        for method_name in method_names:
-            method = getattr(application, method_name, None)
-            if callable(method):
-                method()
-                return method_name
-
-        available = self._public_names(application)
-        raise AttributeError(f"No known Dlubal calculation method found. Available application methods: {available}")
+        # dlubal.api requires skip_warnings as a keyword-only argument; without it
+        # the call raises TypeError before reaching the server.
+        method(skip_warnings=skip_warnings)
+        return "calculate_all"
 
     def _inspect(self, conn):
         api = conn.api

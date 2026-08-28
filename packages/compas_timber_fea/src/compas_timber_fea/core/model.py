@@ -1,6 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-from compas.geometry import Point, Frame, Vector
+from compas.geometry import Point, Vector
+
+from compas_timber_fea.core.releases import LoadCombination
+from compas_timber_fea.core.releases import MemberEccentricity
+from compas_timber_fea.core.releases import MemberRelease
 
 @dataclass
 class StructuralNode:
@@ -51,9 +55,18 @@ class StructuralMember:
     orientation_vector: Vector = field(default_factory=lambda: Vector(0, 0, 1))
     is_rigid: bool = False
     member_type: str = "BEAM" # "BEAM", "RIGID", "COUPLING"
+    # Mechanical end conditions. None means fully continuous; a MemberRelease
+    # carries per-DOF stiffness (inf = rigid, 0 = free, finite = spring).
+    release_start: Optional[MemberRelease] = None
+    release_end: Optional[MemberRelease] = None
+    # Offset of the member axis from the system line, in local axes.
+    eccentricity: Optional[MemberEccentricity] = None
     source_element_id: Optional[str] = None
     source_element_type: Optional[str] = None
     source_segment_id: Optional[str] = None
+    # Which timber joint produced each end condition, for traceability.
+    source_joint_start: Optional[str] = None
+    source_joint_end: Optional[str] = None
 
 @dataclass
 class StructuralNodeResult:
@@ -147,9 +160,26 @@ class StructuralModel:
     supports: List[StructuralSupport] = field(default_factory=list)
     materials: Dict[int, str] = field(default_factory=dict)
     load_cases: List[StructuralLoadCase] = field(default_factory=list)
+    load_combinations: List[LoadCombination] = field(default_factory=list)
     point_loads: List[StructuralPointLoad] = field(default_factory=list)
     member_loads: List[StructuralMemberLoad] = field(default_factory=list)
     thicknesses: List[StructuralThickness] = field(default_factory=list)
     surfaces: List[StructuralSurface] = field(default_factory=list)
     surface_connections: List[StructuralSurfaceConnection] = field(default_factory=list)
     results: Dict[int, StructuralResultSet] = field(default_factory=dict)
+    # Everything in the neutral model is SI: metres, kN, kNm. The source model's
+    # unit is recorded so a translation can state what it converted from.
+    source_units: str = "m"
+
+    def to_json(self, filepath, pretty=True):
+        """Serialise the model to JSON. See :mod:`compas_timber_fea.core.serialization`."""
+        from compas_timber_fea.core.serialization import model_to_json
+
+        return model_to_json(self, filepath, pretty=pretty)
+
+    @classmethod
+    def from_json(cls, filepath):
+        """Load a model previously written with :meth:`to_json`."""
+        from compas_timber_fea.core.serialization import model_from_json
+
+        return model_from_json(filepath)

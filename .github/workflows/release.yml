@@ -5,26 +5,26 @@ on:
     tags:
       - 'v*'
 
+# The monorepo packages are not published to PyPI (they depend on each other by
+# name and on an unreleased compas_timber branch). This workflow therefore only
+# verifies that a tagged revision installs and passes its tests; publishing is
+# done manually if and when the packages are released.
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python: ['3.9', '3.10', '3.11']
-
-    steps:
-      - uses: compas-dev/compas-actions.build@v4
-        with:
-          python: ${{ matrix.python }}
-          invoke_lint: true
-          invoke_test: true
-
-  Publish:
-    needs: build
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: compas-dev/compas-actions.publish@v3
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          pypi_token: ${{ secrets.PYPI }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          enable-cache: true
+
+      - name: Install workspace
+        run: uv sync --extra dev
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test
+        run: uv run pytest -v

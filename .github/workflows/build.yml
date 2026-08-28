@@ -13,13 +13,25 @@ jobs:
     if: "!contains(github.event.pull_request.labels.*.name, 'docs-only')"
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python: ["3.10", "3.11", "3.12"]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
-      - uses: compas-dev/compas-actions.build@v4
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python: ${{ matrix.python }}
-          invoke_lint: true
-          invoke_test: true
+          enable-cache: true
+
+      # Installs the whole workspace (the four packages under packages/) from
+      # uv.lock, using the interpreter pinned in .python-version.
+      - name: Install workspace
+        run: uv sync --extra dev
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test
+        run: uv run pytest -v

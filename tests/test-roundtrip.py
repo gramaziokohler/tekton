@@ -1,11 +1,8 @@
 import os
 
-import compas
 
 from compas.data import json_load
 
-import compas_timber_fea
-import compas_dlubal
 
 # Configuration
 from dotenv import load_dotenv

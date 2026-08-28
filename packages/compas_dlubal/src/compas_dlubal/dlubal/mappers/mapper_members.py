@@ -1,7 +1,6 @@
-import math
-from compas.geometry import Vector
-from compas_timber_fea.core.model import StructuralMember, StructuralSection, StructuralNode
-from compas_timber_fea.utils import calculate_beta_from_vector
+from compas_timber_fea.core.model import StructuralMember, StructuralSection
+
+from compas_dlubal.dlubal.conventions import calculate_beta_from_vector
 
 class MemberMapper:
     """Konvertiert neutrale Member/Sections in Dlubal PB Objekte"""
@@ -18,12 +17,52 @@ class MemberMapper:
         "C30": "C30 | EN 338:2016-04"
     }
 
-    def __init__(self, Core, nodes_cache=None):
+    def __init__(self, Core, nodes_cache=None, types_for_members=None):
         self.Core = Core
         # Wir brauchen Zugriff auf die Knotenkoordinaten für die Winkelberechnung
-        self.nodes_cache = nodes_cache or {} 
+        self.nodes_cache = nodes_cache or {}
+        # MemberHinge lives in a separate proto module than the structure core.
+        self.types_for_members = types_for_members
+        self._hinge_id_counter = 1
+        self._hinges_map = {}
+        #: (member_id, "start"|"end") -> Dlubal hinge number
+        self.hinge_numbers = {}
 
     # ... (map_section and map_material remain similar)
+
+    def map_hinge(self, release):
+        """Create a Dlubal MemberHinge for a neutral MemberRelease.
+
+        RFEM's release fields hold a spring stiffness per degree of freedom,
+        with 0 fully released and inf fully restrained - the same convention
+        the neutral model uses, so the values pass through unchanged.
+
+        Identical releases share one hinge object, the way an engineer would
+        define a hinge type once and reference it from many members. Returns
+        (hinge_or_None, hinge_no); the hinge is None when an equivalent one was
+        already created and only needs referencing.
+        """
+        if self.types_for_members is None:
+            raise AttributeError("MemberMapper needs types_for_members to create member hinges")
+
+        key = tuple(getattr(release, dof) for dof in ("ux", "uy", "uz", "rx", "ry", "rz"))
+        if key in self._hinges_map:
+            return None, self._hinges_map[key]
+
+        hinge_no = self._hinge_id_counter
+        hinge = self.types_for_members.MemberHinge(
+            no=hinge_no,
+            name=release.name or f"Hinge {hinge_no}",
+            axial_release_n=float(release.ux),
+            axial_release_vy=float(release.uy),
+            axial_release_vz=float(release.uz),
+            moment_release_mt=float(release.rx),
+            moment_release_my=float(release.ry),
+            moment_release_mz=float(release.rz),
+        )
+        self._hinges_map[key] = hinge_no
+        self._hinge_id_counter += 1
+        return hinge, hinge_no
 
     def map_member(self, member: StructuralMember):
         if member.member_type == "RIGID":
@@ -36,15 +75,35 @@ class MemberMapper:
             )
         
         if member.member_type == "COUPLING":
-            # Dlubal Type 24 is COUPLING (hinged-hinged rigid link)
-            # Useful for rotational stiffness/hinged connectors
+            hinge_start = self.hinge_numbers.get((member.id, "start"))
+            hinge_end = self.hinge_numbers.get((member.id, "end"))
+
+            # A spring cannot be expressed by the coupling type, which is a
+            # plain hinge-hinge link, so a springy connector becomes a rigid
+            # member carrying explicit hinges instead.
+            if self._has_spring(member):
+                kwargs = dict(
+                    no=member.id,
+                    type=2,  # TYPE_RIGID
+                    node_start=member.node_start,
+                    node_end=member.node_end,
+                )
+                if hinge_start is not None:
+                    kwargs["member_hinge_start"] = hinge_start
+                if hinge_end is not None:
+                    kwargs["member_hinge_end"] = hinge_end
+                return self.Core.Member(**kwargs)
+
+            # Dlubal Type 24 is COUPLING (hinged-hinged rigid link):
+            # the hinge is already part of the member type.
             return self.Core.Member(
                 no=member.id,
                 type=24, # TYPE_COUPLING_HINGE_HINGE
                 node_start=member.node_start,
                 node_end=member.node_end
             )
-        
+
+
         # Standard BEAM (Type 1 is default)
         p1 = self.nodes_cache.get(member.node_start)
         p2 = self.nodes_cache.get(member.node_end)
@@ -52,16 +111,71 @@ class MemberMapper:
         if p1 and p2:
             beta = calculate_beta_from_vector(p1, p2, member.orientation_vector)
 
-        return self.Core.Member(
+        kwargs = dict(
             no=member.id,
             node_start=member.node_start,
             node_end=member.node_end,
             cross_section_start=member.section_id,
             cross_section_end=member.section_id,
             is_rotated=bool(beta != 0.0),
-            rotation_specification_type=0, 
-            rotation_angle=float(beta)
+            rotation_specification_type=0,
+            rotation_angle=float(beta),
         )
+
+        # End releases, if the joint policy produced any for this member.
+        hinge_no = self.hinge_numbers.get((member.id, "start"))
+        if hinge_no is not None:
+            kwargs["member_hinge_start"] = hinge_no
+        hinge_no = self.hinge_numbers.get((member.id, "end"))
+        if hinge_no is not None:
+            kwargs["member_hinge_end"] = hinge_no
+
+        return self.Core.Member(**kwargs)
+
+    @staticmethod
+    def _has_spring(member):
+        """True if any end condition is a finite spring rather than rigid/free."""
+        for end in ("start", "end"):
+            release = getattr(member, f"release_{end}", None)
+            if release is None:
+                continue
+            for dof in ("ux", "uy", "uz", "rx", "ry", "rz"):
+                value = getattr(release, dof)
+                if value not in (0.0, float("inf")):
+                    return True
+        return False
+
+    def _needs_explicit_hinge(self, member):
+        """Whether this member must reference a MemberHinge object.
+
+        A COUPLING member is already a hinge-hinge link by type, so it only
+        needs an explicit hinge when a spring stiffness has to be expressed.
+        """
+        if member.member_type == "RIGID":
+            return False
+        if member.member_type == "COUPLING":
+            return self._has_spring(member)
+        return True
+
+    def map_hinges_for_members(self, members):
+        """Create the hinge objects a set of members needs, and record their numbers.
+
+        Returns the list of new MemberHinge objects to push; call before
+        map_member so the members can reference them.
+        """
+        hinges = []
+        for member in members:
+            if not self._needs_explicit_hinge(member):
+                continue
+            for end in ("start", "end"):
+                release = getattr(member, f"release_{end}", None)
+                if release is None or release.is_rigid():
+                    continue
+                hinge, hinge_no = self.map_hinge(release)
+                if hinge is not None:
+                    hinges.append(hinge)
+                self.hinge_numbers[(member.id, end)] = hinge_no
+        return hinges
 
     def map_material(self, mat_id: int, mat_name: str):
         desc = self.Core.Material.DESCRIPTOR.fields_by_name['material_type'].enum_type

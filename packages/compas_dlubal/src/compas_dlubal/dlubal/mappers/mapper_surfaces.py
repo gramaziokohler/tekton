@@ -25,20 +25,18 @@ class SurfaceMapper:
                 line_no = self._line_id_counter
                 objects.append(self.Core.Line(
                     no=line_no,
-                    definition_nodes=f"{u}, {v}",
+                    definition_nodes=[u, v],
                     type="TYPE_POLYLINE"
                 ))
                 self._lines_map[key] = line_no
                 self._line_id_counter += 1
-            
+
             line_ids.append(self._lines_map[key])
-            
-        boundary_lines_str = ", ".join(map(str, line_ids))
-        
+
         # Create surface
         objects.append(self.Core.Surface(
             no=structural_surface.id,
-            boundary_lines=boundary_lines_str,
+            boundary_lines=line_ids,
             thickness=structural_surface.thickness_id
         ))
         

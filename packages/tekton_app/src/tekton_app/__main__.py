@@ -1,6 +1,5 @@
 import argparse
 import sys
-import os
 from compas.data import json_load
 
 def main():
@@ -16,22 +15,9 @@ def main():
     # Start GUI if requested or if no arguments are provided
     if args.gui or (not args.input and len(sys.argv) == 1):
         print("Starte GUI...")
-        try:
-            from tkinterdnd2 import TkinterDnD
-            from tekton_app.gui import DlubalExportGUI
-            root = TkinterDnD.Tk()
-            app = DlubalExportGUI(root)
-            root.mainloop()
-            return
-        except ImportError as e:
-            # Fallback if tkinterdnd2 is not installed
-            print(f"Warning: tkinterdnd2 not found, starting without Drag&Drop support. ({e})")
-            from tekton_app.gui import DlubalExportGUI
-            import tkinter as tk
-            root = tk.Tk()
-            app = DlubalExportGUI(root)
-            root.mainloop()
-            return
+        from tekton_app.gui import run_gui
+
+        run_gui()
 
     if not args.input:
         parser.print_help()
@@ -46,33 +32,28 @@ def main():
 
     if args.output:
         print(f"Exporting to SAF: {args.output}")
-        from compas_timber_fea.translator import TimberToStructural
         from compas_saf.exporter.saf import SAFExporter
-        
+        from compas_timber_fea.translator import TimberToStructural
+
         translator = TimberToStructural()
         struct_model = translator.translate(timber_model)
-        
+
         exporter = SAFExporter(struct_model)
-        exporter.export(args.output)
+        if not exporter.export(args.output):
+            sys.exit(1)
 
     if args.dlubal:
         print(f"Pushing to Dlubal ({args.app})...")
-        from compas_timber_fea.translator import TimberToStructural
         from compas_dlubal.dlubal.importer import DlubalImporter
-        
+        from compas_timber_fea.translator import TimberToStructural
+
         translator = TimberToStructural()
         struct_model = translator.translate(timber_model)
-        
+
         importer = DlubalImporter(app_type=args.app, delete_all=False)
-        importer.run(struct_model)
+        if not importer.run(struct_model):
+            sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
-
-
-"""
-# how to use:
-
-$env:PYTHONPATH = "$PWD\src"; .\.venv_parallels\Scripts\python.exe -m tekton_app
-
-"""

@@ -7,6 +7,6 @@ class ThicknessMapper:
         return self.Core.Thickness(
             no=structural_thickness.id,
             name=structural_thickness.name,
-            material_no=structural_thickness.material_id,
-            uniform_thickness_thickness=structural_thickness.thickness
+            material=structural_thickness.material_id,
+            uniform_thickness=structural_thickness.thickness
         )

@@ -3,6 +3,21 @@ import pandas as pd
 from compas_timber_fea.exporter.base import BaseExporter
 from compas_saf.exporter.saf_schema import SHEETS
 
+
+def _saf_constraint(value, rigid_threshold=1e10):
+    """Translate a neutral stiffness value into a SAF constraint and stiffness.
+
+    inf (or a very large value) means fully restrained, 0 means free, and any
+    finite value in between is a spring, which SAF expresses as 'Flexible' plus
+    a numeric stiffness.
+    """
+    if value == float('inf') or value > rigid_threshold:
+        return 'Rigid', ''
+    if not value:
+        return 'Free', ''
+    return 'Flexible', value
+
+
 class SAFExporter(BaseExporter):
     """Exporter für das Structural Analysis Format (SAF) mittels Excel (.xlsx)."""
     
@@ -69,7 +84,7 @@ class SAFExporter(BaseExporter):
                 'Id': f"MAT{mat_id}"
             }
             materials_data.append({col: data.get(col, '') for col in SHEETS['StructuralMaterial']})
-        df_materials = pd.DataFrame(materials_data)
+        df_materials = pd.DataFrame(materials_data, columns=SHEETS['StructuralMaterial'])
 
         # 3. Sections Sheet
         sections_data = []
@@ -95,7 +110,7 @@ class SAFExporter(BaseExporter):
                 'Id': guid
             }
             sections_data.append({col: data.get(col, '') for col in SHEETS['StructuralCrossSection']})
-        df_sections = pd.DataFrame(sections_data)
+        df_sections = pd.DataFrame(sections_data, columns=SHEETS['StructuralCrossSection'])
 
         # 4. Nodes (Point Connections)
         nodes_data = []
@@ -104,38 +119,30 @@ class SAFExporter(BaseExporter):
                 'Name': str(node.id),
                 'Coordinate X [m]': round(float(node.point.x), 6),
                 'Coordinate Y [m]': round(float(node.point.y), 6),
-                'Coordinate Z [m]': round(-float(node.point.z), 6), # Invert Z
+                'Coordinate Z [m]': round(float(node.point.z), 6),
                 'Id': f"node-guid-{node.id}"
             }
             nodes_data.append({col: data.get(col, '') for col in SHEETS['StructuralPointConnection']})
-        df_nodes = pd.DataFrame(nodes_data)
+        df_nodes = pd.DataFrame(nodes_data, columns=SHEETS['StructuralPointConnection'])
 
         # 5. Members (Curve Members)
         members_data = []
-        from compas_timber_fea.utils import calculate_beta_from_vector
-        # Note: We need a beta calculation here that does not depend on Dlubal
-        import math
+        sections_by_id = {s.id: s for s in self.model.sections}
+        points_by_id = {n.id: n.point for n in self.model.nodes}
 
         for i, mem in enumerate(self.model.members):
-            section_name = "Unknown"
-            for s in self.model.sections:
-                if s.id == mem.section_id:
-                    section_name = s.name
-                    break
-            
-            # Rotation calculation
-            p1 = None
-            p2 = None
-            for n in self.model.nodes:
-                if n.id == mem.node_start: p1 = n.point
-                if n.id == mem.node_end: p2 = n.point
-            
-            beta_deg = 0.0
-            length = 0.0
-            if p1 and p2:
-                beta_rad = calculate_beta_from_vector(p1, p2, mem.orientation_vector)
-                beta_deg = math.degrees(beta_rad)
-                length = p1.distance_to_point(p2)
+            section = sections_by_id.get(mem.section_id)
+            section_name = section.name if section else "Unknown"
+
+            p1 = points_by_id.get(mem.node_start)
+            p2 = points_by_id.get(mem.node_end)
+            length = p1.distance_to_point(p2) if p1 and p2 else 0.0
+
+            # SAF's "y by vector" takes the local y direction in global coordinates.
+            # The neutral model already stores it, so no backend-specific rotation
+            # convention is involved.
+            orientation = mem.orientation_vector
+            lcs_x, lcs_y, lcs_z = (float(orientation.x), float(orientation.y), float(orientation.z)) if orientation else (0.0, 0.0, 1.0)
 
             data = {
                 'Name': f"CM{mem.id}",
@@ -149,12 +156,12 @@ class SAFExporter(BaseExporter):
                 'Internal nodes': '',
                 'Length [m]': round(length, 6),
                 'Geometrical shape': 'Line',
-                'Parent ID': '',
+                'Parent ID': mem.source_element_id or '',
                 'LCS': 'y by vector',
-                'LCS Rotation [deg]': round(beta_deg, 4),
-                'Coordinate X [m]': 0.0,
-                'Coordinate Y [m]': 0.0,
-                'Coordinate Z [m]': 0.0,
+                'LCS Rotation [deg]': 0.0,
+                'Coordinate X [m]': round(lcs_x, 6),
+                'Coordinate Y [m]': round(lcs_y, 6),
+                'Coordinate Z [m]': round(lcs_z, 6),
                 'System line': 'Centre',
                 'Eccentricity ey [mm]': '',
                 'Eccentricity ez [mm]': '',
@@ -164,42 +171,41 @@ class SAFExporter(BaseExporter):
                 'Id': f"mem-guid-{i}"
             }
             members_data.append({col: data.get(col, '') for col in SHEETS['StructuralCurveMember']})
-        df_members = pd.DataFrame(members_data)
+        df_members = pd.DataFrame(members_data, columns=SHEETS['StructuralCurveMember'])
 
         # 6. Supports
         supports_data = []
         for supp in self.model.supports:
-            is_inf = lambda x: x == float('inf') or x > 1e10
             for node_id in supp.nodes:
-                stiff_x = "INF" if is_inf(supp.ux) else "0"
-                stiff_y = "INF" if is_inf(supp.uy) else "0"
-                stiff_z = "INF" if is_inf(supp.uz) else "0"
-                stiff_rx = "INF" if is_inf(supp.rx) else "0"
-                stiff_ry = "INF" if is_inf(supp.ry) else "0"
-                stiff_rz = "INF" if is_inf(supp.rz) else "0"
-                
+                # SAF constraint enums: 'Rigid' (fully restrained), 'Free', or
+                # 'Flexible' with a stiffness value. Stiffness columns apply to
+                # flexible degrees of freedom only and stay empty otherwise.
+                constraints = {}
+                stiffnesses = {}
+                for dof, value, stiffness_column in (
+                    ('ux', supp.ux, 'Stiffness X [MN/m]'),
+                    ('uy', supp.uy, 'Stiffness Y [MN/m]'),
+                    ('uz', supp.uz, 'Stiffness Z [MN/m]'),
+                    ('fix', supp.rx, 'Stiffness Fix [MNm/rad]'),
+                    ('fiy', supp.ry, 'Stiffness Fiy [MNm/rad]'),
+                    ('fiz', supp.rz, 'Stiffness Fiz [MNm/rad]'),
+                ):
+                    constraint, stiffness = _saf_constraint(value)
+                    constraints[dof] = constraint
+                    stiffnesses[stiffness_column] = stiffness
+
                 support_data = {
                     'Name': f"S_{supp.id}_{node_id}",
-                    'Type': 'General',
+                    'Type': 'Custom',
                     'Node': str(node_id),
-                    'ux': "Fixed" if is_inf(supp.ux) else "Free",
-                    'uy': "Fixed" if is_inf(supp.uy) else "Free",
-                    'uz': "Fixed" if is_inf(supp.uz) else "Free",
-                    'fix': "Fixed" if is_inf(supp.rx) else "Free",
-                    'fiy': "Fixed" if is_inf(supp.ry) else "Free",
-                    'fiz': "Fixed" if is_inf(supp.rz) else "Free",
-                    'Stiffness X [MN/m]': stiff_x,
-                    'Stiffness Y [MN/m]': stiff_y,
-                    'Stiffness Z [MN/m]': stiff_z,
-                    'Stiffness Fix [MNm/rad]': stiff_rx,
-                    'Stiffness Fiy [MNm/rad]': stiff_ry,
-                    'Stiffness Fiz [MNm/rad]': stiff_rz,
+                    **constraints,
+                    **stiffnesses,
                     'Id': f"S_{supp.id}_{node_id}"
                 }
                 # Ensure all columns match the schema
                 full_support_data = {col: support_data.get(col, '') for col in SHEETS['StructuralPointSupport']}
                 supports_data.append(full_support_data)
-        df_supports = pd.DataFrame(supports_data)
+        df_supports = pd.DataFrame(supports_data, columns=SHEETS['StructuralPointSupport'])
 
         # 7. Loading (Groups and Cases)
         df_groups = pd.DataFrame([{col: {'Name': 'G', 'Load group type': 'Permanent', 'Relation': 'Standard', 'Load type': 'Permanent', 'Id': 'group-guid-1'}.get(col, '') for col in SHEETS['StructuralLoadGroup']}])
@@ -216,7 +222,7 @@ class SAFExporter(BaseExporter):
                 'Id': f"lc-guid-{i}"
             }
             lc_data.append({col: data.get(col, '') for col in SHEETS['StructuralLoadCase']})
-        df_lc = pd.DataFrame(lc_data)
+        df_lc = pd.DataFrame(lc_data, columns=SHEETS['StructuralLoadCase'])
 
         # Excel Export
         try:

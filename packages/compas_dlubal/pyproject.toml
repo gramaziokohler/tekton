@@ -9,7 +9,8 @@ description = "Dlubal module for Tekton"
 authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
 requires-python = ">=3.10"
 dependencies = [
-    "compas_timber_fea"
+    "compas_timber_fea",
+    "dlubal-api == 2.13.8"
 ]
 
 [tool.setuptools]

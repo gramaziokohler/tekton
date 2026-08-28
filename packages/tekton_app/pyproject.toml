@@ -15,5 +15,8 @@ dependencies = [
     "compas_saf"
 ]
 
+[project.scripts]
+tekton = "tekton_app.__main__:main"
+
 [tool.setuptools]
 package-dir = { "" = "src" }
