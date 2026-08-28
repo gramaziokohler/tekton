@@ -1,0 +1,125 @@
+{
+    "name": "Tekton Run",
+    "nickname": "TRun",
+    "category": "Tekton",
+    "subcategory": "3 | Run",
+    "description": "Modell ans Backend schicken, rechnen lassen, Ergebnisse zurueckholen. Laeuft in einem eigenen Prozess (Backends brauchen Python >= 3.10). NUR per Button ausloesen \u2014 jeder Lauf baut das RFEM-Modell neu auf und blockiert Grasshopper, solange gerechnet wird.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000013",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel aus TektonTranslate.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "backend",
+                "nickname": "backend",
+                "description": "Aus TektonBackend.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_cases",
+                "nickname": "load_cases",
+                "description": "Lastfaelle, deren Ergebnisse gelesen werden. Leer = alle.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "int",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "model_name",
+                "nickname": "model_name",
+                "description": "Name des Modells im Backend.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "calculate",
+                "nickname": "calculate",
+                "description": "False = nur uebergeben, nicht rechnen (Handoff).",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "run",
+                "nickname": "run",
+                "description": "Button. Ausloesen des Laufs.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "Modell mit Ergebnissen",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "log",
+                "nickname": "log",
+                "description": "Worker-Ausgabe",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "stamp",
+                "nickname": "stamp",
+                "description": "Fingerprint + Zeitpunkt des Laufs",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

@@ -46,7 +46,19 @@ line-length = 180
 target-version = "py310"
 # The Grasshopper scratch scripts under tests/plate-tests are pasted component
 # bodies, not importable modules; linting them is noise.
-extend-exclude = ["tests/plate-tests"]
+#
+# packages/tekton_gh/components/*/code.py are Grasshopper script-component
+# bodies too: they run inside Rhino, where `ghenv` and the input variables are
+# injected by the host, so they do not resolve as standalone modules. The
+# importable part of that package (src/tekton_gh) is linted normally.
+#
+# componentize_cpy.py is vendored verbatim from lorin-gh-tools so this repo
+# builds standalone; it is not ours to restyle.
+extend-exclude = [
+    "tests/plate-tests",
+    "packages/tekton_gh/components",
+    "packages/tekton_gh/_componentizer/componentize_cpy.py",
+]
 
 [tool.ruff.lint]
 # Start with a narrow, high-signal set so CI is meaningful from day one:

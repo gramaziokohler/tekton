@@ -2073,12 +2073,6 @@ requires-dist = [
 name = "tekton-gh"
 version = "0.1.0"
 source = { editable = "packages/tekton_gh" }
-dependencies = [
-    { name = "compas-timber-fea" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "compas-timber-fea", editable = "packages/compas_timber_fea" }]
 
 [[package]]
 name = "tomli"

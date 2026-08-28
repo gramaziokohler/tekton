@@ -1,0 +1,139 @@
+{
+    "name": "Tekton Translate",
+    "nickname": "TTrans",
+    "category": "Tekton",
+    "subcategory": "2 | Translate",
+    "description": "Kern der Bruecke: TimberModel -> neutrales StructuralModel. Erzeugt Systemlinien, Knoten, Querschnitte, Gelenke, Lager. Der 'report'-Ausgang listet alle getroffenen Annahmen \u2014 das ist kein Debug-Output, sondern das, worueber der Statiker spaeter diskutiert.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000010",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "model",
+                "nickname": "model",
+                "description": "TimberModel (COMPAS Timber).",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "material",
+                "nickname": "material",
+                "description": "Aus TektonMaterial. Leer = C24.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "joint_policy",
+                "nickname": "joint_policy",
+                "description": "Aus TektonJointPolicy. Leer = konservativ (gelenkig).",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "plate_policy",
+                "nickname": "plate_policy",
+                "description": "Aus TektonPlatePolicy.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_cases",
+                "nickname": "load_cases",
+                "description": "Aus TektonLoadCase. Leer = nur Eigengewicht.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "units",
+                "nickname": "units",
+                "description": "Einheiten des Timber-Modells. Leer = Rhino-Dokumenteinheit.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "repo",
+                "nickname": "repo",
+                "description": "Pfad zum Tekton-Monorepo (siehe TektonInfo).",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "Neutrales StructuralModel",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "report",
+                "nickname": "report",
+                "description": "Annahmenprotokoll \u2014 lesen!",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "preview",
+                "nickname": "preview",
+                "description": "Systemlinien zur Kontrolle",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

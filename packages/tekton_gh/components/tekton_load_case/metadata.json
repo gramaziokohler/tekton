@@ -1,0 +1,81 @@
+{
+    "name": "Tekton Load Case",
+    "nickname": "TCase",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Lastfall definieren (Eigengewicht, Nutzlast, Schnee, Wind). Lastfaelle sind die Container, auf die sich Lasten und Kombinationen beziehen.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000004",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "name",
+                "nickname": "name",
+                "description": "Name des Lastfalls.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "category",
+                "nickname": "category",
+                "description": "PERMANENT | VARIABLE | SNOW | WIND.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "self_weight",
+                "nickname": "self_weight",
+                "description": "Eigengewicht automatisch ansetzen.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "id",
+                "nickname": "id",
+                "description": "Optionale feste ID. Leer = fortlaufend.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "int",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "load_case",
+                "nickname": "load_case",
+                "description": "Lastfall fuer Translate/Loads",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

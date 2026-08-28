@@ -1,0 +1,61 @@
+{
+    "name": "Tekton Preflight",
+    "nickname": "TCheck",
+    "category": "Tekton",
+    "subcategory": "2 | Translate",
+    "description": "Prueft das Statikmodell vor dem Rechnen: Auflager vorhanden? Modell zusammenhaengend? Querschnitte plausibel? Ein lagerloses Modell geht sonst kommentarlos in die Berechnung und liefert Unsinn oder einen Solver-Abbruch.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000011",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel aus TektonTranslate.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "strict",
+                "nickname": "strict",
+                "description": "True = Fehler statt Warnung bei Befunden.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "ok",
+                "nickname": "ok",
+                "description": "True, wenn nichts Kritisches gefunden wurde",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "issues",
+                "nickname": "issues",
+                "description": "Befunde im Klartext",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

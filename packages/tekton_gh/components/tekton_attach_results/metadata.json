@@ -1,0 +1,75 @@
+{
+    "name": "Tekton Attach Results",
+    "nickname": "TAttach",
+    "category": "Tekton",
+    "subcategory": "4 | Results",
+    "description": "Schreibt die Ergebnisse zurueck auf das Timber-Modell (beam.attributes['analysis']) \u2014 mit Herkunftsangabe: welcher Modellstand, welcher Lastfall, wann. Eine Zahl ohne diese Angabe ist eine Haftungsfrage.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000015",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "model",
+                "nickname": "model",
+                "description": "TimberModel.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel mit Ergebnissen.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_case",
+                "nickname": "load_case",
+                "description": "Lastfall.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "int",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "model",
+                "nickname": "model",
+                "description": "TimberModel mit Analyse-Attributen",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "attached",
+                "nickname": "attached",
+                "description": "Anzahl belegter Bauteile",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

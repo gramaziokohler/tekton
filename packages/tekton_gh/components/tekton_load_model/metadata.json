@@ -1,0 +1,61 @@
+{
+    "name": "Tekton Load Model",
+    "nickname": "TLoad",
+    "category": "Tekton",
+    "subcategory": "5 | IO",
+    "description": "Liest ein neutrales Modell (inkl. Ergebnisse) aus JSON zurueck auf den Canvas \u2014 etwa das, was der Statiker zurueckschickt, oder ein frueherer Rechenlauf.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000019",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "filepath",
+                "nickname": "filepath",
+                "description": "Quelldatei (.json).",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "repo",
+                "nickname": "repo",
+                "description": "Pfad zum Monorepo.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "info",
+                "nickname": "info",
+                "description": "Kurzuebersicht: Knoten, Staebe, Lastfaelle, Ergebnisse",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

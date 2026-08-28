@@ -1,0 +1,81 @@
+{
+    "name": "Tekton Point Load",
+    "nickname": "TPLoad",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Einzellast an einem Punkt. Wird beim Anwenden dem naechstgelegenen Knoten des Statikmodells zugeordnet \u2014 die Zuordnung passiert also nach dem Uebersetzen, weil erst dann Knoten existieren.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000005",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "point",
+                "nickname": "point",
+                "description": "Angriffspunkt.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "point",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "force",
+                "nickname": "force",
+                "description": "Kraft [kN].",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "vector",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "moment",
+                "nickname": "moment",
+                "description": "Moment [kNm]. Optional.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "vector",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_case",
+                "nickname": "load_case",
+                "description": "Lastfall aus TektonLoadCase.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "load",
+                "nickname": "load",
+                "description": "Punktlast fuer TektonApplyLoads",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

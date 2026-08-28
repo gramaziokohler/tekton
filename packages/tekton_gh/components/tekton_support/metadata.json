@@ -1,0 +1,97 @@
+{
+    "name": "Tekton Support",
+    "nickname": "TSup",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Auflagerpunkte auf Balken markieren. Schreibt beam.attributes['support_points'] \u2014 der einzige Weg, den der Translator heute liest. Die Punkte muessen auf der Balkenachse liegen (Toleranz 1e-4 in Modelleinheiten).",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000003",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "model",
+                "nickname": "model",
+                "description": "TimberModel (COMPAS Timber).",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "points",
+                "nickname": "points",
+                "description": "Auflagerpunkte.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "point",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "type",
+                "nickname": "type",
+                "description": "'pinned' | 'fixed' | 'roller'. Default: pinned.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "tolerance",
+                "nickname": "tolerance",
+                "description": "Suchradius zur Balkenachse. Default 1e-4 (Modelleinheiten).",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "model",
+                "nickname": "model",
+                "description": "TimberModel mit gesetzten Auflagerattributen",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "found",
+                "nickname": "found",
+                "description": "Zugeordnete Punkte",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "missed",
+                "nickname": "missed",
+                "description": "Punkte ohne Balken in Reichweite \u2014 pruefen!",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

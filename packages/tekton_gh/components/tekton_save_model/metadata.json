@@ -1,0 +1,81 @@
+{
+    "name": "Tekton Save Model",
+    "nickname": "TSave",
+    "category": "Tekton",
+    "subcategory": "5 | IO",
+    "description": "Schreibt das neutrale Modell als JSON. Das ist zugleich das Uebergabeformat an Statiker: nachvollziehbar, versionierbar, diskutierbar \u2014 inklusive Annahmenprotokoll.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000018",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "filepath",
+                "nickname": "filepath",
+                "description": "Zielpfad (.json).",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "report",
+                "nickname": "report",
+                "description": "Annahmenprotokoll aus TektonTranslate.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "save",
+                "nickname": "save",
+                "description": "Button.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "path",
+                "nickname": "path",
+                "description": "Geschriebene Datei",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

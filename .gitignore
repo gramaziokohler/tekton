@@ -144,6 +144,11 @@ scripts/
 *.saf
 structural_model_export.xlsx
 
+# Grasshopper components: the bundles (code.py/metadata.json/icon.png) are the
+# source and are tracked; the built .ghuser files are artifacts.
+packages/tekton_gh/_componentizer/ghuser_build/
+packages/tekton_gh/_componentizer/*.log
+
 # Internal working documents, kept out of version control on purpose
 docs/reviews/
 docs/concepts/

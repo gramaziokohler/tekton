@@ -7,10 +7,21 @@ name = "tekton-gh"
 version = "0.1.0"
 description = "Grasshopper components for Tekton"
 authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
-requires-python = ">=3.10"
-dependencies = [
-    "compas_timber_fea"
-]
+
+# Abweichung vom Rest des Monorepos, und zwar mit Absicht: dieses Paket läuft
+# in Rhino 8, und Rhino 8 fährt CPython 3.9. Alles hier muss 3.9-Syntax sein
+# (keine PEP-604-Unions, kein match, keine slots=-Dataclasses).
+requires-python = ">=3.9"
+
+# compas_timber_fea steht bewusst nicht drin: in Rhino gibt es keinen
+# pip-Install des Monorepos, dort wird es zur Laufzeit über sys.path gefunden
+# (siehe tekton_gh/env.py). Eine harte Abhängigkeit wäre zudem widersprüchlich,
+# solange compas_timber_fea selbst >=3.10 deklariert — das würde diesem Paket
+# seine 3.9-Installierbarkeit nehmen.
+dependencies = []
 
 [tool.setuptools]
 package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

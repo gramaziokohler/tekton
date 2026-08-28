@@ -1,0 +1,75 @@
+{
+    "name": "Tekton Material",
+    "nickname": "TMat",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Material fuer das Statikmodell waehlen. Heute traegt das neutrale Modell nur einen Namens-String, den RFEM gegen seine Bibliothek aufloest. Sobald die Material-Dataclass mit Presets existiert (siehe discussion/materials.md), liefert diese Komponente ein vollwertiges Material mit Ueberschreibungen.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000002",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "grade",
+                "nickname": "grade",
+                "description": "Guetekasse, z.B. 'C24' oder 'GL24h'.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "E0_mean",
+                "nickname": "E0_mean",
+                "description": "Optionale Ueberschreibung E0,mean [N/mm2].",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "density",
+                "nickname": "density",
+                "description": "Optionale Ueberschreibung Rohdichte [kg/m3].",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "material",
+                "nickname": "material",
+                "description": "Material fuer TektonTranslate",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "info",
+                "nickname": "info",
+                "description": "Was tatsaechlich gesetzt wurde",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

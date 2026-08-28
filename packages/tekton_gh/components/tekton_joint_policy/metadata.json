@@ -1,0 +1,75 @@
+{
+    "name": "Tekton Joint Policy",
+    "nickname": "TPolicy",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Regel, wie Holzverbindungen mechanisch idealisiert werden (gelenkig, steif, Feder). Das ist eine Ingenieurentscheidung, keine Geometrie \u2014 darum explizit, ueberschreibbar und im Annahmenprotokoll dokumentiert.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000008",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "preset",
+                "nickname": "preset",
+                "description": "'conservative' (alles gelenkig) | 'rigid' | 'catalogue'.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "joint_types",
+                "nickname": "joint_types",
+                "description": "Verbindungstypen, die abweichen sollen.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "releases",
+                "nickname": "releases",
+                "description": "Zugehoerig: 'rigid'|'pinned'|'spherical', parallel zu joint_types.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "policy",
+                "nickname": "policy",
+                "description": "JointPolicy fuer TektonTranslate",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "info",
+                "nickname": "info",
+                "description": "Aufgeloeste Regeln",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

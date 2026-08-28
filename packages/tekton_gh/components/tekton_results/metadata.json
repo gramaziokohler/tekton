@@ -1,0 +1,91 @@
+{
+    "name": "Tekton Results",
+    "nickname": "TRes",
+    "category": "Tekton",
+    "subcategory": "4 | Results",
+    "description": "Ergebnisse pro physischem Balken auslesen: Huellwerte (max. Ausnutzung, max. Verformung) und Stuetzstellen entlang der Achse. Die Zuordnung laeuft ueber die Bauteil-GUID, nicht ueber Stabnummern. Warnt, wenn die Ergebnisse zu einem aelteren Modellstand gehoeren.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000014",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel mit Ergebnissen (aus TektonRun).",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_case",
+                "nickname": "load_case",
+                "description": "Lastfall. Leer = erster verfuegbarer.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "int",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "quantity",
+                "nickname": "quantity",
+                "description": "'utilization' | 'displacement' | 'N' | 'My' | 'Vz'.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "beam_ids",
+                "nickname": "beam_ids",
+                "description": "Bauteil-GUIDs",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "envelope",
+                "nickname": "envelope",
+                "description": "Huellwert je Balken",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "samples",
+                "nickname": "samples",
+                "description": "Stuetzstellen je Balken (t, Wert)",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "stale",
+                "nickname": "stale",
+                "description": "True, wenn die Ergebnisse nicht zum Modell passen",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

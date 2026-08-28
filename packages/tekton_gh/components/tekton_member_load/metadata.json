@@ -1,0 +1,95 @@
+{
+    "name": "Tekton Member Load",
+    "nickname": "TMLoad",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Streckenlast auf Balken. Die Zuordnung laeuft ueber die Bauteil-GUID, nicht ueber Stabnummern \u2014 ein physischer Balken wird beim Idealisieren in mehrere Staebe geteilt, die Last muss auf alle davon.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000006",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "beams",
+                "nickname": "beams",
+                "description": "Balken (COMPAS Timber) oder deren GUIDs.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "force",
+                "nickname": "force",
+                "description": "Streckenlast [kN/m].",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "vector",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_case",
+                "nickname": "load_case",
+                "description": "Lastfall aus TektonLoadCase.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "start",
+                "nickname": "start",
+                "description": "Relativer Beginn 0..1. Default 0.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "end",
+                "nickname": "end",
+                "description": "Relatives Ende 0..1. Default 1.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "load",
+                "nickname": "load",
+                "description": "Streckenlast fuer TektonApplyLoads",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

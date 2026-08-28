@@ -1,0 +1,89 @@
+{
+    "name": "Tekton Apply Loads",
+    "nickname": "TApply",
+    "category": "Tekton",
+    "subcategory": "2 | Translate",
+    "description": "Setzt die authorierten Lasten auf das uebersetzte Statikmodell. Muss NACH TektonTranslate laufen: Punktlasten brauchen Knoten, Streckenlasten brauchen die Staebe, in die ein Balken zerlegt wurde. Beides existiert vor dem Uebersetzen noch nicht.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000020",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel aus TektonTranslate.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "loads",
+                "nickname": "loads",
+                "description": "Aus TektonPointLoad / TektonMemberLoad.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "combinations",
+                "nickname": "combinations",
+                "description": "Aus TektonLoadCombination.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "tolerance",
+                "nickname": "tolerance",
+                "description": "Suchradius Punktlast -> Knoten [m]. Default 0.01.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel mit Lasten",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "report",
+                "nickname": "report",
+                "description": "Was zugeordnet wurde \u2014 und was nicht",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

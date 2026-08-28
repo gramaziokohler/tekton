@@ -1,0 +1,81 @@
+{
+    "name": "Tekton Load Combination",
+    "nickname": "TComb",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Lastkombination aus Lastfaellen und Teilsicherheitsbeiwerten. Spaeter: EC0-Generator statt Handarbeit.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000007",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "name",
+                "nickname": "name",
+                "description": "Name, z.B. 'ULS 1'.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_cases",
+                "nickname": "load_cases",
+                "description": "Lastfaelle.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "factors",
+                "nickname": "factors",
+                "description": "Beiwerte, parallel zu load_cases.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "type",
+                "nickname": "type",
+                "description": "ULS | SLS. Default ULS.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "combination",
+                "nickname": "combination",
+                "description": "Kombination fuer TektonApplyLoads",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

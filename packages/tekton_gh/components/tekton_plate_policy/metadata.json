@@ -1,0 +1,53 @@
+{
+    "name": "Tekton Plate Policy",
+    "nickname": "TPlatePol",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Wie Plattenraender aneinander gekoppelt werden (gelenkige Kante vs. durchlaufend). Pendant zur Joint Policy fuer den Plattenpfad.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000009",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "preset",
+                "nickname": "preset",
+                "description": "'hinged' (Default) | 'continuous'.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "span_direction",
+                "nickname": "span_direction",
+                "description": "Tragrichtung. Bei Holz nicht optional \u2014 Orthotropie.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "vector",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "policy",
+                "nickname": "policy",
+                "description": "PlateConnectionPolicy fuer TektonTranslate",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

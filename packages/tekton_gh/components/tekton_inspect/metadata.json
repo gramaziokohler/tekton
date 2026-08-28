@@ -1,0 +1,91 @@
+{
+    "name": "Tekton Inspect",
+    "nickname": "TInspect",
+    "category": "Tekton",
+    "subcategory": "4 | Results",
+    "description": "Zeigt das Ersatzsystem selbst: Systemlinien, Knoten, Lagersymbole, Gelenkmarker. Zum Pruefen der Idealisierung, bevor gerechnet wird \u2014 getrennt von der Ergebnisdarstellung.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000017",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "show",
+                "nickname": "show",
+                "description": "'members' | 'nodes' | 'supports' | 'releases' | 'surfaces'.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "scale",
+                "nickname": "scale",
+                "description": "Symbolgroesse in Dokumenteinheiten.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "members",
+                "nickname": "members",
+                "description": "Systemlinien",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "nodes",
+                "nickname": "nodes",
+                "description": "Knotenpunkte",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "supports",
+                "nickname": "supports",
+                "description": "Lagersymbole",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "releases",
+                "nickname": "releases",
+                "description": "Gelenkmarker",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

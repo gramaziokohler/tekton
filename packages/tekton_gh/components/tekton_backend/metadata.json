@@ -1,0 +1,81 @@
+{
+    "name": "Tekton Backend",
+    "nickname": "TBackend",
+    "category": "Tekton",
+    "subcategory": "3 | Run",
+    "description": "Backend und Verbindungsdaten buendeln. Der API-Key gehoert NICHT in die GH-Datei \u2014 die wandert per Mail weiter. Leer lassen und die Umgebungsvariable TEKTON_API_KEY setzen.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000012",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "backend",
+                "nickname": "backend",
+                "description": "'rfem' | 'rstab' | 'saf'.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "api_key",
+                "nickname": "api_key",
+                "description": "Nur fuer Tests. Besser: TEKTON_API_KEY.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "repo",
+                "nickname": "repo",
+                "description": "Pfad zum Monorepo (dort liegt das Worker-venv).",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "filepath",
+                "nickname": "filepath",
+                "description": "Nur bei 'saf': Zielpfad der xlsx-Datei.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "backend",
+                "nickname": "backend",
+                "description": "Backend-Konfiguration fuer TektonRun",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}
