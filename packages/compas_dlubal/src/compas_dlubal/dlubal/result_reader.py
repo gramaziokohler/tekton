@@ -1,14 +1,19 @@
 from compas_dlubal.dlubal.client import DlubalClient
+from compas_dlubal.dlubal.result_parsing import member_lengths_from_model
+from compas_dlubal.dlubal.result_parsing import parse_member_internal_forces
+from compas_dlubal.dlubal.result_parsing import parse_node_deformations
+from compas_dlubal.dlubal.result_parsing import parse_support_forces
 from compas_timber_fea.core.model import StructuralResultSet
 
 
 class DlubalResultReader:
     """Reads analysis results from the active Dlubal model into neutral result containers.
 
-    The Dlubal Python package exposes generated API objects whose result accessors can
-    vary between RFEM/RSTAB versions. This class intentionally starts with connection,
-    calculation, and API discovery helpers so result table mapping can be added against
-    the concrete installed API.
+    The live surface is deliberately thin: fetch DataFrames via
+    get_result_table, then hand them to the pure parsers in result_parsing,
+    which are tested offline. Raw column names of every fetched table are kept
+    in the result metadata so the parsers' column candidates can be calibrated
+    against a real RFEM response.
     """
 
     def __init__(self, app_type="rfem", api_key=None):
@@ -29,34 +34,75 @@ class DlubalResultReader:
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
             return self._inspect(conn)
 
-    def read(self, load_cases=None, calculate=True):
-        """Calculate and return empty neutral result sets for the requested load cases.
+    def read(self, load_cases=None, calculate=True, structural_model=None):
+        """Calculate and read results for the requested load cases.
 
-        This establishes the round-trip API shape while the concrete Dlubal result-table
-        accessors are identified. The returned result sets include inspection metadata so
-        callers can see which result-related API surfaces were available.
+        Returns {load_case_id: StructuralResultSet} with member internal
+        forces, nodal deformations and support reactions. When
+        ``structural_model`` is given, member result positions are normalised
+        to the 0..1 parameter along each member.
         """
         load_cases = load_cases or [1]
+        member_lengths = member_lengths_from_model(structural_model) if structural_model else {}
 
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
             calculation_method = None
             if calculate:
                 calculation_method = self._calculate(conn.application)
 
-            inspection = self._inspect(conn)
             result_sets = {}
             for load_case_id in load_cases:
-                result_sets[load_case_id] = StructuralResultSet(
-                    load_case_id=load_case_id,
-                    name=f"Load Case {load_case_id}",
-                    metadata={
-                        "source": "dlubal",
-                        "app_type": self.app_type,
-                        "calculation_method": calculation_method,
-                        "inspection": inspection,
-                    },
+                result_sets[load_case_id] = self._read_load_case(
+                    conn, load_case_id, member_lengths, calculation_method
                 )
             return result_sets
+
+    def _read_load_case(self, conn, load_case_id, member_lengths, calculation_method):
+        api = conn.api
+        application = conn.application
+        loading = api.ObjectId(no=load_case_id, object_type=api.OBJECT_TYPE_LOAD_CASE)
+
+        tables = {
+            "member_forces": api.results.STATIC_ANALYSIS_MEMBERS_INTERNAL_FORCES,
+            "node_deformations": api.results.STATIC_ANALYSIS_NODES_GLOBAL_DEFORMATIONS,
+            "support_forces": api.results.STATIC_ANALYSIS_NODES_SUPPORT_FORCES,
+        }
+
+        frames = {}
+        metadata = {
+            "source": "dlubal",
+            "app_type": self.app_type,
+            "calculation_method": calculation_method,
+            "columns": {},
+            "errors": {},
+        }
+        for name, table in tables.items():
+            try:
+                result = application.get_result_table(table=table, loading=loading)
+                frames[name] = result.data
+                metadata["columns"][name] = [str(c) for c in result.data.columns]
+                if getattr(result, "warning", ""):
+                    metadata.setdefault("warnings", {})[name] = result.warning
+            except Exception as error:  # a missing table must not sink the others
+                metadata["errors"][name] = f"{type(error).__name__}: {error}"
+
+        member_results = {}
+        if "member_forces" in frames:
+            member_results = parse_member_internal_forces(frames["member_forces"], load_case_id, member_lengths)
+
+        node_results = {}
+        if "node_deformations" in frames:
+            node_results = parse_node_deformations(frames["node_deformations"], load_case_id)
+        if "support_forces" in frames:
+            node_results = parse_support_forces(frames["support_forces"], load_case_id, node_results)
+
+        return StructuralResultSet(
+            load_case_id=load_case_id,
+            name=f"Load Case {load_case_id}",
+            node_results=node_results,
+            member_results=member_results,
+            metadata=metadata,
+        )
 
     def _calculate(self, application, skip_warnings=True):
         method = getattr(application, "calculate_all", None)

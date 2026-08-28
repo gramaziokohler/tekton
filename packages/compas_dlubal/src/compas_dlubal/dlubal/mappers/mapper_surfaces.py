@@ -38,11 +38,15 @@ class SurfaceMapper:
             line_ids.append(self._lines_map[key])
 
         # Create surface
-        objects.append(self.Core.Surface(
+        surface_kwargs = dict(
             no=structural_surface.id,
             boundary_lines=line_ids,
             thickness=structural_surface.thickness_id
-        ))
+        )
+        # Anchor the source plate GUID in RFEM for cross-session traceability.
+        if structural_surface.source_element_id:
+            surface_kwargs["id_for_export_import"] = structural_surface.source_element_id
+        objects.append(self.Core.Surface(**surface_kwargs))
 
         return objects
 

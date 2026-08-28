@@ -1,5 +1,7 @@
 import warnings
 
+from compas_timber_fea.core.preflight import preflight
+
 from compas_dlubal.dlubal.client import DlubalClient
 from compas_dlubal.dlubal.mappers.mapper_nodes import NodeMapper
 from compas_dlubal.dlubal.mappers.mapper_members import MemberMapper
@@ -67,6 +69,13 @@ class DlubalImporter:
 
     def run(self, structural_model, model_name="Import"):
         self._remove_zero_length_members(structural_model)
+
+        # Surface the predictable problems before RFEM turns them into opaque
+        # errors (or worse, silently calculates a mechanism). Findings do not
+        # block the push - adding supports inside RFEM is a legitimate workflow.
+        report = preflight(structural_model)
+        if report.errors or report.warnings:
+            print(report.summary())
 
         # 1. Connect to Dlubal via Client Module
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:

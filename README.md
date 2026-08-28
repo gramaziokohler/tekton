@@ -42,11 +42,19 @@ compas_timber = { path = "../compas_timber", editable = true }
 
 Then run `uv sync` again. Revert the override before committing.
 
-> **Note:** if the repository lives on a path containing spaces (e.g. iCloud
-> Drive), an incremental `uv sync` can leave the workspace packages
-> unimportable, because the `.pth` entries it writes are not picked up. If
-> `import compas_timber_fea` suddenly fails, recreate the environment with
-> `rm -rf .venv && uv sync --extra dev`.
+> **Note (iCloud Drive):** if the repository lives in iCloud Drive, the
+> workspace packages can suddenly become unimportable
+> (`ModuleNotFoundError: compas_timber_fea`). Cause: iCloud asynchronously
+> sets the macOS *hidden* flag on synced files, and Python ≥3.12 skips hidden
+> `.pth` files in site-packages — which is exactly how editable installs are
+> wired up. Quick fix:
+>
+> ```bash
+> chflags nohidden .venv/lib/python3.12/site-packages/*.pth
+> ```
+>
+> Durable fix: keep the venv outside iCloud, e.g.
+> `export UV_PROJECT_ENVIRONMENT=~/.venvs/tekton` before `uv sync`.
 
 ## Overview & Structure
 

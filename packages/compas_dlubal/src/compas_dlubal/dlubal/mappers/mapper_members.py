@@ -122,6 +122,11 @@ class MemberMapper:
             rotation_angle=float(beta),
         )
 
+        # Anchor the source element GUID in RFEM itself, so results and objects
+        # remain traceable to the design model even across sessions.
+        if member.source_element_id:
+            kwargs["id_for_export_import"] = member.source_element_id
+
         # End releases, if the joint policy produced any for this member.
         hinge_no = self.hinge_numbers.get((member.id, "start"))
         if hinge_no is not None:

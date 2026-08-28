@@ -10,6 +10,16 @@ import math
 from compas.geometry import Vector
 
 
+def vector_from_dlubal(x, y, z):
+    """Convert a global vector from Dlubal's Z-down space to the neutral Z-up space.
+
+    The inverse of the Z negation applied when pushing geometry; used for
+    result quantities expressed in global coordinates (displacements,
+    reactions).
+    """
+    return Vector(x, y, -z)
+
+
 def calculate_beta_from_vector(node_start_point, node_end_point, orientation_vector):
     """Convert an agnostic orientation vector into Dlubal's beta rotation angle.
 
