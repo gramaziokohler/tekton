@@ -1,3 +1,5 @@
+import warnings
+
 from compas_dlubal.dlubal.client import DlubalClient
 from compas_dlubal.dlubal.mappers.mapper_nodes import NodeMapper
 from compas_dlubal.dlubal.mappers.mapper_members import MemberMapper
@@ -10,13 +12,34 @@ from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper
 class DlubalImporter:
     """Orchestrates the export from the neutral structural model to Dlubal via gRPC."""
     
-    def __init__(self, app_type="rfem", api_key=None, delete_all=False, material_preset="C24", connector_mode="rigid", load_cases=["sw"]):
+    def __init__(self, app_type="rfem", api_key=None, delete_all=False, **legacy):
+        """
+        Parameters
+        ----------
+        app_type : str
+            "rfem" or "rstab".
+        api_key : str, optional
+            Dlubal machine key.
+        delete_all : bool
+            Wipe the active model before pushing.
+
+        Loading, material and joint idealisation are properties of the neutral
+        model, decided during translation. The former material_preset,
+        connector_mode and load_cases arguments are accepted and ignored so
+        existing callers keep working.
+        """
         self.app_type = app_type
         self.api_key = api_key
         self.delete_all = delete_all
-        self.material_preset = material_preset
-        self.connector_mode = connector_mode
-        self.load_cases = load_cases
+
+        if legacy:
+            names = ", ".join(sorted(legacy))
+            warnings.warn(
+                f"DlubalImporter ignores {names}: loading, material and joint idealisation "
+                "are decided during translation and travel in the structural model.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
     def _remove_zero_length_members(self, structural_model, tol=1e-6):
         nodes_by_id = {node.id: node for node in structural_model.nodes}
@@ -61,9 +84,9 @@ class DlubalImporter:
                 types_for_members=conn.api.types_for_members,
             )
             support_mapper = SupportMapper(conn.api.types_for_nodes)
-            load_mapper = LoadMapper(conn.api.loading)
+            load_mapper = LoadMapper(conn.api.loading, Loads=conn.api.loads)
             thickness_mapper = ThicknessMapper(conn.api.structure_core)
-            surface_mapper = SurfaceMapper(conn.api.structure_core)
+            surface_mapper = SurfaceMapper(conn.api.structure_core, types_for_lines=conn.api.types_for_lines)
 
             # 3. Mapping from neutral -> Dlubal objects
             objects = []
@@ -95,12 +118,25 @@ class DlubalImporter:
             for su in structural_model.surfaces:
                 objects.extend(surface_mapper.map(su))
 
+            # Plate-to-plate edge connections, once the lines they reference exist.
+            objects.extend(surface_mapper.map_connections(structural_model.surface_connections))
+
             # Supports
             for su in structural_model.supports:
                 objects.append(support_mapper.map(su))
 
-            # Loads (using selected cases)
-            objects.extend(load_mapper.create_load_cases(self.load_cases))
+            # Load cases, loads and combinations come from the neutral model, so
+            # every backend applies the same loading.
+            objects.extend(load_mapper.map_load_cases(structural_model.load_cases))
+
+            for point_load in structural_model.point_loads:
+                objects.append(load_mapper.map_point_load(point_load))
+
+            for member_load in structural_model.member_loads:
+                objects.extend(load_mapper.map_member_load(member_load))
+
+            for combination in structural_model.load_combinations:
+                objects.append(load_mapper.map_load_combination(combination))
 
             # 4. Push to Dlubal
             try:

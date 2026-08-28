@@ -139,3 +139,24 @@ def test_section_dimensions_are_rounded_not_truncated(tmp_path):
 
     sections = _sheet(path, "StructuralCrossSection")
     assert sections.iloc[0]["Parameters [mm]"].startswith("115;")
+
+
+def test_load_case_attributes_come_from_the_model(column_model, tmp_path):
+    """Action type and load type must reflect the case, not a hardcoded default."""
+    from compas_timber_fea.core.model import StructuralLoadCase
+
+    column_model.load_cases.append(StructuralLoadCase(id=1, name="Self-Weight", action_category="PERMANENT", self_weight=True))
+    column_model.load_cases.append(StructuralLoadCase(id=2, name="Snow", action_category="SNOW"))
+
+    path = tmp_path / "loads.xlsx"
+    SAFExporter(column_model).export(str(path))
+    cases = _sheet(path, "StructuralLoadCase")
+
+    self_weight = cases[cases["Name"] == "Self-Weight"].iloc[0]
+    snow = cases[cases["Name"] == "Snow"].iloc[0]
+
+    assert self_weight["Action type"] == "Permanent"
+    assert snow["Action type"] == "Variable"
+    # SAF spells it without a hyphen, and only self-weight cases may use it.
+    assert self_weight["Load type"] == "Self weight"
+    assert snow["Load type"] != "Self weight"

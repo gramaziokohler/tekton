@@ -4,6 +4,16 @@ from compas_timber_fea.exporter.base import BaseExporter
 from compas_saf.exporter.saf_schema import SHEETS
 
 
+#: Neutral action categories -> SAF 'Action type' enum values.
+SAF_ACTION_TYPES = {
+    'PERMANENT': 'Permanent',
+    'VARIABLE': 'Variable',
+    'SNOW': 'Variable',
+    'WIND': 'Variable',
+    'ACCIDENTAL': 'Accidental',
+}
+
+
 def _saf_constraint(value, rigid_threshold=1e10):
     """Translate a neutral stiffness value into a SAF constraint and stiffness.
 
@@ -215,9 +225,11 @@ class SAFExporter(BaseExporter):
             data = {
                 'Name': lc.name,
                 'Description': f"Exported Case {lc.id}",
-                'Action type': 'Permanent',
+                'Action type': SAF_ACTION_TYPES.get((lc.action_category or '').upper(), 'Variable'),
                 'Load group': 'G',
-                'Load type': 'Self-weight',
+                # SAF reserves the 'Self weight' load type for automatically
+                # generated self-weight cases; everything else is 'Standard'.
+                'Load type': 'Self weight' if lc.self_weight else 'Standard',
                 'Duration': 'Long',
                 'Id': f"lc-guid-{i}"
             }

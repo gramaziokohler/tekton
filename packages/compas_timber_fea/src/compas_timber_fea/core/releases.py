@@ -57,6 +57,15 @@ class MemberRelease:
         """All three rotations released, translations continuous."""
         return cls(rx=FREE, ry=FREE, rz=FREE, name=name)
 
+    @classmethod
+    def hinged_edge(cls, name="hinged edge"):
+        """A line hinge along a plate edge: bending about the edge is released.
+
+        Along an edge only rotation about the edge axis (local x) is meaningful,
+        so this is the plate counterpart of :meth:`pinned`.
+        """
+        return cls(rx=FREE, name=name)
+
     def is_rigid(self):
         return all(getattr(self, dof) == RIGID for dof in DOFS)
 

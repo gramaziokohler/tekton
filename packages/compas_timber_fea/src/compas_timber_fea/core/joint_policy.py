@@ -29,6 +29,55 @@ DEFAULT_RIGID_JOINT_TYPES = frozenset({
 
 
 @dataclass
+class PlateConnectionPolicy:
+    """How plates are connected where they meet along an edge.
+
+    compas_timber's plate surfaces do not share nodes, so without an explicit
+    connection the plates are separate pieces and the model is a mechanism.
+    Each connection gets a release from this policy: continuous, hinged, or
+    springy.
+
+    The default is a hinged edge. Timber panel joints (butt joints with
+    fasteners, mitred edges) transfer shear and normal force but little
+    bending, so assuming continuity would overestimate the structure's
+    stiffness. Along an edge only rotation about the edge axis is meaningful,
+    which is what :meth:`MemberRelease.hinged_edge` expresses.
+    """
+
+    default: MemberRelease = field(default_factory=MemberRelease.hinged_edge)
+    by_type: Dict[str, MemberRelease] = field(default_factory=dict)
+    by_instance: Dict[str, MemberRelease] = field(default_factory=dict)
+
+    @classmethod
+    def continuous(cls):
+        """Plates act monolithically. Only right where panels are truly continuous."""
+        return cls(default=MemberRelease.rigid())
+
+    def release_for(self, joint) -> MemberRelease:
+        """Return the end condition for a plate joint (or the default for None)."""
+        if joint is None:
+            return self.default
+
+        guid = str(getattr(joint, "guid", "")) or None
+        if guid and guid in self.by_instance:
+            return self.by_instance[guid]
+
+        joint_type = type(joint).__name__
+        if joint_type in self.by_type:
+            return self.by_type[joint_type]
+
+        return self.default
+
+    def override_type(self, joint_type: str, release: MemberRelease):
+        self.by_type[joint_type] = release
+        return self
+
+    def override_instance(self, joint_guid: str, release: MemberRelease):
+        self.by_instance[str(joint_guid)] = release
+        return self
+
+
+@dataclass
 class JointPolicy:
     """Maps timber joint types to mechanical end conditions.
 

@@ -7,6 +7,7 @@ from compas_timber.structural import StructuralGraph
 from compas_timber.structural import BeamStructuralElementSolver
 
 from compas_timber_fea.core.model import StructuralLoadCase
+from compas_timber_fea.core.joint_policy import PlateConnectionPolicy
 from compas_timber_fea.core.joint_policy import policy_from_connector_mode
 from compas_timber_fea.core.units import check_section_plausible
 from compas_timber_fea.core.units import check_thickness_plausible
@@ -113,7 +114,7 @@ class TimberToStructural:
         :mod:`compas_timber_fea.core.units`.
     """
 
-    def __init__(self, connector_mode="rigid", material_name="C24", source_units="m", joint_policy=None):
+    def __init__(self, connector_mode="rigid", material_name="C24", source_units="m", joint_policy=None, load_cases=None, plate_policy=None):
         self.connector_mode = connector_mode
         self.material_name = material_name
         self.source_units = source_units
@@ -122,6 +123,9 @@ class TimberToStructural:
         # joints. Without an explicit one, connector_mode decides, so existing
         # callers keep their behaviour.
         self.joint_policy = joint_policy or policy_from_connector_mode(connector_mode)
+        self.plate_policy = plate_policy or PlateConnectionPolicy()
+        # None means "seed a self-weight case"; pass a list to author your own.
+        self.load_cases = load_cases
         self.sections_library = SectionLibrary()
         self.thicknesses_library = ThicknessLibrary()
         self._member_id_counter = 1
@@ -181,6 +185,17 @@ class TimberToStructural:
         return model
 
     def _add_load_cases(self, model):
+        """Seed the model's load cases.
+
+        A timber design model carries no loading, so the translator can only
+        contribute self-weight. Anything else - imposed, snow, wind, and the
+        combinations - is authored on the neutral model afterwards, where every
+        backend picks it up identically.
+        """
+        if self.load_cases is not None:
+            model.load_cases.extend(self.load_cases)
+            return
+
         model.load_cases.append(StructuralLoadCase(id=1, name="Self-Weight", action_category="PERMANENT", self_weight=True))
 
     def _remove_zero_length_members(self, model, tol=1e-6):
@@ -344,25 +359,77 @@ class TimberToStructural:
             if problem and problem not in self.report:
                 self.report.append(problem)
             
+            # The analytical surface is regenerated on every translation, so its
+            # guid is not stable. Results must map back to the source plate.
+            parent_plate = getattr(surface, "parent_plate", None)
+
             model.surfaces.append(
                 StructuralSurface(
                     id=surface_id_counter,
                     nodes=node_ids,
                     thickness_id=thickness_obj.id,
-                    source_element_id=source_id(surface),
+                    span_direction=self._span_direction(surface),
+                    source_element_id=source_id(parent_plate) if parent_plate is not None else None,
                     source_element_type="plate",
                     source_surface_id=source_id(surface),
                 )
             )
             surface_id_counter += 1
 
+    def _span_direction(self, surface):
+        """Local x axis of the plate, taken as its strong direction.
+
+        Timber panels are markedly stiffer along the grain of their face layers,
+        and an orthotropic surface needs a reference direction. compas_timber
+        carries no layup, so this is the panel's geometric main axis rather than
+        a measured grain direction - enough to orient an orthotropic material
+        once the layup is known, and harmless while surfaces stay isotropic.
+        """
+        frame = getattr(surface, "frame", None)
+        if frame is None:
+            return None
+        return Vector(*frame.xaxis)
+
     def _add_plate_connections(self, model, structural_graph):
+        """Record where one plate meets another along an edge.
+
+        Each connection edge is an edge of one plate's surface that abuts a
+        neighbouring plate; the graph names both sides. Without such a
+        connection the plates share no nodes and the model falls apart, so the
+        connection carries the mechanical behaviour the plate policy assigns.
+        """
         conn_id_counter = 1
+        decisions = {}
+
         for n1, n2 in structural_graph.surface_connection_edges:
-            id_start = node_to_id(structural_graph, n1)
-            id_end = node_to_id(structural_graph, n2)
-            model.surface_connections.append(StructuralSurfaceConnection(id=conn_id_counter, nodes=[id_start, id_end]))
+            attributes = structural_graph.edge_attributes((n1, n2))
+            line = attributes.get("line") if hasattr(attributes, "get") else None
+            own_plate = attributes.get("plate") if hasattr(attributes, "get") else None
+            # The line's parent plate is the plate on the other side of the joint.
+            other_plate = getattr(line, "parent_plate", None)
+
+            joint = structural_graph.joint(n1, n2)
+            release = self.plate_policy.release_for(joint)
+
+            kind = "rigid" if release.is_rigid() else "released " + "/".join(release.released_dofs())
+            basis = "joint rule" if joint is not None else "policy default (plate connectors carry no joint reference)"
+            decisions[f"plate edge: {kind} ({basis})"] = decisions.get(f"plate edge: {kind} ({basis})", 0) + 1
+
+            model.surface_connections.append(
+                StructuralSurfaceConnection(
+                    id=conn_id_counter,
+                    nodes=[node_to_id(structural_graph, n1), node_to_id(structural_graph, n2)],
+                    release=release,
+                    source_joint_id=source_id(joint) if joint is not None else None,
+                    source_element_ids=[
+                        source_id(plate) for plate in (own_plate, other_plate) if plate is not None
+                    ],
+                )
+            )
             conn_id_counter += 1
+
+        for description, count in sorted(decisions.items()):
+            self.report.append(f"{count}x {description}")
 
     def _add_support_nodes(self, model, structural_graph):
         base_nodes = self._get_support_nodes(model, structural_graph)

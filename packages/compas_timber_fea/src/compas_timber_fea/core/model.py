@@ -26,6 +26,10 @@ class StructuralSurface:
     id: int
     nodes: List[int]
     thickness_id: int
+    # Direction of the strong axis, in global coordinates. Timber panels (CLT,
+    # sheathing) are markedly stiffer along the grain of their face layers, so
+    # a surface without this is only meaningful if it is genuinely isotropic.
+    span_direction: Optional[Vector] = None
     source_element_id: Optional[str] = None
     source_element_type: Optional[str] = None
     source_surface_id: Optional[str] = None
@@ -34,6 +38,12 @@ class StructuralSurface:
 class StructuralSurfaceConnection:
     id: int
     nodes: List[int]
+    # Mechanical behaviour along the shared edge (inf = continuous, 0 = released,
+    # finite = spring), in the same convention as StructuralSupport.
+    release: Optional[MemberRelease] = None
+    source_joint_id: Optional[str] = None
+    # Source plates on either side of the edge, for traceability.
+    source_element_ids: List[str] = field(default_factory=list)
 
 @dataclass
 class StructuralSection:
