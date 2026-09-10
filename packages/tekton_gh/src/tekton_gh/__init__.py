@@ -12,6 +12,7 @@ wiring.
 
 from .env import ensure_tekton_path, remember_repo_root, tekton_repo_root, diagnose
 from .rhino_io import (
+    build_value_list,
     value_list_items,
     document_units,
     line_to_rhino,
@@ -25,6 +26,7 @@ __all__ = [
     "remember_repo_root",
     "tekton_repo_root",
     "diagnose",
+    "build_value_list",
     "value_list_items",
     "document_units",
     "line_to_rhino",

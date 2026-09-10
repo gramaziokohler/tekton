@@ -61,6 +61,7 @@ def _warn(message):
 
 # --------------------- INPUTS ---------------------
 preset: str  # type: ignore
+menu: bool  # type: ignore
 span_direction = span_direction  # type: ignore # noqa: F821
 
 # --------------------- SCRIPT ---------------------
@@ -68,7 +69,14 @@ span_direction = span_direction  # type: ignore # noqa: F821
 _setup()
 from compas_timber_fea.core.joint_policy import PlateConnectionPolicy
 
-from tekton_gh.rhino_io import value_list_items
+from tekton_gh.rhino_io import build_value_list, value_list_items
+
+# The drop-down is built on an explicit button press, never by the component
+# itself: touching the canvas during a solve is what crashed Rhino twice.
+if menu:  # noqa: F821
+    _created, _message = build_value_list(
+        ghenv, ["hinged", "continuous"], param_index=0, nickname="Preset")  # type: ignore # noqa: F821
+    print(_message)
 
 for _line in value_list_items(ghenv, ["hinged", "continuous"]):  # type: ignore # noqa: F821
     print(_line)

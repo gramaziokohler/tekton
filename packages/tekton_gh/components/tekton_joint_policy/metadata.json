@@ -25,6 +25,20 @@
                 "simplify": false
             },
             {
+                "name": "menu",
+                "nickname": "menu",
+                "description": "Set True once to create a drop-down for 'preset', then back to False.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
+            },
+            {
                 "name": "joint_types",
                 "nickname": "joint_types",
                 "description": "Joint types that should deviate.",

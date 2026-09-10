@@ -23,6 +23,20 @@
                 "typeHintID": "str",
                 "reverse": false,
                 "simplify": false
+            },
+            {
+                "name": "menu",
+                "nickname": "menu",
+                "description": "Set True once to create a drop-down for 'grade', then back to False.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
             }
         ],
         "outputParameters": [

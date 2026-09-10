@@ -138,28 +138,7 @@ def error(ghenv, message):
 
 
 def value_list_items(ghenv, names, param_index=0):
-    """Offer a drop-down for an input - without touching the canvas.
-
-    The obvious implementation (create a GH_ValueList and wire it up from
-    inside the component) is not safe here. Adding objects during a solve
-    crashes Rhino outright, and deferring the work through
-    ``ScheduleSolution`` did not help: the callback is a Python closure that
-    has to survive across the .NET delegate boundary, and if it is collected
-    before Grasshopper calls it, the process dies with no error at all. Two
-    crashes on 2026-09-10 and 2026-09-11 were enough.
-
-    So this does the honest thing instead: it reports the allowed values, and
-    the component prints them. To get the Karamba-style menu, right-click the
-    input and pick "Manage Value List Collection", or drop a value list next
-    to it - one gesture, and nothing can take Rhino down with it.
-
-    Parameters
-    ----------
-    ghenv : the component's ``ghenv``
-    names : list of str
-        The allowed values.
-    param_index : int
-        Which input they belong to.
+    """Report the allowed values for an input.
 
     Returns
     -------
@@ -176,5 +155,65 @@ def value_list_items(ghenv, names, param_index=0):
         return []
     return [
         "{}: {}".format(param.NickName, " | ".join(names)),
-        "  (right-click the input > Manage Value List Collection for a menu)",
+        "  (set 'menu' to True once to get a drop-down)",
     ]
+
+
+def build_value_list(ghenv, names, param_index=0, nickname="Options"):
+    """Create a drop-down for an input - on an explicit button press only.
+
+    A component must never build this by itself. Adding objects during a solve
+    crashes Rhino, and deferring through ``ScheduleSolution`` does not save it
+    either: the callback is a Python closure that has to survive across the
+    .NET delegate boundary, and if it is collected before Grasshopper calls it,
+    the process dies with no error at all. Two crashes on 2026-09-10 and
+    2026-09-11 came from exactly that.
+
+    Behind a button the situation is different. The user presses it, the
+    document is between solves, and the object is created straight away
+    instead of from a callback that has to survive anything. Same convenience,
+    without the mechanism that did the damage.
+
+    Returns
+    -------
+    tuple
+        ``(created, message)`` - `created` is False when nothing was done
+        (already wired, or no document), and `message` says why.
+    """
+    import Grasshopper
+    import System
+
+    component = ghenv.Component
+    try:
+        param = component.Params.Input[param_index]
+    except (IndexError, AttributeError):
+        return False, "input {} does not exist".format(param_index)
+
+    if param.SourceCount:
+        return False, "'{}' already has a source - leaving it alone".format(param.NickName)
+
+    document = component.OnPingDocument()
+    if document is None:
+        return False, "no active document"
+
+    value_list = Grasshopper.Kernel.Special.GH_ValueList()
+    value_list.CreateAttributes()
+    value_list.Name = nickname
+    value_list.NickName = nickname
+    value_list.ListItems.Clear()
+    for name in names:
+        value_list.ListItems.Add(
+            Grasshopper.Kernel.Special.GH_ValueListItem(name, '"{}"'.format(name))
+        )
+    value_list.SelectItem(0)
+
+    pivot = component.Attributes.Pivot
+    bounds = value_list.Attributes.Bounds
+    value_list.Attributes.Pivot = System.Drawing.PointF(
+        float(pivot.X - bounds.Width - 90),
+        float(pivot.Y - 10 + param_index * 20),
+    )
+
+    document.AddObject(value_list, False)
+    param.AddSource(value_list)
+    return True, "drop-down created with {} entries - set 'menu' back to False".format(len(names))

@@ -195,10 +195,13 @@ Grasshopper invokes it, the process dies instantly and silently — no exception
 no log entry. `TektonMaterialLibrary` took Rhino down twice this way
 (2026-09-10 with the naive version, 2026-09-11 with the scheduled one).
 
-Components therefore only *report* what a value list should contain; the user
-drops one in via right-click > Manage Value List Collection. One extra gesture,
-and nothing that can end the session. See `value_list_items` in
-`tekton_gh.rhino_io`.
+Components therefore never build one by themselves. They *report* what a value
+list should contain, and Material Library, Joint Policy and Plate Policy carry
+a `menu` input: set it True once and the drop-down is created and wired, then
+set it back to False. Behind a button the document is between solves and the
+object is created directly, with no callback that has to survive anything -
+the mechanism that did the damage is gone. See `build_value_list` and
+`value_list_items` in `tekton_gh.rhino_io`.
 
 **Never calculate automatically.** `TektonRun` blocks Grasshopper while it
 calculates, and every run rebuilds the backend model from scratch. Hence
