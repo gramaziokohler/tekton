@@ -7,9 +7,9 @@ Bauteil-GUID: RFEM-Stabnummer -> neutrale Member-ID -> source_element_id
 Balken wird in mehrere Staebe geteilt, deren Ergebnisse hier wieder
 zusammengefuehrt werden.
 
-TODO(scaffold): Der Ergebnis-Reader in compas_dlubal ist noch ein
-Geruest — er loest die Berechnung aus, liest aber nichts. Diese
-Komponente hat darum die richtige Form, aber noch keine Zahlen.
+Ausnutzung ist die eine Groesse, die noch fehlt: sie kommt aus dem
+Bemessungs-Addon von RFEM und ist nicht angebunden. Schnittgroessen,
+Verformungen und Auflagerreaktionen werden gelesen.
 """
 # venv: tekton
 # r: compas, compas_timber
@@ -78,10 +78,7 @@ else:
 
     results = getattr(structural, "results", {}) or {}
     if not results:
-        _warn(
-            "Das Modell traegt keine Ergebnisse. Erst TektonRun ausfuehren. "
-            "(Und beachten: der Ergebnis-Reader ist noch ein Geruest.)"
-        )
+        _warn("Das Modell traegt keine Ergebnisse. Erst TektonRun ausfuehren.")
     else:
         case_id = int(load_case) if load_case else sorted(results)[0]
         result_set = results.get(case_id)
@@ -117,11 +114,25 @@ else:
 
             print("{} Bauteile, Lastfall {}, Groesse '{}'".format(len(beam_ids), case_id, key))
 
-            # TODO(scaffold): Sobald der Fingerprint beim Rechnen mitgeschrieben
-            # wird (siehe worker.model_fingerprint), hier gegen das aktuelle
-            # Modell pruefen und 'stale' setzen. Ergebnisse, die still einen
-            # aelteren Modellstand beschreiben, sind der gefaehrlichste
-            # Fehlermodus dieses Workflows.
+            # Aktualitaet pruefen. Ergebnisse, die still einen aelteren
+            # Modellstand beschreiben, sind der gefaehrlichste Fehlermodus
+            # dieses Workflows: Grasshopper haelt alte Outputs fest, und eine
+            # Zahl sieht nach einer Aenderung genauso richtig aus wie vorher.
+            from tekton_gh.worker import model_fingerprint
+
             metadata = getattr(result_set, "metadata", {}) or {}
-            if not metadata.get("model_fingerprint"):
+            stamped = metadata.get("model_fingerprint")
+            if not stamped:
                 _warn("Ergebnisse ohne Herkunftsstempel — Aktualitaet nicht pruefbar.")
+            else:
+                current = model_fingerprint(structural)
+                stale = current != stamped
+                if stale:
+                    _warn(
+                        "VERALTET: Die Ergebnisse gehoeren zu Modellstand {}, "
+                        "angeschlossen ist {}. Neu rechnen.".format(stamped, current)
+                    )
+                else:
+                    print("Modellstand {} — Ergebnisse aktuell{}.".format(
+                        stamped,
+                        ", gerechnet {}".format(metadata["calculated_at"]) if metadata.get("calculated_at") else ""))

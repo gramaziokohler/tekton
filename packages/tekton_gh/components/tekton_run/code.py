@@ -101,10 +101,17 @@ else:
 
         if result_model is not None:
             structural = result_model
-            # Fingerprint des *gesendeten* Modells festhalten: damit koennen die
-            # Ergebnis-Komponenten spaeter erkennen, ob der Canvas inzwischen
-            # ein anderes Modell zeigt als das, welches gerechnet wurde.
-            structural.metadata = getattr(structural, "metadata", {}) or {}
+            # Fingerprint des *gesendeten* Modells in jeden Ergebnissatz
+            # schreiben. Damit kann TektonResults spaeter vergleichen, ob der
+            # Canvas inzwischen ein anderes Modell zeigt als das gerechnete —
+            # Ergebnisse, die still eine Entwurfsaenderung ueberleben, sind der
+            # gefaehrlichste Fehlermodus dieses Workflows.
+            for result_set in (getattr(structural, "results", {}) or {}).values():
+                metadata = getattr(result_set, "metadata", None)
+                if metadata is None:
+                    result_set.metadata = metadata = {}
+                metadata["model_fingerprint"] = fingerprint
+                metadata["calculated_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
 
         stamp = "{} @ {}".format(fingerprint, time.strftime("%H:%M:%S"))
         ghenv.Component.Message = "Run\n({})".format(stamp)  # type: ignore # noqa: F821
@@ -113,8 +120,9 @@ else:
         total_results = len(getattr(structural, "results", {}) or {})
         if total_results == 0:
             _warn(
-                "Berechnung ausgeloest, aber keine Ergebnisse gelesen. Der "
-                "Ergebnis-Reader ist noch ein Geruest (siehe discussion/roundtrip.md)."
+                "Berechnung ausgeloest, aber keine Ergebnisse zurueckgekommen. "
+                "Das Worker-Protokoll unten nennt den Grund — meist eine "
+                "Ergebnistabelle, die RFEM nicht liefert."
             )
 
 for line in log:

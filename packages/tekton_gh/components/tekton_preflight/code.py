@@ -1,11 +1,18 @@
 """Tekton Preflight — Modell vor dem Rechnen pruefen.
 
-Ein lagerloses oder unzusammenhaengendes Modell geht sonst kommentarlos
-in die Berechnung und liefert Unsinn oder einen Solver-Abbruch, dessen
-Meldung niemand liest. Lieber hier auffallen.
+Ein lagerloses oder unzusammenhaengendes Modell geht sonst kommentarlos in die
+Berechnung und liefert Unsinn oder einen Solver-Abbruch, dessen Meldung niemand
+liest. Lieber hier auffallen.
 
-Geprueft wird: Auflager vorhanden, Knoten/Staebe vorhanden, Querschnitte
-plausibel, keine verwaisten Knoten.
+Duenner Wrapper um ``compas_timber_fea.core.preflight`` — die Pruefungen
+gehoeren in die neutrale Schicht, damit GUI, CLI und Grasshopper dieselben
+Befunde melden. Der Dlubal-Importer ruft dieselbe Funktion beim Push.
+
+Fehler ("error") sind Bedingungen, unter denen eine Berechnung sinnlos ist
+(keine Auflager, ins Leere zeigende Verweise). Warnungen sind einen Blick wert
+(unverbundene Teile, ungenutzte Lastfaelle). Nichts davon blockiert einen
+Export: ein Push ohne Auflager ist legitim, wenn der Statiker sie in RFEM
+ergaenzt.
 """
 # venv: tekton
 # r: compas, compas_timber
@@ -21,7 +28,7 @@ def _setup(explicit_repo=None):
 
     Siehe TektonInfo, wenn das fehlschlaegt. Der Purge ist noetig, weil in
     Rhino womoeglich schon ein anderes compas_timber geladen ist (das
-    offizielle Plugin, 1.0.5), das kein `compas_timber.structural` kennt.
+    offizielle Plugin), das kein `compas_timber.structural` kennt.
     """
     root = None
     for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
@@ -38,12 +45,15 @@ def _setup(explicit_repo=None):
     return root
 
 
-def _warn(message):
+def _message(level, text):
     import Grasshopper
 
-    ghenv.Component.AddRuntimeMessage(  # type: ignore # noqa: F821
-        Grasshopper.Kernel.GH_RuntimeMessageLevel.Warning, message
-    )
+    levels = {
+        "warning": Grasshopper.Kernel.GH_RuntimeMessageLevel.Warning,
+        "error": Grasshopper.Kernel.GH_RuntimeMessageLevel.Error,
+    }
+    ghenv.Component.AddRuntimeMessage(levels[level], text)  # type: ignore # noqa: F821
+
 
 # --------------------- INPUTS ---------------------
 structural = structural  # type: ignore # noqa: F821
@@ -55,60 +65,30 @@ issues = []
 ok = False
 
 if structural is None:
-    _warn("Kein StructuralModel angeschlossen.")
+    _message("warning", "Kein StructuralModel angeschlossen.")
 else:
     _setup()
-    from compas_timber_fea.core.units import check_section_plausible
+    from compas_timber_fea.core.preflight import preflight
 
-    if not structural.supports:
-        issues.append("KRITISCH: Keine Auflager. Das System ist nicht gelagert.")
-    if not structural.nodes:
-        issues.append("KRITISCH: Keine Knoten.")
-    if not structural.members and not structural.surfaces:
-        issues.append("KRITISCH: Weder Staebe noch Flaechen.")
-    if not structural.load_cases:
-        issues.append("Keine Lastfaelle definiert.")
+    report = preflight(structural)
+    ok = report.ok
 
-    # Verwaiste Knoten: von keinem Stab und keiner Flaeche referenziert.
-    used = set()
-    for member in structural.members:
-        used.add(member.node_start)
-        used.add(member.node_end)
-    for surface in structural.surfaces:
-        used.update(surface.nodes)
-    orphans = [n.id for n in structural.nodes if n.id not in used]
-    if orphans:
-        issues.append("{} Knoten ohne Anschluss (IDs: {}{}).".format(
-            len(orphans), orphans[:8], " ..." if len(orphans) > 8 else ""))
+    for level, text in report:
+        issues.append("[{}] {}".format(level, text))
 
-    # Querschnittsmasse: der haeufigste stille Fehler ist ein Einheitenfehler,
-    # der Balken 1000-fach zu gross oder zu klein macht.
-    # Koppelstaebe ('Rigid') haben bewusst keine Abmessungen — sie sind ein
-    # Kunstquerschnitt fuer starre Verbindungen, kein Bauteil.
-    rigid_section_ids = set(m.section_id for m in structural.members if m.is_rigid or m.member_type in ("RIGID", "COUPLING"))
-    for section in structural.sections:
-        if section.id in rigid_section_ids or section.name == "Rigid":
-            continue
-        note = check_section_plausible(section.width, section.height, units="m")
-        if note:
-            issues.append("Querschnitt '{}': {}".format(section.name, note))
-
-    critical = [i for i in issues if i.startswith("KRITISCH")]
-    ok = not critical
-
-    if issues:
-        message = "{} Befund(e), davon {} kritisch.".format(len(issues), len(critical))
-        if strict or critical:
-            import Grasshopper
-
-            level = (Grasshopper.Kernel.GH_RuntimeMessageLevel.Error if (critical or strict)
-                     else Grasshopper.Kernel.GH_RuntimeMessageLevel.Warning)
-            ghenv.Component.AddRuntimeMessage(level, message)  # type: ignore # noqa: F821
-        else:
-            _warn(message)
-    else:
+    if not issues:
         issues.append("Keine Befunde.")
-        ok = True
+
+    if report.errors:
+        _message(
+            "error" if strict else "warning",
+            "{} Fehler, {} Warnung(en). Siehe 'issues'.".format(len(report.errors), len(report.warnings)),
+        )
+    elif report.warnings:
+        _message(
+            "error" if strict else "warning",
+            "{} Warnung(en). Siehe 'issues'.".format(len(report.warnings)),
+        )
 
 for line in issues:
     print(line)

@@ -1,8 +1,9 @@
 # tekton_gh — Grasshopper-Komponenten
 
-*Stand: 2026-08-28 — Scaffold. Die Komponenten haben ihre endgültige Form
-(Inputs, Outputs, Warnungen), aber ein Teil der Logik sind Platzhalter mit
-`TODO(scaffold)`. Konzept: [`docs/concepts/gh-addon.md`](../../docs/concepts/gh-addon.md).*
+*Stand: 2026-09-10 — die Kette steht durchgehend: Authoring → Translate →
+Preflight → Worker → Ergebnisse zurück, offline getestet. Was noch fehlt, steht
+unter „Was noch nicht echt ist"; was nur mit laufendem RFEM prüfbar ist, ist
+dort benannt. Konzept: [`docs/concepts/gh-addon.md`](../../docs/concepts/gh-addon.md).*
 
 ## Warum zwei Prozesse
 
@@ -89,6 +90,12 @@ src/tekton_gh/            geteilte Laufzeit: env.py, worker.py, rhino_io.py
 _componentizer/           Build-Werkzeug + Metadaten-Generator
 ```
 
+Die Gegenseite der Prozessgrenze liegt in `tekton_app`:
+`packages/tekton_app/src/tekton_app/worker.py` — aufgerufen als
+`python -m tekton_app.worker model.json --backend rfem --out ergebnis.json`.
+Er lässt sich unabhängig von Grasshopper testen, und genau das tut
+`tests/unit/test_worker_cli.py`.
+
 `build_metadata.py` enthält die **Komponententabelle** — Name, Kategorie,
 Inputs, Outputs, Beschreibungen. Neue Komponente: dort einen Eintrag mit
 frischer `uid` anhängen, Skript laufen lassen, `code.py` schreiben.
@@ -135,22 +142,26 @@ jeweils mit `TODO(scaffold)` im Code markiert:
 
 | Was | Warum | Blockiert durch |
 |---|---|---|
-| **Ergebnisse** | `DlubalResultReader` löst die Berechnung aus, liest aber nichts | Roundtrip (`discussion/roundtrip.md`) |
-| **Worker-CLI** | `tekton_app.worker` existiert noch nicht; `TektonRun` schlägt bis dahin fehl | kleine Arbeit, gehört nach `tekton_app` |
+| **Ausnutzung** | kommt aus dem Bemessungs-Addon von RFEM, nicht angebunden | Live-Test mit RFEM |
 | **Material-Overrides** | Material ist heute nur ein Namens-String | Material-Dataclass (`discussion/materials.md`) |
-| **Lasten in RFEM** | Der Importer nutzt einen fest verdrahteten Katalog | Priorität 1 in `docs/handoff.md` |
-| **Ausnutzung** | kommt aus dem Bemessungs-Addon, ungetestet | Live-Test mit RFEM |
 | **Lagertypen** | der Translator erzeugt immer gelenkige Lager | neutrales Modell |
 | **Orthotropie** | `span_direction` wird nur protokolliert | Datenmodell (`docs/handoff.md`, Punkt 3) |
 | **Icons** | einfarbige Platzhalter nach Gruppe | Zeichenarbeit |
+
+Erledigt seit dem ersten Scaffold: der **Worker-CLI** (`tekton_app.worker`)
+existiert und ist getestet, und der **Ergebnis-Reader** liest inzwischen echte
+Tabellen (Stabschnittgrößen, Knotenverformungen, Auflagerreaktionen). Der Weg
+Rhino → Backend → Rhino ist damit durchgehend; ungetestet ist er nur gegen ein
+laufendes RFEM.
 
 ## Fallstricke
 
 **Ergebnisse veralten still.** Grasshopper hält alte Outputs fest — die Zahlen
 am Canvas können ein längst geändertes Modell beschreiben. Das ist der
-gefährlichste Fehlermodus dieses Workflows. `worker.model_fingerprint()` und
-der `stale`-Ausgang von `TektonResults` sind dafür da; sobald der Fingerprint
-beim Rechnen mitgeschrieben wird, greift die Prüfung.
+gefährlichste Fehlermodus dieses Workflows, und Grasshopper begünstigt ihn.
+Gegenmaßnahme ist scharf: `TektonRun` stempelt den Modell-Fingerprint in jeden
+Ergebnissatz, `TektonResults` vergleicht ihn gegen das angeschlossene Modell
+und setzt `stale` plus eine Warnung, sobald beides auseinanderläuft.
 
 **Nie automatisch rechnen.** `TektonRun` blockiert Grasshopper, solange
 gerechnet wird, und jeder Lauf baut das Backend-Modell neu auf. Darum
