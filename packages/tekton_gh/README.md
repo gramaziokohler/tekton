@@ -96,9 +96,15 @@ statt referenziert — das Repo soll für sich baubar bleiben. Einzige Änderung
 
 ```text
 components/<name>/        code.py + metadata.json + icon.png   (ein Bundle = eine Komponente)
+icons/                    Icon-Quellen: <name>.svg + <name>_96.png
 src/tekton_gh/            geteilte Laufzeit: env.py, worker.py, rhino_io.py
-_componentizer/           Build-Werkzeug + Metadaten-Generator
+_componentizer/           Build-Werkzeug, Metadaten-Generator, install.sh
 ```
+
+Icons liegen an zwei Orten, und das ist kein Versehen: `icons/` hält die
+bearbeitbaren SVGs, `components/<name>/icon.png` die 24px-Fassung, die der
+Componentizer neben `code.py` erwartet. Details in
+[icons/README.md](icons/README.md), Motive und Farben in [ICONS.md](ICONS.md).
 
 Die Gegenseite der Prozessgrenze liegt in `tekton_app`:
 `packages/tekton_app/src/tekton_app/worker.py` — aufgerufen als
@@ -155,14 +161,13 @@ jeweils mit `TODO(scaffold)` im Code markiert:
 | **Ausnutzung** | kommt aus dem Bemessungs-Addon von RFEM, nicht angebunden | Live-Test mit RFEM |
 | **Material-Overrides** | Material ist heute nur ein Namens-String | Material-Dataclass (`discussion/materials.md`) |
 | **Lagertypen** | der Translator erzeugt immer gelenkige Lager | neutrales Modell |
-| **Orthotropie** | `span_direction` wird nur protokolliert | Datenmodell (`docs/handoff.md`, Punkt 3) |
-| **Icons** | einfarbige Platzhalter nach Gruppe | Zeichenarbeit |
 
 Erledigt seit dem ersten Scaffold: der **Worker-CLI** (`tekton_app.worker`)
-existiert und ist getestet, und der **Ergebnis-Reader** liest inzwischen echte
-Tabellen (Stabschnittgrößen, Knotenverformungen, Auflagerreaktionen). Der Weg
-Rhino → Backend → Rhino ist damit durchgehend; ungetestet ist er nur gegen ein
-laufendes RFEM.
+existiert und ist getestet, der **Ergebnis-Reader** liest inzwischen echte
+Tabellen (Stabschnittgrößen, Knotenverformungen, Auflagerreaktionen), die
+**Tragrichtung** wird auf die Flächen geschrieben statt nur protokolliert, und
+die **Icons** sind gezeichnet. Der Weg Rhino → Backend → Rhino ist damit
+durchgehend; ungetestet ist er nur gegen ein laufendes RFEM.
 
 ## Fallstricke
 
