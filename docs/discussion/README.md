@@ -16,5 +16,5 @@ argued with, not treated as spec.
 Related, more detailed material:
 
 - `../docs/review_2026-08-27.md` — full repo review + implementation log
-- `../docs/plattengraph_design_2026-08-27.md` — deep design study on the plate graph (German)
+- `../reviews/plattengraph_design_2026-08-27.md` — deep design study on the plate graph (German)
 - `../docs/handoff.md` — one-page overview

@@ -113,4 +113,4 @@ Who is in this loop?
 
 - `result_reader.py` scaffold; `tests/test-roundtrip.py` (shape of the loop)
 - get_result_table signature verified against dlubal-api 2.13.8
-- BackendMap / identity design: `../docs/plattengraph_design_2026-08-27.md` §2.1
+- BackendMap / identity design: `../reviews/plattengraph_design_2026-08-27.md` §2.1

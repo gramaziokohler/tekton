@@ -1,6 +1,6 @@
 # Materials
 
-*Status: 2026-08-28 — mostly open, direction is clear*
+*Status: 2026-09-10 — library implemented (core/materials.py); per-element authoring and layups still open*
 
 ## The problem
 
@@ -83,12 +83,18 @@ The library is the single source; backends take the slice they can express.
 
 ## Open
 
-- Build the `Material` dataclass + preset table (small, high value).
-- Fix SAF to write real properties from it.
-- Per-element material authoring (upstream attribute?).
-- Grade values double-checked against current EN 338 / EN 14080 editions.
-- Service class / load duration (kmod, kdef) — needed for design checks, not
-  for the FEA itself. Park until design-check integration.
+- ~~Build the `Material` dataclass + preset table~~ done: `core/materials.py`,
+  11 presets (C14–C30, GL24h/c–GL32h), overrides via `from_preset(**kw)`,
+  unknown grades borrow C24 honestly labelled (`is_assumed`), serializes with
+  the model, translator reports assumptions.
+- ~~Fix SAF to write real properties~~ done — a GL24h model now exports GL24h
+  stiffness; legacy string materials still resolve.
+- Per-element material authoring (upstream attribute?) — still open.
+- Solid-timber *strength* rows follow the widely published EN 338:2009 table;
+  the 2016 revision adjusted some tension values (C24 14→14.5). Stiffness and
+  density are edition-stable. Review strengths before design checks.
+- Service class / load duration (kmod, kdef) — park until design-check
+  integration.
 
 ## Sources
 

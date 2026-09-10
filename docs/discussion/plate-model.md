@@ -2,7 +2,7 @@
 
 *Status: 2026-08-28 — design settled (see plattengraph study), implementation early*
 
-The full design study is `../docs/plattengraph_design_2026-08-27.md` (German,
+The full design study is `../reviews/plattengraph_design_2026-08-27.md` (German,
 detailed, adversarially reviewed). This is the short English version of what
 was found and decided.
 
@@ -112,7 +112,7 @@ data exists.
 
 ## Sources
 
-- `../docs/plattengraph_design_2026-08-27.md` — full study; proto claims marked
+- `../reviews/plattengraph_design_2026-08-27.md` — full study; proto claims marked
   VERIFIZIERT were checked against the pinned dlubal-api 2.13.8 wheel
 - RFEM 6 documentation on surfaces/lines/integrated objects; saf.guide on
   StructuralSurfaceMember and edge connections

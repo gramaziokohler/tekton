@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from compas_timber_fea.core.materials import Material
 from compas_timber_fea.exporter.base import BaseExporter
 from compas_saf.exporter.saf_schema import SHEETS
 
@@ -77,20 +78,23 @@ class SAFExporter(BaseExporter):
         ]
         df_project = pd.DataFrame(project_info).rename(columns={'test-model': model_name})
 
-        # 2. Materials Sheet
+        # 2. Materials Sheet - physical properties come from the neutral
+        # material, not from a hardcoded grade. A GL24h model must not export
+        # with C24 stiffness.
         materials_data = []
-        for mat_id, mat_name in self.model.materials.items():
+        for mat_id, mat_value in self.model.materials.items():
+            material = Material.resolve(mat_value)
             data = {
                 'Name': f"MAT{mat_id}",
                 'Type': 'Timber',
                 'Subtype': 'Timber',
-                'Quality': mat_name,
-                'Unit mass [kg/m3]': 420.0,
-                'E modulus [MPa]': 11000.0,
-                'G modulus [MPa]': 690.0,
-                'Poisson Coefficient': 0.0,
+                'Quality': material.name,
+                'Unit mass [kg/m3]': material.density_mean,
+                'E modulus [MPa]': material.E0_mean,
+                'G modulus [MPa]': material.G_mean,
+                'Poisson Coefficient': material.poisson,
                 'Thermal expansion [1/K]': 0.0,
-                'Design properties': '',
+                'Design properties': material.standard,
                 'Id': f"MAT{mat_id}"
             }
             materials_data.append({col: data.get(col, '') for col in SHEETS['StructuralMaterial']})

@@ -160,3 +160,31 @@ def test_load_case_attributes_come_from_the_model(column_model, tmp_path):
     # SAF spells it without a hyphen, and only self-weight cases may use it.
     assert self_weight["Load type"] == "Self weight"
     assert snow["Load type"] != "Self weight"
+
+
+def test_material_properties_come_from_the_material(column_model, tmp_path):
+    """A GL24h model must not export with C24 stiffness."""
+    from compas_timber_fea.core.materials import Material
+
+    column_model.materials[1] = Material.from_preset("GL24h")
+
+    path = tmp_path / "materials.xlsx"
+    SAFExporter(column_model).export(str(path))
+    materials = _sheet(path, "StructuralMaterial")
+
+    row = materials.iloc[0]
+    assert row["Quality"] == "GL24h"
+    assert float(row["E modulus [MPa]"]) == 11500.0
+    assert float(row["Unit mass [kg/m3]"]) == 420.0
+    assert float(row["G modulus [MPa]"]) == 650.0
+
+
+def test_legacy_string_material_still_exports_with_real_properties(column_model, tmp_path):
+    """The fixture stores the grade as a plain string - it must still resolve."""
+    path = tmp_path / "legacy.xlsx"
+    SAFExporter(column_model).export(str(path))
+    materials = _sheet(path, "StructuralMaterial")
+
+    row = materials.iloc[0]
+    assert row["Quality"] == "C24"
+    assert float(row["E modulus [MPa]"]) == 11000.0

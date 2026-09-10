@@ -17,6 +17,7 @@ from dataclasses import is_dataclass
 from compas.geometry import Point
 from compas.geometry import Vector
 
+from compas_timber_fea.core import materials as materials_module
 from compas_timber_fea.core import model as model_module
 from compas_timber_fea.core import releases as releases_module
 
@@ -55,7 +56,7 @@ def _encode(value):
 def _dataclass_types():
     """All dataclasses that may appear in a serialised model, by name."""
     types = {}
-    for module in (model_module, releases_module):
+    for module in (model_module, releases_module, materials_module):
         for name in dir(module):
             candidate = getattr(module, name)
             if isinstance(candidate, type) and is_dataclass(candidate):

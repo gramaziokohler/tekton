@@ -9,6 +9,7 @@ from compas_timber.structural import BeamStructuralElementSolver
 from compas_timber_fea.core.model import StructuralLoadCase
 from compas_timber_fea.core.joint_policy import PlateConnectionPolicy
 from compas_timber_fea.core.joint_policy import policy_from_connector_mode
+from compas_timber_fea.core.materials import Material
 from compas_timber_fea.core.units import check_section_plausible
 from compas_timber_fea.core.units import check_thickness_plausible
 from compas_timber_fea.core.units import scale_to_meters
@@ -164,7 +165,11 @@ class TimberToStructural:
         self.report = []
         self.sections_library.model_sections = model.sections  # Damit die SectionLibrary direkt in das Model schreibt
         self.thicknesses_library.model_thicknesses = model.thicknesses
-        model.materials[1] = self.material_name
+
+        material = Material.resolve(self.material_name)
+        model.materials[1] = material
+        if material.is_assumed:
+            self.report.append(f"material {material.name!r}: {material.standard}")
 
         self._add_nodes(model, structural_graph)
         self._add_sections_and_members(model, structural_graph)

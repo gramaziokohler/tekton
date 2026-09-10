@@ -168,7 +168,10 @@ class StructuralModel:
     members: List[StructuralMember] = field(default_factory=list)
     sections: List[StructuralSection] = field(default_factory=list)
     supports: List[StructuralSupport] = field(default_factory=list)
-    materials: Dict[int, str] = field(default_factory=dict)
+    # Values are Material objects carrying real physical properties (see
+    # core/materials.py); plain grade-name strings from older serialized
+    # models still load and are upgraded by consumers via Material.resolve.
+    materials: Dict[int, Any] = field(default_factory=dict)
     load_cases: List[StructuralLoadCase] = field(default_factory=list)
     load_combinations: List[LoadCombination] = field(default_factory=list)
     point_loads: List[StructuralPointLoad] = field(default_factory=list)

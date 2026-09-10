@@ -148,3 +148,18 @@ def test_springy_coupling_becomes_a_rigid_member_with_hinges(member_mapper):
     assert proto.type == 2
     assert proto.member_hinge_start == 1
     assert proto.member_hinge_end == 1
+
+
+def test_material_object_resolves_to_rfem_library_name(member_mapper):
+    from compas_timber_fea.core.materials import Material as NeutralMaterial
+
+    proto = member_mapper.map_material(1, NeutralMaterial.from_preset("GL24h"))
+
+    assert proto.no == 1
+    assert proto.name == "GL24h | EN 14080:2013-09"
+
+
+def test_string_material_still_maps(member_mapper):
+    proto = member_mapper.map_material(2, "C24")
+
+    assert proto.name == "C24 | EN 338:2016-04"

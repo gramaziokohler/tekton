@@ -1,3 +1,4 @@
+from compas_timber_fea.core.materials import Material as NeutralMaterial
 from compas_timber_fea.core.model import StructuralMember, StructuralSection
 
 from compas_dlubal.dlubal.conventions import calculate_beta_from_vector
@@ -5,14 +6,19 @@ from compas_dlubal.dlubal.conventions import calculate_beta_from_vector
 class MemberMapper:
     """Konvertiert neutrale Member/Sections in Dlubal PB Objekte"""
     
-    # Mapping for common timber materials (as in importer-old.py)
+    # Grade name -> RFEM library identifier. Resolving against RFEM's own
+    # library gives the full native material; the neutral Material's physical
+    # properties are the fallback story for backends without a library.
     MATERIAL_LIBRARY = {
         "GL24h": "GL24h | EN 14080:2013-09",
         "GL24c": "GL24c | EN 14080:2013-09",
+        "GL28h": "GL28h | EN 14080:2013-09",
         "GL28c": "GL28c | EN 14080:2013-09",
         "GL30c": "GL30c | EN 14080:2013-09",
+        "GL32h": "GL32h | EN 14080:2013-09",
         "C14": "C14 | EN 338:2016-04",
         "C16": "C16 | EN 338:2016-04",
+        "C18": "C18 | EN 338:2016-04",
         "C24": "C24 | EN 338:2016-04",
         "C30": "C30 | EN 338:2016-04"
     }
@@ -182,13 +188,21 @@ class MemberMapper:
                 self.hinge_numbers[(member.id, end)] = hinge_no
         return hinges
 
-    def map_material(self, mat_id: int, mat_name: str):
+    def map_material(self, mat_id: int, material):
+        """Map a neutral material (Material object or grade-name string).
+
+        RFEM resolves the name against its own library; the neutral object's
+        physical properties are not pushed here - the library material is the
+        richer native representation.
+        """
+        material = NeutralMaterial.resolve(material)
+
         desc = self.Core.Material.DESCRIPTOR.fields_by_name['material_type'].enum_type
         timber_type_id = desc.values_by_name['MATERIAL_TYPE_TIMBER'].number
-        
+
         # Resolve full name using library or use fallback
-        full_name = self.MATERIAL_LIBRARY.get(mat_name, mat_name)
-        
+        full_name = self.MATERIAL_LIBRARY.get(material.name, material.name)
+
         return self.Core.Material(
             no=mat_id,
             name=full_name,
