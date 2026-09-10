@@ -37,3 +37,26 @@ group. The colour assignment and the motifs are in
 
 Exception: `tekton_visualize` carries the result gradient green→yellow→red,
 because that is exactly its function.
+
+
+## `_todo/` - icons still to be designed
+
+Components added after the icon set was drawn carry a **magenta question mark**
+instead of a real icon. Magenta appears in no Tekton group, so they are easy to
+spot in the ribbon - that is the whole point: they mark themselves as
+unfinished.
+
+Currently waiting:
+
+| Bundle | Component | Group |
+|---|---|---|
+| `tekton_material_library` | Tekton Material Library | 1 \| Author |
+| `tekton_support_nodes` | Tekton Support Nodes | 2 \| Translate |
+
+`_todo/` also holds my rough drafts for both (`<bundle>.svg`) - a starting
+point, not a proposal. Motifs and the group accent colours are in
+[../ICONS.md](../ICONS.md).
+
+When an icon is done: put the 24px PNG in `../components/<bundle>/icon.png`,
+the sources in `icons/` next to the others, delete the draft from `_todo/`,
+then rebuild and install.

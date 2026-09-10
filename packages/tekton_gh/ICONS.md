@@ -75,6 +75,25 @@ idea — something that says "check the state", not "display information".
 
 ---
 
+## Still to be designed
+
+Two components were added after the set was drawn. They carry a magenta
+question mark so they stand out in the ribbon; drafts are in `icons/_todo/`.
+
+### Tekton Material Library (`TMatLib`)
+*Group 1 | Author, accent `#50a9d3`.* Pick a grade from the library. Hangs a
+drop-down on itself when placed, so nobody has to type "GL24h" correctly.
+*Motif idea:* stacked material cards, the selected one in accent - a shelf you
+reach into. Should read as a sibling of Tekton Material, not a duplicate: that
+one is about overriding single values, this one about choosing.
+
+### Tekton Support Nodes (`TSupN`)
+*Group 2 | Translate, accent `#50d3c6`.* Supports placed straight onto nodes of
+the analysis model - needed for plates, which carry no support attribute.
+*Motif idea:* the support triangle from Tekton Support, but attached to a node
+dot on a system line rather than to a beam. The pair should be readable as
+"same idea, other end of the pipeline".
+
 ## 1 | Author — light blue `#50a9d3`
 
 What the designer gives the model in the way of engineering knowledge. The

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="#e0359b" stroke="none" shape-rendering="crispEdges">
+    <!-- "Needs design" marker. Deliberately loud: magenta appears in no Tekton
+         group, so these stand out in the ribbon. Drawn as blocks rather than
+         strokes because at 24px a thin question mark turns to mush. -->
+    <g><!-- dashed frame -->
+        <rect x="3" y="2" width="2" height="2"/><rect x="7" y="2" width="2" height="2"/>
+        <rect x="11" y="2" width="2" height="2"/><rect x="15" y="2" width="2" height="2"/>
+        <rect x="19" y="2" width="2" height="2"/>
+        <rect x="3" y="20" width="2" height="2"/><rect x="7" y="20" width="2" height="2"/>
+        <rect x="11" y="20" width="2" height="2"/><rect x="15" y="20" width="2" height="2"/>
+        <rect x="19" y="20" width="2" height="2"/>
+        <rect x="2" y="3" width="2" height="2"/><rect x="2" y="7" width="2" height="2"/>
+        <rect x="2" y="11" width="2" height="2"/><rect x="2" y="15" width="2" height="2"/>
+        <rect x="2" y="19" width="2" height="2"/>
+        <rect x="20" y="3" width="2" height="2"/><rect x="20" y="7" width="2" height="2"/>
+        <rect x="20" y="11" width="2" height="2"/><rect x="20" y="15" width="2" height="2"/>
+        <rect x="20" y="19" width="2" height="2"/>
+    </g>
+    <g><!-- question mark -->
+        <rect x="9" y="7" width="6" height="2"/>
+        <rect x="13" y="9" width="2" height="3"/>
+        <rect x="11" y="12" width="4" height="2"/>
+        <rect x="11" y="14" width="2" height="2"/>
+        <rect x="11" y="17" width="2" height="2"/>
+    </g>
+</svg>
