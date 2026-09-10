@@ -62,7 +62,7 @@ _setup()
 from compas_timber_fea.core.joint_policy import JointPolicy
 from compas_timber_fea.core.releases import MemberRelease
 
-from tekton_gh.rhino_io import attach_value_list
+from tekton_gh.rhino_io import value_list_items
 
 PRESETS = {
     "conservative": JointPolicy.conservative,
@@ -75,16 +75,14 @@ RELEASES = {
     "spherical": MemberRelease.spherical,
 }
 
-# Offer the presets as a drop-down rather than asking for a typed string.
-attach_value_list(ghenv, sorted(PRESETS), param_index=0, nickname="Preset")  # type: ignore # noqa: F821
-
 key = (preset or "conservative").lower().strip('"')
 if key not in PRESETS:
     _warn("Unknown preset '{}'. Allowed: {}.".format(key, ", ".join(sorted(PRESETS))))
     key = "conservative"
 
 policy = PRESETS[key]()
-info = ["Preset: {} (default: {})".format(key, policy.default.name)]
+info = list(value_list_items(ghenv, sorted(PRESETS)))  # type: ignore # noqa: F821
+info.append("Preset: {} (default: {})".format(key, policy.default.name))
 
 if joint_types and releases:
     if len(joint_types) != len(releases):

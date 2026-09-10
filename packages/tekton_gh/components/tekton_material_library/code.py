@@ -49,20 +49,21 @@ grade: str  # type: ignore
 _setup()
 from compas_timber_fea.core.materials import PRESETS, Material  # noqa: E402
 
-from tekton_gh.rhino_io import attach_value_list  # noqa: E402
+from tekton_gh.rhino_io import value_list_items  # noqa: E402
 
 grades = sorted(PRESETS)
 
-# Schedule the menu on the first solve. It comes into being after this solve;
-# the next solve it triggers then runs through with a grade selected.
-attach_value_list(ghenv, grades, param_index=0, nickname="Grade")  # type: ignore # noqa: F821
+# The allowed grades as a hint. Deliberately not a value list the component
+# builds itself - see value_list_items for why that costs Rhino its life.
+hint = value_list_items(ghenv, grades)  # type: ignore # noqa: F821
 
 material = None
 properties = []
 
 name = (grade or "").strip().strip('"')
 if not name:
-    properties = ["{} grades available:".format(len(grades))]
+    properties = list(hint)
+    properties.append("{} grades available:".format(len(grades)))
     for key in grades:
         preset = PRESETS[key]
         properties.append("  {:<7} E0 {:>6.0f} N/mm2   rho {:>3.0f} kg/m3   {}".format(
