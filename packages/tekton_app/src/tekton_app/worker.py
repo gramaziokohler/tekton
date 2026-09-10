@@ -34,6 +34,21 @@ def log(message):
     sys.stdout.flush()
 
 
+def unbuffer_stdout():
+    """Ausgaben in der Reihenfolge halten, in der sie entstehen.
+
+    Der Aufrufer sammelt stdout und stderr in einem Strom. Ohne das hier
+    erscheinen gepufferte ``print``-Zeilen aus den Bibliotheken (etwa der
+    Preflight-Bericht des Importers) *nach* einer Fehlermeldung, die
+    ungepuffert durchkommt — und der Leser schliesst auf die falsche
+    Ursache.
+    """
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except AttributeError:  # aeltere Interpreter
+        pass
+
+
 def parse_load_cases(raw):
     """"1,3" -> [1, 3]. Leer/None -> None (= alle)."""
     if not raw:
@@ -118,6 +133,7 @@ def main(argv=None):
     parser.add_argument("--delete-all", action="store_true", help="Backend-Modell vor dem Push leeren")
 
     args = parser.parse_args(argv)
+    unbuffer_stdout()
 
     if not os.path.isfile(args.input):
         raise SystemExit("Eingabedatei nicht gefunden: {}".format(args.input))
