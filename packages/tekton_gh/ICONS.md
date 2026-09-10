@@ -119,9 +119,13 @@ Gelenksymbols in Akzent. Idealerweise sichtbar, dass es eine *Wahl* ist —
 etwa zwei Varianten nebeneinander.
 
 ### Tekton Plate Policy (`TPlatePol`)
-Wie Plattenränder gekoppelt werden; dazu die Tragrichtung (Orthotropie).
+Wie Plattenränder gekoppelt werden (gelenkig/durchlaufend), plus die
+Tragrichtung. Letztere ist nicht Kür: Plattenwerkstoffe sind orthotrop, und
+RFEMs m_x folgt den Flächenachsen — ohne festgelegte Richtung sind die
+Momente nicht interpretierbar.
 *Motiv:* Zwei aneinanderstoßende Platten in Draufsicht, die Fuge betont, plus
-Richtungspfeil für die Spannrichtung.
+Richtungspfeil für die Spannrichtung. Der Pfeil ist die eigentliche Aussage —
+gern in Akzent, die Fuge dunkel.
 
 ---
 
