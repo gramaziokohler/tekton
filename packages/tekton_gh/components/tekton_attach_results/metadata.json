@@ -3,7 +3,7 @@
     "nickname": "TAttach",
     "category": "Tekton",
     "subcategory": "4 | Results",
-    "description": "Schreibt die Ergebnisse zurueck auf das Timber-Modell (beam.attributes['analysis']) \u2014 mit Herkunftsangabe: welcher Modellstand, welcher Lastfall, wann. Eine Zahl ohne diese Angabe ist eine Haftungsfrage.",
+    "description": "Writes the results back onto the timber model (beam.attributes['analysis']) - with their provenance: which model state, which load case, when. A number without that is a liability question.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000015",
     "ghpython": {
@@ -27,7 +27,7 @@
             {
                 "name": "structural",
                 "nickname": "structural",
-                "description": "StructuralModel mit Ergebnissen.",
+                "description": "StructuralModel with results.",
                 "optional": false,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "load_case",
                 "nickname": "load_case",
-                "description": "Lastfall.",
+                "description": "Load case.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -57,7 +57,7 @@
             {
                 "name": "model",
                 "nickname": "model",
-                "description": "TimberModel mit Analyse-Attributen",
+                "description": "TimberModel with analysis attributes",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -65,7 +65,7 @@
             {
                 "name": "attached",
                 "nickname": "attached",
-                "description": "Anzahl belegter Bauteile",
+                "description": "Number of elements written to",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

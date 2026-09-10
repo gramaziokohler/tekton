@@ -1,15 +1,15 @@
-"""Erzeugt metadata.json + Platzhalter-Icons für alle Tekton-Komponenten.
+"""Generates metadata.json + placeholder icons for all Tekton components.
 
-Warum generiert und nicht von Hand: die metadata.json des Componentizers ist
-sehr geschwätzig (jeder Parameter ~12 Zeilen). Bei 14 Komponenten ist eine
-Tabelle plus Generator lesbarer und hält die Konventionen (GUID-Vergabe,
-Kategorie, Reihenfolge) automatisch konsistent.
+Why generated and not hand-written: the componentizer's metadata.json is very
+verbose (about 12 lines per parameter). With 14 components a table plus a
+generator is easier to read, and it keeps the conventions (GUID assignment,
+category, ordering) consistent automatically.
 
-Aufruf (normales Python 3, kein Rhino nötig)::
+Run it with plain Python 3, no Rhino needed::
 
     python3 _componentizer/build_metadata.py
 
-Danach die Komponenten bauen::
+Then build the components::
 
     bash _componentizer/componetize.bash
 """
@@ -24,11 +24,10 @@ COMPONENTS_DIR = os.path.join(os.path.dirname(HERE), "components")
 
 CATEGORY = "Tekton"
 
-# Jede Komponente hat eine feste Nummer ("uid"), aus der die InstanceGuid
-# gebildet wird. Eine geänderte GUID macht aus einer aktualisierten Komponente
-# eine *neue*: bestehende Definitionen verlieren dann ihre Verkabelung. Darum
-# sind die Nummern explizit und nicht von der Listenposition abgeleitet —
-# umsortieren ist so gefahrlos, nur neu vergeben darf man sie nie.
+# Every component has a fixed number ("uid") that the InstanceGuid is built
+# from. A changed GUID turns an updated component into a *new* one: existing
+# definitions then lose their wiring. That is why the numbers are explicit and
+# not derived from the list position - reordering is safe, reassigning never is.
 SUB_SETUP = "0 | Setup"
 SUB_AUTHOR = "1 | Author"
 SUB_TRANSLATE = "2 | Translate"
@@ -38,7 +37,7 @@ SUB_IO = "5 | IO"
 
 
 def p(name, hint="ghdoc", access="item", optional=True, desc="", nickname=None):
-    """Input-Parameter-Definition (Kurzform)."""
+    """Input parameter definition (shorthand)."""
     return {
         "name": name,
         "nickname": nickname or name,
@@ -56,7 +55,7 @@ def p(name, hint="ghdoc", access="item", optional=True, desc="", nickname=None):
 
 
 def o(name, desc="", nickname=None):
-    """Output-Parameter-Definition (Kurzform)."""
+    """Output parameter definition (shorthand)."""
     return {
         "name": name,
         "nickname": nickname or name,
@@ -68,7 +67,7 @@ def o(name, desc="", nickname=None):
 
 
 # --------------------------------------------------------------------------
-# Die Komponententabelle. Reihenfolge = Reihenfolge im GH-Menü.
+# The component table. Order here = order in the GH menu.
 # --------------------------------------------------------------------------
 
 COMPONENTS = [
@@ -80,14 +79,14 @@ COMPONENTS = [
         nickname="TInfo",
         sub=SUB_SETUP,
         description=(
-            "Zustandsbericht der Tekton-Umgebung: Python-Version, compas_timber-Version, "
-            "ob compas_timber.structural vorhanden ist, ob das Repo und das Worker-venv "
-            "gefunden werden. Erste Anlaufstelle, wenn eine Komponente rot wird."
+            "Status report of the Tekton environment: Python version, compas_timber version, "
+            "whether compas_timber.structural is present, whether the repo and the worker venv "
+            "are found. First place to look when a component turns red."
         ),
         inputs=[
-            p("repo", "str", desc="Pfad zum Tekton-Monorepo. Leer = Umgebungsvariable TEKTON_REPO."),
+            p("repo", "str", desc="Path to the Tekton monorepo. Empty = environment variable TEKTON_REPO."),
         ],
-        outputs=[o("report", "Diagnose-Zeilen"), o("ok", "True, wenn alles Noetige da ist")],
+        outputs=[o("report", "Diagnostic lines"), o("ok", "True when everything needed is there")],
     ),
     # ---------------- Author ----------------
     dict(
@@ -97,17 +96,17 @@ COMPONENTS = [
         nickname="TMat",
         sub=SUB_AUTHOR,
         description=(
-            "Material fuer das Statikmodell waehlen. Heute traegt das neutrale Modell nur "
-            "einen Namens-String, den RFEM gegen seine Bibliothek aufloest. Sobald die "
-            "Material-Dataclass mit Presets existiert (siehe discussion/materials.md), "
-            "liefert diese Komponente ein vollwertiges Material mit Ueberschreibungen."
+            "Pick the material for the analysis model. Today the neutral model carries only "
+            "a name string that RFEM resolves against its own library. Once the material "
+            "dataclass with presets exists (see discussion/materials.md), this component "
+            "will return a full material with overrides."
         ),
         inputs=[
-            p("grade", "str", desc="Guetekasse, z.B. 'C24' oder 'GL24h'."),
-            p("E0_mean", "float", desc="Optionale Ueberschreibung E0,mean [N/mm2]."),
-            p("density", "float", desc="Optionale Ueberschreibung Rohdichte [kg/m3]."),
+            p("grade", "str", desc="Grade, e.g. 'C24' or 'GL24h'."),
+            p("E0_mean", "float", desc="Optional override for E0,mean [N/mm2]."),
+            p("density", "float", desc="Optional override for density [kg/m3]."),
         ],
-        outputs=[o("material", "Material fuer TektonTranslate"), o("info", "Was tatsaechlich gesetzt wurde")],
+        outputs=[o("material", "Material for TektonTranslate"), o("info", "What was actually set")],
     ),
     dict(
         folder="tekton_material_library",
@@ -116,17 +115,17 @@ COMPONENTS = [
         nickname="TMatLib",
         sub=SUB_AUTHOR,
         description=(
-            "Werkstoff aus der Bibliothek waehlen. Haengt sich beim Platzieren selbst ein "
-            "Auswahlmenue mit allen Gueteklassen an — kein Tippen, keine Tippfehler. "
-            "Ohne Auswahl listet sie, was verfuegbar ist, samt Kennwerten."
+            "Pick a material from the library. On placement it attaches its own value list "
+            "with all grades - no typing, no typos. Without a selection it lists what is "
+            "available, along with the property values."
         ),
         inputs=[
-            p("grade", "str", desc="Gueteklasse. Leer = nur auflisten."),
+            p("grade", "str", desc="Grade. Empty = only list what is available."),
         ],
         outputs=[
-            o("material", "Material fuer TektonTranslate"),
-            o("grades", "Alle verfuegbaren Gueteklassen"),
-            o("properties", "Kennwerte der Auswahl"),
+            o("material", "Material for TektonTranslate"),
+            o("grades", "All available grades"),
+            o("properties", "Property values of the selection"),
         ],
     ),
     dict(
@@ -136,20 +135,20 @@ COMPONENTS = [
         nickname="TSup",
         sub=SUB_AUTHOR,
         description=(
-            "Auflagerpunkte auf Balken markieren. Schreibt beam.attributes['support_points'] — "
-            "der einzige Weg, den der Translator heute liest. Die Punkte muessen auf der "
-            "Balkenachse liegen (Toleranz 1e-4 in Modelleinheiten)."
+            "Mark support points on beams. Writes beam.attributes['support_points'] - the only "
+            "channel the translator reads today. The points have to lie on the beam axis "
+            "(tolerance 1e-4 in model units)."
         ),
         inputs=[
             p("model", desc="TimberModel (COMPAS Timber).", optional=False),
-            p("points", "point", access="list", desc="Auflagerpunkte."),
+            p("points", "point", access="list", desc="Support points."),
             p("support_type", "str", desc="'pinned' | 'fixed' | 'roller'. Default: pinned."),
-            p("tolerance", "float", desc="Suchradius zur Balkenachse. Default 1e-4 (Modelleinheiten)."),
+            p("tolerance", "float", desc="Search radius around the beam axis. Default 1e-4 (model units)."),
         ],
         outputs=[
-            o("model", "TimberModel mit gesetzten Auflagerattributen"),
-            o("found", "Zugeordnete Punkte"),
-            o("missed", "Punkte ohne Balken in Reichweite — pruefen!"),
+            o("model", "TimberModel with support attributes set"),
+            o("found", "Points that were assigned"),
+            o("missed", "Points with no beam within reach - check these!"),
         ],
     ),
     dict(
@@ -159,16 +158,16 @@ COMPONENTS = [
         nickname="TCase",
         sub=SUB_AUTHOR,
         description=(
-            "Lastfall definieren (Eigengewicht, Nutzlast, Schnee, Wind). Lastfaelle sind "
-            "die Container, auf die sich Lasten und Kombinationen beziehen."
+            "Define a load case (self-weight, imposed, snow, wind). Load cases are the "
+            "containers that loads and combinations refer to."
         ),
         inputs=[
-            p("name", "str", desc="Name des Lastfalls."),
+            p("name", "str", desc="Name of the load case."),
             p("category", "str", desc="PERMANENT | VARIABLE | SNOW | WIND."),
-            p("self_weight", "bool", desc="Eigengewicht automatisch ansetzen."),
-            p("id", "int", desc="Optionale feste ID. Leer = fortlaufend."),
+            p("self_weight", "bool", desc="Apply self-weight automatically."),
+            p("id", "int", desc="Optional fixed ID. Empty = numbered consecutively."),
         ],
-        outputs=[o("load_case", "Lastfall fuer Translate/Loads")],
+        outputs=[o("load_case", "Load case for Translate/Loads")],
     ),
     dict(
         folder="tekton_point_load",
@@ -177,17 +176,17 @@ COMPONENTS = [
         nickname="TPLoad",
         sub=SUB_AUTHOR,
         description=(
-            "Einzellast an einem Punkt. Wird beim Anwenden dem naechstgelegenen Knoten des "
-            "Statikmodells zugeordnet — die Zuordnung passiert also nach dem Uebersetzen, "
-            "weil erst dann Knoten existieren."
+            "Point load at a location. On application it is assigned to the nearest node of "
+            "the analysis model - so the assignment happens after translating, because only "
+            "then do nodes exist."
         ),
         inputs=[
-            p("point", "point", desc="Angriffspunkt."),
-            p("force", "vector", desc="Kraft [kN]."),
+            p("point", "point", desc="Point of application."),
+            p("force", "vector", desc="Force [kN]."),
             p("moment", "vector", desc="Moment [kNm]. Optional."),
-            p("load_case", desc="Lastfall aus TektonLoadCase."),
+            p("load_case", desc="Load case from TektonLoadCase."),
         ],
-        outputs=[o("load", "Punktlast fuer TektonApplyLoads")],
+        outputs=[o("load", "Point load for TektonApplyLoads")],
     ),
     dict(
         folder="tekton_member_load",
@@ -196,18 +195,18 @@ COMPONENTS = [
         nickname="TMLoad",
         sub=SUB_AUTHOR,
         description=(
-            "Streckenlast auf Balken. Die Zuordnung laeuft ueber die Bauteil-GUID, nicht "
-            "ueber Stabnummern — ein physischer Balken wird beim Idealisieren in mehrere "
-            "Staebe geteilt, die Last muss auf alle davon."
+            "Line load on beams. The assignment goes through the element GUID, not through "
+            "member numbers - one physical beam is split into several members when it is "
+            "idealised, and the load has to reach all of them."
         ),
         inputs=[
-            p("beams", access="list", desc="Balken (COMPAS Timber) oder deren GUIDs."),
-            p("force", "vector", desc="Streckenlast [kN/m]."),
-            p("load_case", desc="Lastfall aus TektonLoadCase."),
-            p("start", "float", desc="Relativer Beginn 0..1. Default 0."),
-            p("end", "float", desc="Relatives Ende 0..1. Default 1."),
+            p("beams", access="list", desc="Beams (COMPAS Timber) or their GUIDs."),
+            p("force", "vector", desc="Line load [kN/m]."),
+            p("load_case", desc="Load case from TektonLoadCase."),
+            p("start", "float", desc="Relative start 0..1. Default 0."),
+            p("end", "float", desc="Relative end 0..1. Default 1."),
         ],
-        outputs=[o("load", "Streckenlast fuer TektonApplyLoads")],
+        outputs=[o("load", "Line load for TektonApplyLoads")],
     ),
     dict(
         folder="tekton_combination",
@@ -216,16 +215,16 @@ COMPONENTS = [
         nickname="TComb",
         sub=SUB_AUTHOR,
         description=(
-            "Lastkombination aus Lastfaellen und Teilsicherheitsbeiwerten. "
-            "Spaeter: EC0-Generator statt Handarbeit."
+            "Load combination from load cases and partial safety factors. "
+            "Later: an EC0 generator instead of doing this by hand."
         ),
         inputs=[
-            p("name", "str", desc="Name, z.B. 'ULS 1'."),
-            p("load_cases", access="list", desc="Lastfaelle."),
-            p("factors", "float", access="list", desc="Beiwerte, parallel zu load_cases."),
+            p("name", "str", desc="Name, e.g. 'ULS 1'."),
+            p("load_cases", access="list", desc="Load cases."),
+            p("factors", "float", access="list", desc="Factors, parallel to load_cases."),
             p("combination_type", "str", desc="ULS | SLS. Default ULS."),
         ],
-        outputs=[o("combination", "Kombination fuer TektonApplyLoads")],
+        outputs=[o("combination", "Combination for TektonApplyLoads")],
     ),
     dict(
         folder="tekton_joint_policy",
@@ -234,16 +233,16 @@ COMPONENTS = [
         nickname="TPolicy",
         sub=SUB_AUTHOR,
         description=(
-            "Regel, wie Holzverbindungen mechanisch idealisiert werden (gelenkig, steif, "
-            "Feder). Das ist eine Ingenieurentscheidung, keine Geometrie — darum explizit, "
-            "ueberschreibbar und im Annahmenprotokoll dokumentiert."
+            "Rule for how timber joints are idealised mechanically (pinned, rigid, spring). "
+            "That is an engineering decision, not geometry - so it is explicit, overridable "
+            "and documented in the assumptions report."
         ),
         inputs=[
-            p("preset", "str", desc="'conservative' (alles gelenkig) | 'rigid' | 'catalogue'."),
-            p("joint_types", "str", access="list", desc="Verbindungstypen, die abweichen sollen."),
-            p("releases", "str", access="list", desc="Zugehoerig: 'rigid'|'pinned'|'spherical', parallel zu joint_types."),
+            p("preset", "str", desc="'conservative' (everything pinned) | 'rigid' | 'catalogue'."),
+            p("joint_types", "str", access="list", desc="Joint types that should deviate."),
+            p("releases", "str", access="list", desc="Matching: 'rigid'|'pinned'|'spherical', parallel to joint_types."),
         ],
-        outputs=[o("policy", "JointPolicy fuer TektonTranslate"), o("info", "Aufgeloeste Regeln")],
+        outputs=[o("policy", "JointPolicy for TektonTranslate"), o("info", "Resolved rules")],
     ),
     dict(
         folder="tekton_plate_policy",
@@ -252,14 +251,14 @@ COMPONENTS = [
         nickname="TPlatePol",
         sub=SUB_AUTHOR,
         description=(
-            "Wie Plattenraender aneinander gekoppelt werden (gelenkige Kante vs. "
-            "durchlaufend). Pendant zur Joint Policy fuer den Plattenpfad."
+            "How plate edges are coupled to each other (hinged edge vs. continuous). "
+            "The counterpart to the joint policy for the plate path."
         ),
         inputs=[
-            p("preset", "str", desc="'hinged' (Default) | 'continuous'."),
-            p("span_direction", "vector", desc="Tragrichtung. Bei Holz nicht optional — Orthotropie."),
+            p("preset", "str", desc="'hinged' (default) | 'continuous'."),
+            p("span_direction", "vector", desc="Span direction. Not optional for timber - orthotropy."),
         ],
-        outputs=[o("policy", "PlateConnectionPolicy fuer TektonTranslate")],
+        outputs=[o("policy", "PlateConnectionPolicy for TektonTranslate")],
     ),
     # ---------------- Translate ----------------
     dict(
@@ -269,20 +268,44 @@ COMPONENTS = [
         nickname="TApply",
         sub=SUB_TRANSLATE,
         description=(
-            "Setzt die authorierten Lasten auf das uebersetzte Statikmodell. Muss NACH "
-            "TektonTranslate laufen: Punktlasten brauchen Knoten, Streckenlasten brauchen "
-            "die Staebe, in die ein Balken zerlegt wurde. Beides existiert vor dem "
-            "Uebersetzen noch nicht."
+            "Applies the authored loads to the translated analysis model. Has to run AFTER "
+            "TektonTranslate: point loads need nodes, line loads need the members a beam was "
+            "split into. Neither exists before translating."
         ),
         inputs=[
-            p("structural", desc="StructuralModel aus TektonTranslate.", optional=False),
-            p("loads", access="list", desc="Aus TektonPointLoad / TektonMemberLoad."),
-            p("combinations", access="list", desc="Aus TektonLoadCombination."),
-            p("tolerance", "float", desc="Suchradius Punktlast -> Knoten [m]. Default 0.01."),
+            p("structural", desc="StructuralModel from TektonTranslate.", optional=False),
+            p("loads", access="list", desc="From TektonPointLoad / TektonMemberLoad."),
+            p("combinations", access="list", desc="From TektonLoadCombination."),
+            p("tolerance", "float", desc="Search radius point load -> node [m]. Default 0.01."),
         ],
         outputs=[
-            o("structural", "StructuralModel mit Lasten"),
-            o("report", "Was zugeordnet wurde — und was nicht"),
+            o("structural", "StructuralModel with loads"),
+            o("report", "What was assigned - and what was not"),
+        ],
+    ),
+    dict(
+        folder="tekton_support_nodes",
+        uid=22,
+        name="Tekton Support Nodes",
+        nickname="TSupN",
+        sub=SUB_TRANSLATE,
+        description=(
+            "Add supports directly to nodes of the analysis model, selected by a plane or by "
+            "proximity to points. Needed for plates: the translator reads support_points off "
+            "beams only, so a plate model reaches analysis unsupported - a mechanism. Runs "
+            "after Translate, because nodes only exist from then on."
+        ),
+        inputs=[
+            p("structural", desc="StructuralModel from TektonTranslate.", optional=False),
+            p("points", "point", access="list", desc="Support locations. Empty = use the level below."),
+            p("level", "float", desc="Alternative: every node at this z (document units)."),
+            p("support_type", "str", desc="'pinned' (default) | 'fixed' | 'roller'."),
+            p("tolerance", "float", desc="Match radius in document units. Default 1.0."),
+        ],
+        outputs=[
+            o("structural", "StructuralModel with supports"),
+            o("nodes", "Supported node points"),
+            o("report", "What was matched, and what was not"),
         ],
     ),
     dict(
@@ -292,24 +315,24 @@ COMPONENTS = [
         nickname="TTrans",
         sub=SUB_TRANSLATE,
         description=(
-            "Kern der Bruecke: TimberModel -> neutrales StructuralModel. Erzeugt Systemlinien, "
-            "Knoten, Querschnitte, Gelenke, Lager. Der 'report'-Ausgang listet alle "
-            "getroffenen Annahmen — das ist kein Debug-Output, sondern das, worueber der "
-            "Statiker spaeter diskutiert."
+            "The core of the bridge: TimberModel -> neutral StructuralModel. Produces system "
+            "lines, nodes, cross-sections, releases, supports. The 'report' output lists every "
+            "assumption made - that is not debug output, it is what the engineer will argue "
+            "about later."
         ),
         inputs=[
             p("model", desc="TimberModel (COMPAS Timber).", optional=False),
-            p("material", desc="Aus TektonMaterial. Leer = C24."),
-            p("joint_policy", desc="Aus TektonJointPolicy. Leer = konservativ (gelenkig)."),
-            p("plate_policy", desc="Aus TektonPlatePolicy."),
-            p("load_cases", access="list", desc="Aus TektonLoadCase. Leer = nur Eigengewicht."),
-            p("units", "str", desc="Einheiten des Timber-Modells. Leer = Rhino-Dokumenteinheit."),
-            p("repo", "str", desc="Pfad zum Tekton-Monorepo (siehe TektonInfo)."),
+            p("material", desc="From TektonMaterial. Empty = C24."),
+            p("joint_policy", desc="From TektonJointPolicy. Empty = conservative (pinned)."),
+            p("plate_policy", desc="From TektonPlatePolicy."),
+            p("load_cases", access="list", desc="From TektonLoadCase. Empty = self-weight only."),
+            p("units", "str", desc="Units of the timber model. Empty = Rhino document unit."),
+            p("repo", "str", desc="Path to the Tekton monorepo (see TektonInfo)."),
         ],
         outputs=[
-            o("structural", "Neutrales StructuralModel"),
-            o("report", "Annahmenprotokoll — lesen!"),
-            o("preview", "Systemlinien zur Kontrolle"),
+            o("structural", "Neutral StructuralModel"),
+            o("report", "Assumptions report - read it!"),
+            o("preview", "System lines for checking"),
         ],
     ),
     dict(
@@ -319,17 +342,17 @@ COMPONENTS = [
         nickname="TCheck",
         sub=SUB_TRANSLATE,
         description=(
-            "Prueft das Statikmodell vor dem Rechnen: Auflager vorhanden? Modell "
-            "zusammenhaengend? Querschnitte plausibel? Ein lagerloses Modell geht sonst "
-            "kommentarlos in die Berechnung und liefert Unsinn oder einen Solver-Abbruch."
+            "Checks the analysis model before calculating: supports present? model connected? "
+            "cross-sections plausible? Otherwise a model without supports goes into the "
+            "calculation without comment and returns nonsense or a solver abort."
         ),
         inputs=[
-            p("structural", desc="StructuralModel aus TektonTranslate.", optional=False),
-            p("strict", "bool", desc="True = Fehler statt Warnung bei Befunden."),
+            p("structural", desc="StructuralModel from TektonTranslate.", optional=False),
+            p("strict", "bool", desc="True = findings raise an error instead of a warning."),
         ],
         outputs=[
-            o("ok", "True, wenn nichts Kritisches gefunden wurde"),
-            o("issues", "Befunde im Klartext"),
+            o("ok", "True when nothing critical was found"),
+            o("issues", "Findings in plain language"),
         ],
     ),
     # ---------------- Run ----------------
@@ -340,17 +363,17 @@ COMPONENTS = [
         nickname="TBackend",
         sub=SUB_RUN,
         description=(
-            "Backend und Verbindungsdaten buendeln. Der API-Key gehoert NICHT in die "
-            "GH-Datei — die wandert per Mail weiter. Leer lassen und die Umgebungsvariable "
-            "TEKTON_API_KEY setzen."
+            "Bundles the backend and its connection data. The API key does NOT belong in the "
+            "GH file - that file gets emailed around. Leave it empty and set the environment "
+            "variable TEKTON_API_KEY instead."
         ),
         inputs=[
             p("backend", "str", desc="'rfem' | 'rstab' | 'saf'."),
-            p("api_key", "str", desc="Nur fuer Tests. Besser: TEKTON_API_KEY."),
-            p("repo", "str", desc="Pfad zum Monorepo (dort liegt das Worker-venv)."),
-            p("filepath", "str", desc="Nur bei 'saf': Zielpfad der xlsx-Datei."),
+            p("api_key", "str", desc="For testing only. Better: TEKTON_API_KEY."),
+            p("repo", "str", desc="Path to the monorepo (that is where the worker venv lives)."),
+            p("filepath", "str", desc="Only for 'saf': target path of the xlsx file."),
         ],
-        outputs=[o("backend", "Backend-Konfiguration fuer TektonRun")],
+        outputs=[o("backend", "Backend configuration for TektonRun")],
     ),
     dict(
         folder="tekton_run",
@@ -359,23 +382,23 @@ COMPONENTS = [
         nickname="TRun",
         sub=SUB_RUN,
         description=(
-            "Modell ans Backend schicken, rechnen lassen, Ergebnisse zurueckholen. "
-            "Laeuft in einem eigenen Prozess (Backends brauchen Python >= 3.10). "
-            "NUR per Button ausloesen — jeder Lauf baut das RFEM-Modell neu auf und "
-            "blockiert Grasshopper, solange gerechnet wird."
+            "Send the model to the backend, calculate, fetch the results back. "
+            "Runs in a separate process (backends need Python >= 3.10). "
+            "Trigger by button ONLY - every run rebuilds the RFEM model from scratch and "
+            "blocks Grasshopper while it calculates."
         ),
         inputs=[
-            p("structural", desc="StructuralModel aus TektonTranslate.", optional=False),
-            p("backend", desc="Aus TektonBackend.", optional=False),
-            p("load_cases", "int", access="list", desc="Lastfaelle, deren Ergebnisse gelesen werden. Leer = alle."),
-            p("model_name", "str", desc="Name des Modells im Backend."),
-            p("calculate", "bool", desc="False = nur uebergeben, nicht rechnen (Handoff)."),
-            p("run", "bool", desc="Button. Ausloesen des Laufs.", optional=False),
+            p("structural", desc="StructuralModel from TektonTranslate.", optional=False),
+            p("backend", desc="From TektonBackend.", optional=False),
+            p("load_cases", "int", access="list", desc="Load cases whose results are read. Empty = all."),
+            p("model_name", "str", desc="Name of the model in the backend."),
+            p("calculate", "bool", desc="False = only hand over, do not calculate (handoff)."),
+            p("run", "bool", desc="Button. Triggers the run.", optional=False),
         ],
         outputs=[
-            o("structural", "Modell mit Ergebnissen"),
-            o("log", "Worker-Ausgabe"),
-            o("stamp", "Fingerprint + Zeitpunkt des Laufs"),
+            o("structural", "Model with results"),
+            o("log", "Worker output"),
+            o("stamp", "Fingerprint + timestamp of the run"),
         ],
     ),
     # ---------------- Results ----------------
@@ -386,21 +409,21 @@ COMPONENTS = [
         nickname="TRes",
         sub=SUB_RESULTS,
         description=(
-            "Ergebnisse pro physischem Balken auslesen: Huellwerte (max. Ausnutzung, max. "
-            "Verformung) und Stuetzstellen entlang der Achse. Die Zuordnung laeuft ueber "
-            "die Bauteil-GUID, nicht ueber Stabnummern. Warnt, wenn die Ergebnisse zu "
-            "einem aelteren Modellstand gehoeren."
+            "Read results per physical beam: envelope values (max. utilisation, max. "
+            "deflection) and sample points along the axis. The assignment goes through the "
+            "element GUID, not through member numbers. Warns when the results belong to an "
+            "older state of the model."
         ),
         inputs=[
-            p("structural", desc="StructuralModel mit Ergebnissen (aus TektonRun).", optional=False),
-            p("load_case", "int", desc="Lastfall. Leer = erster verfuegbarer."),
+            p("structural", desc="StructuralModel with results (from TektonRun).", optional=False),
+            p("load_case", "int", desc="Load case. Empty = first available."),
             p("quantity", "str", desc="'utilization' | 'displacement' | 'N' | 'My' | 'Vz'."),
         ],
         outputs=[
-            o("beam_ids", "Bauteil-GUIDs"),
-            o("envelope", "Huellwert je Balken"),
-            o("samples", "Stuetzstellen je Balken (t, Wert)"),
-            o("stale", "True, wenn die Ergebnisse nicht zum Modell passen"),
+            o("beam_ids", "Element GUIDs"),
+            o("envelope", "Envelope value per beam"),
+            o("samples", "Sample points per beam (t, value)"),
+            o("stale", "True when the results do not match the model"),
         ],
     ),
     dict(
@@ -410,16 +433,16 @@ COMPONENTS = [
         nickname="TAttach",
         sub=SUB_RESULTS,
         description=(
-            "Schreibt die Ergebnisse zurueck auf das Timber-Modell "
-            "(beam.attributes['analysis']) — mit Herkunftsangabe: welcher Modellstand, "
-            "welcher Lastfall, wann. Eine Zahl ohne diese Angabe ist eine Haftungsfrage."
+            "Writes the results back onto the timber model "
+            "(beam.attributes['analysis']) - with their provenance: which model state, "
+            "which load case, when. A number without that is a liability question."
         ),
         inputs=[
             p("model", desc="TimberModel.", optional=False),
-            p("structural", desc="StructuralModel mit Ergebnissen.", optional=False),
-            p("load_case", "int", desc="Lastfall."),
+            p("structural", desc="StructuralModel with results.", optional=False),
+            p("load_case", "int", desc="Load case."),
         ],
-        outputs=[o("model", "TimberModel mit Analyse-Attributen"), o("attached", "Anzahl belegter Bauteile")],
+        outputs=[o("model", "TimberModel with analysis attributes"), o("attached", "Number of elements written to")],
     ),
     dict(
         folder="tekton_visualize",
@@ -428,21 +451,20 @@ COMPONENTS = [
         nickname="TViz",
         sub=SUB_RESULTS,
         description=(
-            "Faerbt die Bauteile nach einem Ergebniswert ein und liefert eine Legende. "
-            "Werte oberhalb der Obergrenze werden hart rot — eine Ueberschreitung soll "
-            "auffallen, nicht ausbleichen."
+            "Colours the elements by a result value and returns a legend. Values above the "
+            "upper bound turn hard red - an exceedance should stand out, not fade away."
         ),
         inputs=[
-            p("structural", desc="StructuralModel mit Ergebnissen.", optional=False),
-            p("load_case", "int", desc="Lastfall."),
+            p("structural", desc="StructuralModel with results.", optional=False),
+            p("load_case", "int", desc="Load case."),
             p("quantity", "str", desc="'utilization' | 'displacement' | 'N' | 'My' | 'Vz'."),
-            p("low", "float", desc="Untergrenze der Skala. Default 0."),
-            p("high", "float", desc="Obergrenze. Default 1.0 (= Vollausnutzung)."),
+            p("low", "float", desc="Lower bound of the scale. Default 0."),
+            p("high", "float", desc="Upper bound. Default 1.0 (= fully utilised)."),
         ],
         outputs=[
-            o("geometry", "Systemlinien/Flaechen"),
-            o("colours", "Farbe je Element"),
-            o("legend", "Beschriftung der Skala"),
+            o("geometry", "System lines/surfaces"),
+            o("colours", "Colour per element"),
+            o("legend", "Labels of the scale"),
         ],
     ),
     dict(
@@ -452,20 +474,20 @@ COMPONENTS = [
         nickname="TInspect",
         sub=SUB_RESULTS,
         description=(
-            "Zeigt das Ersatzsystem selbst: Systemlinien, Knoten, Lagersymbole, "
-            "Gelenkmarker. Zum Pruefen der Idealisierung, bevor gerechnet wird — "
-            "getrennt von der Ergebnisdarstellung."
+            "Shows the analysis model itself: system lines, nodes, support symbols, "
+            "release markers. For checking the idealisation before calculating - kept "
+            "separate from the display of results."
         ),
         inputs=[
             p("structural", desc="StructuralModel.", optional=False),
             p("show", "str", access="list", desc="'members' | 'nodes' | 'supports' | 'releases' | 'surfaces'."),
-            p("scale", "float", desc="Symbolgroesse in Dokumenteinheiten."),
+            p("scale", "float", desc="Symbol size in document units."),
         ],
         outputs=[
-            o("members", "Systemlinien"),
-            o("nodes", "Knotenpunkte"),
-            o("supports", "Lagersymbole"),
-            o("releases", "Gelenkmarker"),
+            o("members", "System lines"),
+            o("nodes", "Nodes"),
+            o("supports", "Support symbols"),
+            o("releases", "Release markers"),
         ],
     ),
     # ---------------- IO ----------------
@@ -476,17 +498,17 @@ COMPONENTS = [
         nickname="TSave",
         sub=SUB_IO,
         description=(
-            "Schreibt das neutrale Modell als JSON. Das ist zugleich das Uebergabeformat "
-            "an Statiker: nachvollziehbar, versionierbar, diskutierbar — inklusive "
-            "Annahmenprotokoll."
+            "Writes the neutral model as JSON. That is also the handover format for "
+            "engineers: traceable, versionable, open to discussion - including the "
+            "assumptions report."
         ),
         inputs=[
             p("structural", desc="StructuralModel.", optional=False),
-            p("filepath", "str", desc="Zielpfad (.json).", optional=False),
-            p("report", "str", access="list", desc="Annahmenprotokoll aus TektonTranslate."),
+            p("filepath", "str", desc="Target path (.json).", optional=False),
+            p("report", "str", access="list", desc="Assumptions report from TektonTranslate."),
             p("save", "bool", desc="Button.", optional=False),
         ],
-        outputs=[o("path", "Geschriebene Datei")],
+        outputs=[o("path", "File that was written")],
     ),
     dict(
         folder="tekton_load_model",
@@ -495,27 +517,27 @@ COMPONENTS = [
         nickname="TLoad",
         sub=SUB_IO,
         description=(
-            "Liest ein neutrales Modell (inkl. Ergebnisse) aus JSON zurueck auf den Canvas — "
-            "etwa das, was der Statiker zurueckschickt, oder ein frueherer Rechenlauf."
+            "Reads a neutral model (results included) from JSON back onto the canvas - "
+            "for instance what the engineer sends back, or an earlier calculation run."
         ),
         inputs=[
-            p("filepath", "str", desc="Quelldatei (.json).", optional=False),
-            p("repo", "str", desc="Pfad zum Monorepo."),
+            p("filepath", "str", desc="Source file (.json).", optional=False),
+            p("repo", "str", desc="Path to the monorepo."),
         ],
         outputs=[
             o("structural", "StructuralModel"),
-            o("info", "Kurzuebersicht: Knoten, Staebe, Lastfaelle, Ergebnisse"),
+            o("info", "Short overview: nodes, members, load cases, results"),
         ],
     ),
 ]
 
 
 def make_placeholder_icon(path, seed):
-    """24x24-PNG als Platzhalter schreiben (ohne PIL, reines zlib/struct).
+    """Write a 24x24 PNG as a placeholder (no PIL, plain zlib/struct).
 
-    Der Componentizer verlangt eine icon.png; echte Icons kommen spaeter.
-    Farbe variiert nach Gruppe, damit die Komponenten im Menue unterscheidbar
-    sind, solange nichts Gezeichnetes existiert.
+    The componentizer requires an icon.png; real icons come later. The colour
+    varies per group so the components stay distinguishable in the menu as long
+    as nothing drawn exists.
     """
     size = 24
     palette = {
@@ -530,7 +552,7 @@ def make_placeholder_icon(path, seed):
 
     rows = []
     for y in range(size):
-        row = b"\x00"  # Filtertyp
+        row = b"\x00"  # filter type
         for x in range(size):
             border = x < 2 or y < 2 or x >= size - 2 or y >= size - 2
             if border:
@@ -592,8 +614,8 @@ def main():
 
         print("[x] {:<24} {}".format(spec["folder"], spec["sub"]))
 
-    print("\n{} Komponenten geschrieben nach {}".format(len(COMPONENTS), COMPONENTS_DIR))
-    print("Fehlende code.py-Dateien anlegen, dann: bash _componentizer/componetize.bash")
+    print("\n{} components written to {}".format(len(COMPONENTS), COMPONENTS_DIR))
+    print("Create the missing code.py files, then: bash _componentizer/componetize.bash")
 
 
 if __name__ == "__main__":

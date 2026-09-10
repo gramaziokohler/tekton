@@ -3,7 +3,7 @@
     "nickname": "TViz",
     "category": "Tekton",
     "subcategory": "4 | Results",
-    "description": "Faerbt die Bauteile nach einem Ergebniswert ein und liefert eine Legende. Werte oberhalb der Obergrenze werden hart rot \u2014 eine Ueberschreitung soll auffallen, nicht ausbleichen.",
+    "description": "Colours the elements by a result value and returns a legend. Values above the upper bound turn hard red - an exceedance should stand out, not fade away.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000016",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "structural",
                 "nickname": "structural",
-                "description": "StructuralModel mit Ergebnissen.",
+                "description": "StructuralModel with results.",
                 "optional": false,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -27,7 +27,7 @@
             {
                 "name": "load_case",
                 "nickname": "load_case",
-                "description": "Lastfall.",
+                "description": "Load case.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -55,7 +55,7 @@
             {
                 "name": "low",
                 "nickname": "low",
-                "description": "Untergrenze der Skala. Default 0.",
+                "description": "Lower bound of the scale. Default 0.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -69,7 +69,7 @@
             {
                 "name": "high",
                 "nickname": "high",
-                "description": "Obergrenze. Default 1.0 (= Vollausnutzung).",
+                "description": "Upper bound. Default 1.0 (= fully utilised).",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -85,7 +85,7 @@
             {
                 "name": "geometry",
                 "nickname": "geometry",
-                "description": "Systemlinien/Flaechen",
+                "description": "System lines/surfaces",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -93,7 +93,7 @@
             {
                 "name": "colours",
                 "nickname": "colours",
-                "description": "Farbe je Element",
+                "description": "Colour per element",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -101,7 +101,7 @@
             {
                 "name": "legend",
                 "nickname": "legend",
-                "description": "Beschriftung der Skala",
+                "description": "Labels of the scale",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

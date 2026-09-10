@@ -1,12 +1,11 @@
 #!/bin/bash
-# Gebaute .ghuser-Komponenten nach Grasshopper kopieren.
+# Copy the built .ghuser components into Grasshopper.
 #
-# Die UserObjects liegen nicht unter .../8.0/Grasshopper/, wie man vermuten
-# wuerde, sondern unter .../8.0/Plug-ins/Grasshopper (b45a29b1-...)/UserObjects.
-# Der Unterordner "tekton" haelt sie von den uebrigen Komponenten getrennt.
+# The UserObjects do not live under .../8.0/Grasshopper/, as you might expect,
+# but under .../8.0/Plug-ins/Grasshopper (b45a29b1-...)/UserObjects.
+# The "tekton" subfolder keeps them separate from the other components.
 #
-# Grasshopper liest UserObjects nur beim Start — nach dem Kopieren Rhino neu
-# starten.
+# Grasshopper reads UserObjects only at startup - restart Rhino after copying.
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,28 +15,28 @@ GH_PLUGIN="$HOME/Library/Application Support/McNeel/Rhinoceros/8.0/Plug-ins/Gras
 TARGET="$GH_PLUGIN/UserObjects/tekton"
 
 if [ ! -d "$SOURCE" ]; then
-    echo "Nichts gebaut: $SOURCE fehlt."
-    echo "Erst 'python3 _componentizer/build_metadata.py', dann den Componentizer laufen lassen."
+    echo "Nothing built: $SOURCE is missing."
+    echo "Run 'python3 _componentizer/build_metadata.py' first, then the componentizer."
     exit 1
 fi
 
 count=$(find "$SOURCE" -name '*.ghuser' | wc -l | tr -d ' ')
 if [ "$count" -eq 0 ]; then
-    echo "Keine .ghuser in $SOURCE."
+    echo "No .ghuser files in $SOURCE."
     exit 1
 fi
 
 if [ ! -d "$GH_PLUGIN" ]; then
-    echo "Grasshopper-Plugin-Ordner nicht gefunden:"
+    echo "Grasshopper plugin folder not found:"
     echo "  $GH_PLUGIN"
-    echo "Laeuft hier Rhino 8?"
+    echo "Is Rhino 8 installed here?"
     exit 1
 fi
 
 mkdir -p "$TARGET"
 cp "$SOURCE"/*.ghuser "$TARGET/"
 
-echo "$count Komponenten installiert nach:"
+echo "$count components installed to:"
 echo "  $TARGET"
 echo
-echo "Rhino neu starten — Grasshopper liest UserObjects nur beim Start."
+echo "Restart Rhino - Grasshopper reads UserObjects only at startup."

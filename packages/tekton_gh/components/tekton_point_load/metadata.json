@@ -3,7 +3,7 @@
     "nickname": "TPLoad",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Einzellast an einem Punkt. Wird beim Anwenden dem naechstgelegenen Knoten des Statikmodells zugeordnet \u2014 die Zuordnung passiert also nach dem Uebersetzen, weil erst dann Knoten existieren.",
+    "description": "Point load at a location. On application it is assigned to the nearest node of the analysis model - so the assignment happens after translating, because only then do nodes exist.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000005",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "point",
                 "nickname": "point",
-                "description": "Angriffspunkt.",
+                "description": "Point of application.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -27,7 +27,7 @@
             {
                 "name": "force",
                 "nickname": "force",
-                "description": "Kraft [kN].",
+                "description": "Force [kN].",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -55,7 +55,7 @@
             {
                 "name": "load_case",
                 "nickname": "load_case",
-                "description": "Lastfall aus TektonLoadCase.",
+                "description": "Load case from TektonLoadCase.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -71,7 +71,7 @@
             {
                 "name": "load",
                 "nickname": "load",
-                "description": "Punktlast fuer TektonApplyLoads",
+                "description": "Point load for TektonApplyLoads",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

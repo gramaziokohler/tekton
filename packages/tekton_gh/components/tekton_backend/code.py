@@ -1,11 +1,11 @@
-"""Tekton Backend — Backend und Verbindungsdaten buendeln.
+"""Tekton Backend - bundle backend and connection data.
 
-Der API-Key gehoert NICHT in die GH-Datei: die wandert per Mail weiter,
-landet in Git, wird weitergegeben. Leer lassen und stattdessen die
-Umgebungsvariable TEKTON_API_KEY setzen — der Worker liest sie selbst.
+The API key does NOT belong in the GH file: that file gets mailed around,
+lands in git, gets passed on. Leave it empty and set the environment variable
+TEKTON_API_KEY instead - the worker reads it itself.
 
-'repo' ist der Pfad zum Monorepo; dort liegt das venv mit den
-Backend-Paketen (Python >= 3.10).
+'repo' is the path to the monorepo; the venv with the backend packages
+(Python >= 3.10) lives there.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -34,7 +34,7 @@ filepath: str  # type: ignore
 VALID = ("rfem", "rstab", "saf")
 kind = (backend or "rfem").lower()
 if kind not in VALID:
-    _warn("Unbekanntes Backend '{}'. Erlaubt: {}.".format(kind, ", ".join(VALID)))
+    _warn("Unknown backend '{}'. Allowed: {}.".format(kind, ", ".join(VALID)))
     kind = "rfem"
 
 root = None
@@ -44,27 +44,27 @@ for candidate in (repo, os.environ.get("TEKTON_REPO")):
         break
 
 if root is None:
-    _warn("Repo nicht gefunden — TektonRun wird fehlschlagen. Siehe TektonInfo.")
+    _warn("Repo not found - TektonRun will fail. See TektonInfo.")
 else:
-    # Fuer die uebrigen Komponenten hinterlegen (die meisten haben keinen
-    # eigenen repo-Input).
+    # Deposit it for the remaining components (most have no repo input of
+    # their own).
     os.environ["TEKTON_REPO"] = root
     venv = os.path.join(root, ".venv", "bin", "python")
     if not os.path.isfile(venv):
         venv = os.path.join(root, ".venv", "Scripts", "python.exe")
     if not os.path.isfile(venv):
-        _warn("Kein .venv im Repo. 'uv sync --extra dev' ausfuehren.")
+        _warn("No .venv in the repo. Run 'uv sync --extra dev'.")
 
 if api_key:
-    _warn("API-Key im Canvas. Diese GH-Datei nicht weitergeben — besser TEKTON_API_KEY setzen.")
+    _warn("API key on the canvas. Do not pass this GH file on - better to set TEKTON_API_KEY.")
 
 class BackendConfig(object):
-    """Backend-Einstellungen als ein Wert.
+    """Backend settings as a single value.
 
-    Bewusst eine kleine Klasse und kein dict: Grasshopper iteriert ein dict
-    beim Ausgeben und schickt dann nur dessen *Schluessel* weiter — TektonRun
-    bekaeme vier Strings statt einer Konfiguration. Ein Objekt reicht GH als
-    ein Element durch.
+    Deliberately a small class and not a dict: Grasshopper iterates a dict on
+    output and then passes on only its *keys* - TektonRun would get four
+    strings instead of one configuration. An object passes through GH as a
+    single item.
     """
 
     def __init__(self, backend, repo, api_key, filepath):
@@ -80,7 +80,7 @@ class BackendConfig(object):
 backend = BackendConfig(kind, root, api_key or None, filepath or None)
 
 print("Backend: {}".format(kind))
-print("Repo: {}".format(root or "NICHT GEFUNDEN"))
-print("API-Key: {}".format("aus Canvas" if api_key else "aus Umgebung (TEKTON_API_KEY)"))
+print("Repo: {}".format(root or "NOT FOUND"))
+print("API key: {}".format("from canvas" if api_key else "from environment (TEKTON_API_KEY)"))
 if kind == "saf" and not filepath:
-    _warn("Backend 'saf' braucht einen filepath.")
+    _warn("Backend 'saf' needs a filepath.")

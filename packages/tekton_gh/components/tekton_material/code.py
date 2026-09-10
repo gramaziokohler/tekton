@@ -1,16 +1,16 @@
-"""Tekton Material — Werkstoff aus der Bibliothek, mit Überschreibungen.
+"""Tekton Material - material from the library, with overrides.
 
-Ein Güteklassen-Name ist ein Schlüssel, kein Material. RFEM löst Namen zwar
-gegen seine eigene Bibliothek auf, aber SAF will die Zahlen im Blatt, und
-OpenSees/Abaqus haben gar keine Bibliothek. Darum trägt das neutrale Modell
-die physikalischen Eigenschaften, und diese Komponente liefert sie.
+A grade name is a key, not a material. RFEM does resolve names against its own
+library, but SAF wants the numbers in the sheet, and OpenSees/Abaqus have no
+library at all. So the neutral model carries the physical properties, and this
+component supplies them.
 
-Die Presets stammen aus `compas_timber_fea.core.materials` (EN 338 für
-Vollholz, EN 14080 für Brettschichtholz) — eine Quelle für GH, GUI und CLI.
+The presets come from `compas_timber_fea.core.materials` (EN 338 for solid
+timber, EN 14080 for glulam) - one source for GH, GUI and CLI.
 
-Überschreibungen sind der Normalfall bei geprüftem Material: Preset als
-Ausgangspunkt, einzelne Werte ersetzt. Sie wandern mit dem Modell und stehen
-im Annahmenprotokoll.
+Overrides are the normal case for tested material: preset as a starting point,
+single values replaced. They travel with the model and appear in the
+assumptions report.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -22,7 +22,7 @@ ghenv.Component.Message = "Material"  # type: ignore # noqa: F821
 
 
 def _setup(explicit_repo=None):
-    """compas_timber_fea importierbar machen."""
+    """Make compas_timber_fea importable."""
     root = None
     for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
         if candidate and os.path.isdir(os.path.join(os.path.expanduser(candidate), "packages")):
@@ -30,9 +30,9 @@ def _setup(explicit_repo=None):
             break
     if root is None:
         raise RuntimeError(
-            "Tekton-Repo nicht gefunden. Eine Komponente mit 'repo'-Input "
-            "(TektonInfo, TektonTranslate, TektonBackend) einmal auf dem Canvas "
-            "setzen — der Pfad gilt dann fuer die ganze Sitzung. Siehe TektonInfo."
+            "Tekton repo not found. Place one component with a 'repo' input "
+            "(TektonInfo, TektonTranslate, TektonBackend) on the canvas once - "
+            "the path then applies for the whole session. See TektonInfo."
         )
     for package in ("tekton_gh", "compas_timber_fea"):
         src = os.path.join(root, "packages", package, "src")
@@ -71,29 +71,29 @@ if density is not None:
 if name in PRESETS:
     material = Material.from_preset(name, **overrides)
 else:
-    # Unbekannte Guete: Eigenschaften werden geliehen, aber sichtbar als
-    # Annahme markiert — lieber eine benannte Annahme als eine stille.
+    # Unknown grade: the properties are borrowed but visibly marked as an
+    # assumption - a named assumption beats a silent one.
     material = Material.resolve(name)
     if overrides:
         from dataclasses import replace
 
         material = replace(material, **overrides)
     _warn(
-        "Unbekannte Guete '{}'. Eigenschaften von C24 uebernommen und als Annahme "
-        "markiert. Bekannt: {}.".format(name, ", ".join(sorted(PRESETS)))
+        "Unknown grade '{}'. Properties borrowed from C24 and marked as an "
+        "assumption. Known: {}.".format(name, ", ".join(sorted(PRESETS)))
     )
 
 info = [
     "{} ({})".format(material.name, material.standard),
     "E0,mean {:.0f} N/mm2 | E90,mean {:.0f} | G {:.0f}".format(
         material.E0_mean, material.E90_mean, material.G_mean),
-    "Rohdichte {:.0f} kg/m3 (charakteristisch {:.0f})".format(
+    "Density {:.0f} kg/m3 (characteristic {:.0f})".format(
         material.density_mean, material.density_k),
     "f_m,k {:.1f} | f_t0,k {:.1f} | f_c0,k {:.1f} | f_v,k {:.1f} N/mm2".format(
         material.f_mk, material.f_t0k, material.f_c0k, material.f_vk),
 ]
 for key, value in sorted(overrides.items()):
-    info.append("ueberschrieben: {} = {:g}".format(key, value))
+    info.append("overridden: {} = {:g}".format(key, value))
 
 for line in info:
     print(line)

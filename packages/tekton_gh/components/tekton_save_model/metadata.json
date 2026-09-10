@@ -3,7 +3,7 @@
     "nickname": "TSave",
     "category": "Tekton",
     "subcategory": "5 | IO",
-    "description": "Schreibt das neutrale Modell als JSON. Das ist zugleich das Uebergabeformat an Statiker: nachvollziehbar, versionierbar, diskutierbar \u2014 inklusive Annahmenprotokoll.",
+    "description": "Writes the neutral model as JSON. That is also the handover format for engineers: traceable, versionable, open to discussion - including the assumptions report.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000018",
     "ghpython": {
@@ -27,7 +27,7 @@
             {
                 "name": "filepath",
                 "nickname": "filepath",
-                "description": "Zielpfad (.json).",
+                "description": "Target path (.json).",
                 "optional": false,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "report",
                 "nickname": "report",
-                "description": "Annahmenprotokoll aus TektonTranslate.",
+                "description": "Assumptions report from TektonTranslate.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -71,7 +71,7 @@
             {
                 "name": "path",
                 "nickname": "path",
-                "description": "Geschriebene Datei",
+                "description": "File that was written",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

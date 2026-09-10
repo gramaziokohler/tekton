@@ -1,18 +1,17 @@
-"""Tekton Preflight — Modell vor dem Rechnen pruefen.
+"""Tekton Preflight - check the model before calculating.
 
-Ein lagerloses oder unzusammenhaengendes Modell geht sonst kommentarlos in die
-Berechnung und liefert Unsinn oder einen Solver-Abbruch, dessen Meldung niemand
-liest. Lieber hier auffallen.
+A model without supports or with disconnected parts otherwise goes into the
+analysis without comment and yields nonsense, or a solver abort whose message
+nobody reads. Better to notice here.
 
-Duenner Wrapper um ``compas_timber_fea.core.preflight`` — die Pruefungen
-gehoeren in die neutrale Schicht, damit GUI, CLI und Grasshopper dieselben
-Befunde melden. Der Dlubal-Importer ruft dieselbe Funktion beim Push.
+Thin wrapper around ``compas_timber_fea.core.preflight`` - the checks belong in
+the neutral layer, so GUI, CLI and Grasshopper report the same findings. The
+Dlubal importer calls the same function on push.
 
-Fehler ("error") sind Bedingungen, unter denen eine Berechnung sinnlos ist
-(keine Auflager, ins Leere zeigende Verweise). Warnungen sind einen Blick wert
-(unverbundene Teile, ungenutzte Lastfaelle). Nichts davon blockiert einen
-Export: ein Push ohne Auflager ist legitim, wenn der Statiker sie in RFEM
-ergaenzt.
+Errors are conditions under which an analysis is meaningless (no supports,
+dangling references). Warnings are worth a look (disconnected parts, unused
+load cases). Nothing here blocks an export: a push without supports is
+legitimate when the engineer adds them in RFEM.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -24,11 +23,11 @@ ghenv.Component.Message = "Preflight"  # type: ignore # noqa: F821
 
 
 def _setup(explicit_repo=None):
-    """compas_timber_fea + tekton_gh importierbar machen.
+    """Make compas_timber_fea + tekton_gh importable.
 
-    Siehe TektonInfo, wenn das fehlschlaegt. Der Purge ist noetig, weil in
-    Rhino womoeglich schon ein anderes compas_timber geladen ist (das
-    offizielle Plugin), das kein `compas_timber.structural` kennt.
+    See TektonInfo when this fails. The purge is needed because Rhino may
+    already have another compas_timber loaded (the official plugin), which
+    knows no `compas_timber.structural`.
     """
     root = None
     for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
@@ -37,11 +36,11 @@ def _setup(explicit_repo=None):
             break
     if root is None:
         raise RuntimeError(
-            "Tekton-Repo nicht gefunden. Eine Komponente mit 'repo'-Input "
-            "(TektonInfo, TektonTranslate, TektonBackend) einmal auf dem Canvas "
-            "setzen — der Pfad gilt dann fuer die ganze Sitzung. Siehe TektonInfo."
+            "Tekton repo not found. Place one component with a 'repo' input "
+            "(TektonInfo, TektonTranslate, TektonBackend) on the canvas once - "
+            "the path then applies for the whole session. See TektonInfo."
         )
-    # Fuer die Komponenten ohne eigenen repo-Input hinterlegen.
+    # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     for package in ("tekton_gh", "compas_timber_fea"):
         src = os.path.join(root, "packages", package, "src")
@@ -71,7 +70,7 @@ issues = []
 ok = False
 
 if structural is None:
-    _message("warning", "Kein StructuralModel angeschlossen.")
+    _message("warning", "No StructuralModel connected.")
 else:
     _setup()
     from compas_timber_fea.core.preflight import preflight
@@ -83,17 +82,17 @@ else:
         issues.append("[{}] {}".format(level, text))
 
     if not issues:
-        issues.append("Keine Befunde.")
+        issues.append("No findings.")
 
     if report.errors:
         _message(
             "error" if strict else "warning",
-            "{} Fehler, {} Warnung(en). Siehe 'issues'.".format(len(report.errors), len(report.warnings)),
+            "{} error(s), {} warning(s). See 'issues'.".format(len(report.errors), len(report.warnings)),
         )
     elif report.warnings:
         _message(
             "error" if strict else "warning",
-            "{} Warnung(en). Siehe 'issues'.".format(len(report.warnings)),
+            "{} warning(s). See 'issues'.".format(len(report.warnings)),
         )
 
 for line in issues:

@@ -3,7 +3,7 @@
     "nickname": "TMat",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Material fuer das Statikmodell waehlen. Heute traegt das neutrale Modell nur einen Namens-String, den RFEM gegen seine Bibliothek aufloest. Sobald die Material-Dataclass mit Presets existiert (siehe discussion/materials.md), liefert diese Komponente ein vollwertiges Material mit Ueberschreibungen.",
+    "description": "Pick the material for the analysis model. Today the neutral model carries only a name string that RFEM resolves against its own library. Once the material dataclass with presets exists (see discussion/materials.md), this component will return a full material with overrides.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000002",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "grade",
                 "nickname": "grade",
-                "description": "Guetekasse, z.B. 'C24' oder 'GL24h'.",
+                "description": "Grade, e.g. 'C24' or 'GL24h'.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -27,7 +27,7 @@
             {
                 "name": "E0_mean",
                 "nickname": "E0_mean",
-                "description": "Optionale Ueberschreibung E0,mean [N/mm2].",
+                "description": "Optional override for E0,mean [N/mm2].",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "density",
                 "nickname": "density",
-                "description": "Optionale Ueberschreibung Rohdichte [kg/m3].",
+                "description": "Optional override for density [kg/m3].",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -57,7 +57,7 @@
             {
                 "name": "material",
                 "nickname": "material",
-                "description": "Material fuer TektonTranslate",
+                "description": "Material for TektonTranslate",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -65,7 +65,7 @@
             {
                 "name": "info",
                 "nickname": "info",
-                "description": "Was tatsaechlich gesetzt wurde",
+                "description": "What was actually set",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

@@ -3,7 +3,7 @@
     "nickname": "TSup",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Auflagerpunkte auf Balken markieren. Schreibt beam.attributes['support_points'] \u2014 der einzige Weg, den der Translator heute liest. Die Punkte muessen auf der Balkenachse liegen (Toleranz 1e-4 in Modelleinheiten).",
+    "description": "Mark support points on beams. Writes beam.attributes['support_points'] - the only channel the translator reads today. The points have to lie on the beam axis (tolerance 1e-4 in model units).",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000003",
     "ghpython": {
@@ -27,7 +27,7 @@
             {
                 "name": "points",
                 "nickname": "points",
-                "description": "Auflagerpunkte.",
+                "description": "Support points.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -55,7 +55,7 @@
             {
                 "name": "tolerance",
                 "nickname": "tolerance",
-                "description": "Suchradius zur Balkenachse. Default 1e-4 (Modelleinheiten).",
+                "description": "Search radius around the beam axis. Default 1e-4 (model units).",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -71,7 +71,7 @@
             {
                 "name": "model",
                 "nickname": "model",
-                "description": "TimberModel mit gesetzten Auflagerattributen",
+                "description": "TimberModel with support attributes set",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -79,7 +79,7 @@
             {
                 "name": "found",
                 "nickname": "found",
-                "description": "Zugeordnete Punkte",
+                "description": "Points that were assigned",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -87,7 +87,7 @@
             {
                 "name": "missed",
                 "nickname": "missed",
-                "description": "Punkte ohne Balken in Reichweite \u2014 pruefen!",
+                "description": "Points with no beam within reach - check these!",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

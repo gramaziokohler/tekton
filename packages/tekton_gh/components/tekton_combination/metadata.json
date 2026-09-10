@@ -3,7 +3,7 @@
     "nickname": "TComb",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Lastkombination aus Lastfaellen und Teilsicherheitsbeiwerten. Spaeter: EC0-Generator statt Handarbeit.",
+    "description": "Load combination from load cases and partial safety factors. Later: an EC0 generator instead of doing this by hand.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000007",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "name",
                 "nickname": "name",
-                "description": "Name, z.B. 'ULS 1'.",
+                "description": "Name, e.g. 'ULS 1'.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -27,7 +27,7 @@
             {
                 "name": "load_cases",
                 "nickname": "load_cases",
-                "description": "Lastfaelle.",
+                "description": "Load cases.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "factors",
                 "nickname": "factors",
-                "description": "Beiwerte, parallel zu load_cases.",
+                "description": "Factors, parallel to load_cases.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -71,7 +71,7 @@
             {
                 "name": "combination",
                 "nickname": "combination",
-                "description": "Kombination fuer TektonApplyLoads",
+                "description": "Combination for TektonApplyLoads",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

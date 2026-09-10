@@ -3,7 +3,7 @@
     "nickname": "TMatLib",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Werkstoff aus der Bibliothek waehlen. Haengt sich beim Platzieren selbst ein Auswahlmenue mit allen Gueteklassen an \u2014 kein Tippen, keine Tippfehler. Ohne Auswahl listet sie, was verfuegbar ist, samt Kennwerten.",
+    "description": "Pick a material from the library. On placement it attaches its own value list with all grades - no typing, no typos. Without a selection it lists what is available, along with the property values.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000021",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "grade",
                 "nickname": "grade",
-                "description": "Gueteklasse. Leer = nur auflisten.",
+                "description": "Grade. Empty = only list what is available.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -29,7 +29,7 @@
             {
                 "name": "material",
                 "nickname": "material",
-                "description": "Material fuer TektonTranslate",
+                "description": "Material for TektonTranslate",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -37,7 +37,7 @@
             {
                 "name": "grades",
                 "nickname": "grades",
-                "description": "Alle verfuegbaren Gueteklassen",
+                "description": "All available grades",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -45,7 +45,7 @@
             {
                 "name": "properties",
                 "nickname": "properties",
-                "description": "Kennwerte der Auswahl",
+                "description": "Property values of the selection",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

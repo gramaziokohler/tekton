@@ -1,7 +1,7 @@
-"""Tekton Load Model — neutrales Modell aus JSON lesen.
+"""Tekton Load Model - read a neutral model from JSON.
 
-Holt ein gespeichertes Modell samt Ergebnissen zurueck auf den Canvas:
-einen frueheren Rechenlauf, oder das, was der Statiker zurueckschickt.
+Brings a saved model back onto the canvas together with its results: an
+earlier calculation run, or whatever the engineer sends back.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -13,11 +13,11 @@ ghenv.Component.Message = "Load"  # type: ignore # noqa: F821
 
 
 def _setup(explicit_repo=None):
-    """compas_timber_fea + tekton_gh importierbar machen.
+    """Make compas_timber_fea + tekton_gh importable.
 
-    Siehe TektonInfo, wenn das fehlschlaegt. Der Purge ist noetig, weil in
-    Rhino womoeglich schon ein anderes compas_timber geladen ist (das
-    offizielle Plugin, 1.0.5), das kein `compas_timber.structural` kennt.
+    See TektonInfo when this fails. The purge is needed because Rhino may
+    already have another compas_timber loaded (the official plugin, 1.0.5),
+    which knows no `compas_timber.structural`.
     """
     root = None
     for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
@@ -26,11 +26,11 @@ def _setup(explicit_repo=None):
             break
     if root is None:
         raise RuntimeError(
-            "Tekton-Repo nicht gefunden. Eine Komponente mit 'repo'-Input "
-            "(TektonInfo, TektonTranslate, TektonBackend) einmal auf dem Canvas "
-            "setzen — der Pfad gilt dann fuer die ganze Sitzung. Siehe TektonInfo."
+            "Tekton repo not found. Place one component with a 'repo' input "
+            "(TektonInfo, TektonTranslate, TektonBackend) on the canvas once - "
+            "the path then applies for the whole session. See TektonInfo."
         )
-    # Fuer die Komponenten ohne eigenen repo-Input hinterlegen.
+    # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     for package in ("tekton_gh", "compas_timber_fea"):
         src = os.path.join(root, "packages", package, "src")
@@ -57,9 +57,9 @@ structural = None
 info = []
 
 if not filepath:
-    _warn("filepath wird gebraucht.")
+    _warn("filepath is needed.")
 elif not os.path.isfile(os.path.expanduser(filepath)):
-    _warn("Datei nicht gefunden: {}".format(filepath))
+    _warn("File not found: {}".format(filepath))
 else:
     _setup(repo)
     from compas_timber_fea.core.model import StructuralModel
@@ -68,13 +68,13 @@ else:
 
     results = getattr(structural, "results", {}) or {}
     info = [
-        "Knoten: {}".format(len(structural.nodes)),
-        "Staebe: {}".format(len(structural.members)),
-        "Flaechen: {}".format(len(structural.surfaces)),
-        "Lager: {}".format(len(structural.supports)),
-        "Lastfaelle: {}".format(len(structural.load_cases)),
-        "Ergebnissaetze: {}".format(len(results)),
-        "Einheiten der Quelle: {}".format(getattr(structural, "source_units", "?")),
+        "Nodes: {}".format(len(structural.nodes)),
+        "Members: {}".format(len(structural.members)),
+        "Surfaces: {}".format(len(structural.surfaces)),
+        "Supports: {}".format(len(structural.supports)),
+        "Load cases: {}".format(len(structural.load_cases)),
+        "Result sets: {}".format(len(results)),
+        "Source units: {}".format(getattr(structural, "source_units", "?")),
     ]
 
 for line in info:

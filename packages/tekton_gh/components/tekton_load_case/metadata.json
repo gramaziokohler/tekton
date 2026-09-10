@@ -3,7 +3,7 @@
     "nickname": "TCase",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Lastfall definieren (Eigengewicht, Nutzlast, Schnee, Wind). Lastfaelle sind die Container, auf die sich Lasten und Kombinationen beziehen.",
+    "description": "Define a load case (self-weight, imposed, snow, wind). Load cases are the containers that loads and combinations refer to.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000004",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "name",
                 "nickname": "name",
-                "description": "Name des Lastfalls.",
+                "description": "Name of the load case.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "self_weight",
                 "nickname": "self_weight",
-                "description": "Eigengewicht automatisch ansetzen.",
+                "description": "Apply self-weight automatically.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -55,7 +55,7 @@
             {
                 "name": "id",
                 "nickname": "id",
-                "description": "Optionale feste ID. Leer = fortlaufend.",
+                "description": "Optional fixed ID. Empty = numbered consecutively.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -71,7 +71,7 @@
             {
                 "name": "load_case",
                 "nickname": "load_case",
-                "description": "Lastfall fuer Translate/Loads",
+                "description": "Load case for Translate/Loads",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

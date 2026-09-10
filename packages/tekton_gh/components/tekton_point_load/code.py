@@ -1,10 +1,10 @@
-"""Tekton Point Load — Einzellast.
+"""Tekton Point Load - point load.
 
-Die Last kennt hier nur ihren Angriffspunkt. Die Zuordnung zu einem
-Knoten des Statikmodells passiert erst in TektonApplyLoads — vorher
-existieren die Knoten noch gar nicht.
+Here the load knows only its point of application. Mapping it to a node of the
+analysis model happens in TektonApplyLoads - before that the nodes do not even
+exist.
 
-Einheiten: Kraft in kN, Moment in kNm (Vertrag des neutralen Modells).
+Units: force in kN, moment in kNm (the neutral model's contract).
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -33,11 +33,11 @@ load_case = load_case  # type: ignore # noqa: F821
 load = None
 
 if point is None or force is None:
-    _warn("point und force werden gebraucht.")
+    _warn("point and force are both needed.")
 else:
-    # Bewusst ein leichtes dict statt eines StructuralPointLoad: die Knoten-ID
-    # ist erst nach dem Uebersetzen bekannt. TektonApplyLoads macht daraus das
-    # echte Lastobjekt.
+    # Deliberately a light dict instead of a StructuralPointLoad: the node ID
+    # is only known after translating. TektonApplyLoads turns this into the
+    # real load object.
     load = {
         "kind": "point",
         "position": [point.X, point.Y, point.Z],
@@ -45,6 +45,6 @@ else:
         "moment": [moment.X, moment.Y, moment.Z] if moment is not None else [0.0, 0.0, 0.0],
         "load_case_id": getattr(load_case, "id", 1),
     }
-    print("Einzellast {} kN an ({:.3f}, {:.3f}, {:.3f}), Lastfall {}".format(
+    print("Point load {} kN at ({:.3f}, {:.3f}, {:.3f}), load case {}".format(
         [round(v, 3) for v in load["force"]],
         point.X, point.Y, point.Z, load["load_case_id"]))

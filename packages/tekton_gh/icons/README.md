@@ -1,38 +1,39 @@
-# Icon-Quellen
+# Icon sources
 
-Hier liegen die bearbeitbaren Originale: `<bundle>.svg` (skalierbar) und
-`<bundle>_96.png` (zum Beurteilen). Was Grasshopper tatsächlich anzeigt, ist
-die 24px-`icon.png` **im jeweiligen Bundle** unter `../components/<bundle>/`.
+The editable originals live here: `<bundle>.svg` (scalable) and
+`<bundle>_96.png` (for judging the result). What Grasshopper actually shows is
+the 24px `icon.png` **inside the respective bundle** under
+`../components/<bundle>/`.
 
-Zwei Orte, weil der Componentizer die 24px-PNG neben `code.py` und
-`metadata.json` erwartet — die Bundle-Datei ist also nicht redundant, sondern
-das Build-Artefakt.
+Two places, because the componentizer expects the 24px PNG next to `code.py`
+and `metadata.json` — so the file in the bundle is not redundant, it is the
+build artefact.
 
-## Ein Icon ändern
+## Changing an icon
 
-1. SVG hier bearbeiten.
-2. Auf 24px rastern und als `../components/<bundle>/icon.png` speichern
-   (die 96px-Fassung hier gleich mit aktualisieren).
-3. Neu bauen und installieren — siehe [../README.md](../README.md).
+1. Edit the SVG here.
+2. Rasterise to 24px and save as `../components/<bundle>/icon.png`
+   (update the 96px version here at the same time).
+3. Rebuild and install — see [../README.md](../README.md).
 
-`build_metadata.py` überschreibt eine vorhandene `icon.png` **nicht**; es legt
-nur an, was fehlt. Die echten Icons sind also sicher.
+`build_metadata.py` does **not** overwrite an existing `icon.png`; it only
+creates what is missing. The real icons are therefore safe.
 
-## Stil
+## Style
 
-Aus `lorin-gh-tools/gh-icons` übernommen: Strich `#26272A` bei 1.8pt,
-`stroke-linecap`/`linejoin` round, transparenter Hintergrund, ein Akzent pro
-Gruppe. Die Farbzuordnung und die Motive stehen in
+Taken from `lorin-gh-tools/gh-icons`: stroke `#26272A` at 1.8pt,
+`stroke-linecap`/`linejoin` round, transparent background, one accent per
+group. The colour assignment and the motifs are in
 [../ICONS.md](../ICONS.md).
 
-| Gruppe | Akzent |
+| Group | Accent |
 |---|---|
-| 0 \| Setup | `#a5a9ae` grau |
-| 1 \| Author | `#50a9d3` hellblau |
-| 2 \| Translate | `#50d3c6` türkis |
+| 0 \| Setup | `#a5a9ae` grey |
+| 1 \| Author | `#50a9d3` light blue |
+| 2 \| Translate | `#50d3c6` turquoise |
 | 3 \| Run | `#d3a850` orange |
-| 4 \| Results | `#8f50d3` violett |
-| 5 \| IO | `#7a8288` dunkelgrau |
+| 4 \| Results | `#8f50d3` violet |
+| 5 \| IO | `#7a8288` dark grey |
 
-Ausnahme: `tekton_visualize` trägt den Ergebnis-Verlauf grün→gelb→rot, weil
-genau das seine Funktion ist.
+Exception: `tekton_visualize` carries the result gradient green→yellow→red,
+because that is exactly its function.

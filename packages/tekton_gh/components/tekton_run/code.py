@@ -1,13 +1,13 @@
-"""Tekton Run — Modell ans Backend, rechnen, Ergebnisse zurück.
+"""Tekton Run - model to the backend, calculate, results back.
 
-Läuft in einem **eigenen Prozess**: `dlubal-api` verlangt Python >= 3.10 und
-zieht grpcio/pandas/vtk mit, Rhino fährt 3.9. Die Prozessgrenze ist die
-JSON-Serialisierung des neutralen Modells — kein eigenes Protokoll, und jeder
-Lauf hinterlässt nebenbei ein übergabefähiges Modell.
+Runs in a **process of its own**: `dlubal-api` requires Python >= 3.10 and
+pulls in grpcio/pandas/vtk, Rhino runs 3.9. The process boundary is the JSON
+serialisation of the neutral model - no protocol of our own, and every run
+leaves behind a handover-ready model as a side effect.
 
-NUR per Button auslösen. Zwei Gründe: der Lauf blockiert Grasshopper, solange
-gerechnet wird, und jeder Lauf baut das Modell im Backend neu auf. Ein
-Auto-Recompute bei jedem Slider-Wackeln wäre fatal.
+Trigger by button ONLY. Two reasons: the run blocks Grasshopper for as long as
+it calculates, and every run rebuilds the model in the backend from scratch. An
+auto-recompute on every slider wiggle would be fatal.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -31,8 +31,8 @@ run: bool  # type: ignore
 log = []
 stamp = None
 
-# Ergebnisse ueberleben einen Solve ohne Button: sonst waere jedes
-# Canvas-Update ein Datenverlust. sticky haelt sie an der Komponenteninstanz.
+# Results survive a solve without the button: otherwise every canvas update
+# would lose data. sticky keeps them on the component instance.
 import scriptcontext as sc  # noqa: E402
 
 _key = "tekton_run_{}".format(ghenv.Component.InstanceGuid)  # type: ignore # noqa: F821
@@ -59,12 +59,12 @@ if not run:
     if _cached:
         structural, log, stamp = _cached["model"], _cached["log"], _cached["stamp"]
         ghenv.Component.Message = "Run\n({})".format(_cached["stamp"])  # type: ignore # noqa: F821
-        _warn("Zwischengespeichertes Ergebnis von {}. Button druecken fuer neuen Lauf.".format(_cached["stamp"]))
+        _warn("Cached result from {}. Press the button for a new run.".format(_cached["stamp"]))
     else:
-        log = ["Bereit. 'run' auf True setzen, um zu rechnen."]
+        log = ["Ready. Set 'run' to True to calculate."]
 
 elif structural is None or backend is None:
-    _error("structural und backend werden beide gebraucht.")
+    _error("structural and backend are both needed.")
 
 else:
     def _cfg(key, default=None):
@@ -85,7 +85,7 @@ else:
 
     fingerprint = model_fingerprint(structural)
     started = time.time()
-    ghenv.Component.Message = "rechnet..."  # type: ignore # noqa: F821
+    ghenv.Component.Message = "calculating..."  # type: ignore # noqa: F821
 
     try:
         result_model, worker_log = run_backend(
@@ -96,25 +96,25 @@ else:
             model_name=model_name or "tekton-gh",
             api_key=api_key,
             calculate=True if calculate is None else bool(calculate),
-            # Ohne den Pfad landet ein SAF-Export im Temp-Ordner statt dort,
-            # wo TektonBackend ihn hingelegt haben will.
+            # Without the path a SAF export lands in the temp folder instead
+            # of where TektonBackend wanted it put.
             output_path=filepath,
         )
     except WorkerError as exc:
         _error(str(exc))
         log = str(exc).splitlines()
-        ghenv.Component.Message = "Fehler"  # type: ignore # noqa: F821
+        ghenv.Component.Message = "Error"  # type: ignore # noqa: F821
     else:
         elapsed = time.time() - started
-        log = list(worker_log) + ["Dauer: {:.1f}s".format(elapsed)]
+        log = list(worker_log) + ["Duration: {:.1f}s".format(elapsed)]
 
         if result_model is not None:
             structural = result_model
-            # Fingerprint des *gesendeten* Modells in jeden Ergebnissatz
-            # schreiben. Damit kann TektonResults spaeter vergleichen, ob der
-            # Canvas inzwischen ein anderes Modell zeigt als das gerechnete —
-            # Ergebnisse, die still eine Entwurfsaenderung ueberleben, sind der
-            # gefaehrlichste Fehlermodus dieses Workflows.
+            # Write the fingerprint of the *sent* model into every result set.
+            # That lets TektonResults compare later whether the canvas now shows
+            # a different model than the one calculated - results that silently
+            # survive a design change are the most dangerous failure mode of
+            # this workflow.
             for result_set in (getattr(structural, "results", {}) or {}).values():
                 metadata = getattr(result_set, "metadata", None)
                 if metadata is None:
@@ -129,9 +129,9 @@ else:
         total_results = len(getattr(structural, "results", {}) or {})
         if total_results == 0:
             _warn(
-                "Berechnung ausgeloest, aber keine Ergebnisse zurueckgekommen. "
-                "Das Worker-Protokoll unten nennt den Grund — meist eine "
-                "Ergebnistabelle, die RFEM nicht liefert."
+                "Calculation triggered, but no results came back. The worker "
+                "log below names the reason - usually a result table that RFEM "
+                "does not deliver."
             )
 
 for line in log:

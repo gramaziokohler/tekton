@@ -3,7 +3,7 @@
     "nickname": "TCheck",
     "category": "Tekton",
     "subcategory": "2 | Translate",
-    "description": "Prueft das Statikmodell vor dem Rechnen: Auflager vorhanden? Modell zusammenhaengend? Querschnitte plausibel? Ein lagerloses Modell geht sonst kommentarlos in die Berechnung und liefert Unsinn oder einen Solver-Abbruch.",
+    "description": "Checks the analysis model before calculating: supports present? model connected? cross-sections plausible? Otherwise a model without supports goes into the calculation without comment and returns nonsense or a solver abort.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000011",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "structural",
                 "nickname": "structural",
-                "description": "StructuralModel aus TektonTranslate.",
+                "description": "StructuralModel from TektonTranslate.",
                 "optional": false,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -27,7 +27,7 @@
             {
                 "name": "strict",
                 "nickname": "strict",
-                "description": "True = Fehler statt Warnung bei Befunden.",
+                "description": "True = findings raise an error instead of a warning.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -43,7 +43,7 @@
             {
                 "name": "ok",
                 "nickname": "ok",
-                "description": "True, wenn nichts Kritisches gefunden wurde",
+                "description": "True when nothing critical was found",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -51,7 +51,7 @@
             {
                 "name": "issues",
                 "nickname": "issues",
-                "description": "Befunde im Klartext",
+                "description": "Findings in plain language",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

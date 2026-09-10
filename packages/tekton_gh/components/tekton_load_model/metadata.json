@@ -3,7 +3,7 @@
     "nickname": "TLoad",
     "category": "Tekton",
     "subcategory": "5 | IO",
-    "description": "Liest ein neutrales Modell (inkl. Ergebnisse) aus JSON zurueck auf den Canvas \u2014 etwa das, was der Statiker zurueckschickt, oder ein frueherer Rechenlauf.",
+    "description": "Reads a neutral model (results included) from JSON back onto the canvas - for instance what the engineer sends back, or an earlier calculation run.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000019",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "filepath",
                 "nickname": "filepath",
-                "description": "Quelldatei (.json).",
+                "description": "Source file (.json).",
                 "optional": false,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -27,7 +27,7 @@
             {
                 "name": "repo",
                 "nickname": "repo",
-                "description": "Pfad zum Monorepo.",
+                "description": "Path to the monorepo.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -51,7 +51,7 @@
             {
                 "name": "info",
                 "nickname": "info",
-                "description": "Kurzuebersicht: Knoten, Staebe, Lastfaelle, Ergebnisse",
+                "description": "Short overview: nodes, members, load cases, results",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

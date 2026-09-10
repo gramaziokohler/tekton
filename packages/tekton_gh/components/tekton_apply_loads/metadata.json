@@ -3,7 +3,7 @@
     "nickname": "TApply",
     "category": "Tekton",
     "subcategory": "2 | Translate",
-    "description": "Setzt die authorierten Lasten auf das uebersetzte Statikmodell. Muss NACH TektonTranslate laufen: Punktlasten brauchen Knoten, Streckenlasten brauchen die Staebe, in die ein Balken zerlegt wurde. Beides existiert vor dem Uebersetzen noch nicht.",
+    "description": "Applies the authored loads to the translated analysis model. Has to run AFTER TektonTranslate: point loads need nodes, line loads need the members a beam was split into. Neither exists before translating.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000020",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "structural",
                 "nickname": "structural",
-                "description": "StructuralModel aus TektonTranslate.",
+                "description": "StructuralModel from TektonTranslate.",
                 "optional": false,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -27,7 +27,7 @@
             {
                 "name": "loads",
                 "nickname": "loads",
-                "description": "Aus TektonPointLoad / TektonMemberLoad.",
+                "description": "From TektonPointLoad / TektonMemberLoad.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "combinations",
                 "nickname": "combinations",
-                "description": "Aus TektonLoadCombination.",
+                "description": "From TektonLoadCombination.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -55,7 +55,7 @@
             {
                 "name": "tolerance",
                 "nickname": "tolerance",
-                "description": "Suchradius Punktlast -> Knoten [m]. Default 0.01.",
+                "description": "Search radius point load -> node [m]. Default 0.01.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -71,7 +71,7 @@
             {
                 "name": "structural",
                 "nickname": "structural",
-                "description": "StructuralModel mit Lasten",
+                "description": "StructuralModel with loads",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -79,7 +79,7 @@
             {
                 "name": "report",
                 "nickname": "report",
-                "description": "Was zugeordnet wurde \u2014 und was nicht",
+                "description": "What was assigned - and what was not",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

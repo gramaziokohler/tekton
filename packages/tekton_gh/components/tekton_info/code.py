@@ -1,11 +1,11 @@
-"""Tekton Info — Zustandsbericht der Umgebung.
+"""Tekton Info - status report of the environment.
 
-Erste Anlaufstelle bei roten Komponenten. Beantwortet: welches Python, welches
-compas_timber, ist die structural-Branch da, wird das Repo gefunden, gibt es
-ein Worker-venv.
+First place to look when components turn red. Answers: which Python, which
+compas_timber, is the structural branch there, is the repo found, is there a
+worker venv.
 
-Diese Komponente ist bewusst die einzige, die *ohne* funktionierendes Setup
-noch etwas Sinnvolles ausgibt — sie darf nie hart fehlschlagen.
+This component is deliberately the only one that still prints something useful
+*without* a working setup - it must never fail hard.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -25,7 +25,7 @@ ok = False
 
 
 def _find_repo(explicit):
-    """Repo-Wurzel suchen: Input > Umgebungsvariable."""
+    """Look up the repo root: input > environment variable."""
     for candidate in (explicit, os.environ.get("TEKTON_REPO")):
         if not candidate:
             continue
@@ -37,21 +37,21 @@ def _find_repo(explicit):
 
 report.append("Python {}".format(sys.version.split()[0]))
 if sys.version_info[:2] != (3, 9):
-    report.append("  Hinweis: erwartet wurde Rhino 8 / CPython 3.9.")
+    report.append("  Note: Rhino 8 / CPython 3.9 was expected.")
 
 root = _find_repo(repo)
 if root is None:
-    report.append("Repo: NICHT GEFUNDEN")
-    report.append("  -> Input 'repo' setzen oder Umgebungsvariable TEKTON_REPO.")
+    report.append("Repo: NOT FOUND")
+    report.append("  -> Set the 'repo' input or the TEKTON_REPO environment variable.")
 else:
     report.append("Repo: {}".format(root))
-    # Fuer die Sitzung hinterlegen: die meisten Komponenten haben keinen
-    # eigenen repo-Input und wuerden ihn sonst nicht finden.
+    # Deposit it for the session: most components have no repo input of
+    # their own and would not find it otherwise.
     os.environ["TEKTON_REPO"] = root
 
-    # Die in Rhino lauffaehige Schicht importierbar machen. compas_dlubal und
-    # compas_saf fehlen hier bewusst: die brauchen grpc/pandas/vtk und Python
-    # >= 3.10, laufen also nur im Worker-Prozess.
+    # Make the layer that runs inside Rhino importable. compas_dlubal and
+    # compas_saf are deliberately absent: they need grpc/pandas/vtk and Python
+    # >= 3.10, so they only run in the worker process.
     fea_src = os.path.join(root, "packages", "compas_timber_fea", "src")
     gh_src = os.path.join(root, "packages", "tekton_gh", "src")
     for path in (gh_src, fea_src):
@@ -62,16 +62,16 @@ else:
     if not os.path.isfile(venv_python):
         venv_python = os.path.join(root, ".venv", "Scripts", "python.exe")
     if os.path.isfile(venv_python):
-        report.append("Worker-venv: OK")
+        report.append("Worker venv: OK")
     else:
-        report.append("Worker-venv: FEHLT -> 'uv sync --extra dev' im Repo ausfuehren.")
+        report.append("Worker venv: MISSING -> run 'uv sync --extra dev' in the repo.")
 
 try:
     import compas
 
     report.append("compas {}".format(compas.__version__))
 except ImportError as exc:
-    report.append("compas fehlt ({})".format(exc))
+    report.append("compas missing ({})".format(exc))
 
 try:
     import compas_timber
@@ -79,7 +79,7 @@ try:
     report.append("compas_timber {}".format(compas_timber.__version__))
 except ImportError as exc:
     compas_timber = None
-    report.append("compas_timber fehlt ({})".format(exc))
+    report.append("compas_timber missing ({})".format(exc))
 
 if compas_timber is not None:
     try:
@@ -89,11 +89,11 @@ if compas_timber is not None:
         structural_ok = True
     except ImportError:
         structural_ok = False
-        report.append("compas_timber.structural: FEHLT")
+        report.append("compas_timber.structural: MISSING")
         report.append(
-            "  -> Falsche compas_timber-Version. Tekton braucht die Branch "
-            "'structural_graph_plates'. In Rhino: eigenes venv mit dieser "
-            "Revision anlegen (siehe packages/tekton_gh/README.md)."
+            "  -> Wrong compas_timber version. Tekton needs the branch "
+            "'structural_graph_plates'. In Rhino: create a dedicated venv with "
+            "that revision (see packages/tekton_gh/README.md)."
         )
 
     if structural_ok:
@@ -103,11 +103,11 @@ if compas_timber is not None:
             report.append("compas_timber_fea: OK")
             ok = root is not None
         except ImportError as exc:
-            report.append("compas_timber_fea nicht importierbar ({})".format(exc))
+            report.append("compas_timber_fea not importable ({})".format(exc))
 
 report.append("")
-report.append("Backends (RFEM/SAF) laufen NICHT hier, sondern im Worker-Prozess:")
-report.append("dlubal-api verlangt Python >= 3.10, Rhino faehrt 3.9.")
+report.append("Backends (RFEM/SAF) do NOT run here but in the worker process:")
+report.append("dlubal-api requires Python >= 3.10, Rhino runs 3.9.")
 
 for line in report:
     print(line)

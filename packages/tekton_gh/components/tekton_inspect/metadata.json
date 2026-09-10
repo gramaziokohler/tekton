@@ -3,7 +3,7 @@
     "nickname": "TInspect",
     "category": "Tekton",
     "subcategory": "4 | Results",
-    "description": "Zeigt das Ersatzsystem selbst: Systemlinien, Knoten, Lagersymbole, Gelenkmarker. Zum Pruefen der Idealisierung, bevor gerechnet wird \u2014 getrennt von der Ergebnisdarstellung.",
+    "description": "Shows the analysis model itself: system lines, nodes, support symbols, release markers. For checking the idealisation before calculating - kept separate from the display of results.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000017",
     "ghpython": {
@@ -41,7 +41,7 @@
             {
                 "name": "scale",
                 "nickname": "scale",
-                "description": "Symbolgroesse in Dokumenteinheiten.",
+                "description": "Symbol size in document units.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -57,7 +57,7 @@
             {
                 "name": "members",
                 "nickname": "members",
-                "description": "Systemlinien",
+                "description": "System lines",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -65,7 +65,7 @@
             {
                 "name": "nodes",
                 "nickname": "nodes",
-                "description": "Knotenpunkte",
+                "description": "Nodes",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -73,7 +73,7 @@
             {
                 "name": "supports",
                 "nickname": "supports",
-                "description": "Lagersymbole",
+                "description": "Support symbols",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -81,7 +81,7 @@
             {
                 "name": "releases",
                 "nickname": "releases",
-                "description": "Gelenkmarker",
+                "description": "Release markers",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

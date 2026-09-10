@@ -1,18 +1,18 @@
-"""Componentizer aus einer *laufenden* Rhino-Instanz heraus starten.
+"""Run the componentizer from inside a *running* Rhino instance.
 
-Warum nicht einfach `componetize.bash`: dessen Weg über die RhinoCode-CLI
-(`rhinocode script ...`) war am 2026-08-28 auf diesem Rechner wirkungslos —
-Exit-Code 0, aber das Skript lief nachweislich nicht (kein Log, keine Ausgabe,
-kein Seiteneffekt). Das betrifft auch den unveränderten Componentizer in
-`lorin-gh-tools`, liegt also nicht an Tekton.
+Why not just `componetize.bash`: its route through the RhinoCode CLI
+(`rhinocode script ...`) had no effect on this machine on 2026-08-28 -
+exit code 0, but the script demonstrably did not run (no log, no output, no
+side effect). This also affects the unmodified componentizer in
+`lorin-gh-tools`, so it is not Tekton's fault.
 
-Der Componentizer braucht `clr`/`System`, also einen .NET-Prozess. Eine
-laufende Rhino-Instanz ist einer. Dieses Skript im Rhino-Python-Editor öffnen
-und ausführen (oder über eine Skript-Komponente), dann baut es alle Bundles
-aus ``components/`` nach ``_componentizer/ghuser_build/``.
+The componentizer needs `clr`/`System`, so a .NET process. A running Rhino
+instance is one. Open this script in the Rhino Python editor and run it (or
+run it from a script component), and it builds all bundles from ``components/``
+into ``_componentizer/ghuser_build/``.
 
-Sollte die CLI wieder funktionieren, ist ``bash componetize.bash`` weiterhin
-der bequemere Weg — beide erzeugen dasselbe.
+If the CLI works again, ``bash componetize.bash`` is still the more convenient
+route - both produce the same thing.
 """
 
 import os
@@ -24,9 +24,9 @@ SCRIPT = os.path.join(HERE, "componentize_cpy.py")
 
 def main():
     if not os.path.isfile(SCRIPT):
-        raise RuntimeError("componentize_cpy.py nicht gefunden neben {}".format(HERE))
+        raise RuntimeError("componentize_cpy.py not found next to {}".format(HERE))
 
-    # Der Componentizer parst sys.argv und laeuft nur unter __main__.
+    # The componentizer parses sys.argv and only runs under __main__.
     old_argv = sys.argv
     sys.argv = [SCRIPT]
     try:
@@ -39,11 +39,11 @@ def main():
 
     build_dir = os.path.join(HERE, "ghuser_build")
     built = sorted(f for f in os.listdir(build_dir) if f.endswith(".ghuser"))
-    print("\n{} Komponenten in {}".format(len(built), build_dir))
+    print("\n{} components in {}".format(len(built), build_dir))
     print(
-        "\nZum Installieren nach:\n"
+        "\nTo install, copy them to:\n"
         "  ~/Library/Application Support/McNeel/Rhinoceros/8.0/Grasshopper/UserObjects/\n"
-        "kopieren und Rhino neu starten."
+        "and restart Rhino."
     )
     return built
 

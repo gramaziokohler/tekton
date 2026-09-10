@@ -1,13 +1,12 @@
-"""Tekton Load Case — Lastfall definieren.
+"""Tekton Load Case - define a load case.
 
-Lastfaelle sind die Container, auf die sich Lasten und Kombinationen
-beziehen. Der Translator legt von sich aus nur einen an (Eigengewicht);
-alles Weitere kommt von hier.
+Load cases are the containers that loads and combinations refer to. The
+translator creates only one by itself (self-weight); everything else comes
+from here.
 
-Achtung: der Dlubal-Importer ignoriert die Lastfaelle des neutralen
-Modells derzeit noch und nutzt einen fest verdrahteten Katalog
-(Prioritaet 1 in docs/handoff.md). Bis das behoben ist, kommt in RFEM
-nicht unbedingt an, was hier steht.
+Careful: the Dlubal importer still ignores the neutral model's load cases and
+uses a hard-wired catalogue (priority 1 in docs/handoff.md). Until that is
+fixed, what stands here does not necessarily arrive in RFEM.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -19,11 +18,11 @@ ghenv.Component.Message = "Load Case"  # type: ignore # noqa: F821
 
 
 def _setup(explicit_repo=None):
-    """compas_timber_fea + tekton_gh importierbar machen.
+    """Make compas_timber_fea + tekton_gh importable.
 
-    Siehe TektonInfo, wenn das fehlschlaegt. Der Purge ist noetig, weil in
-    Rhino womoeglich schon ein anderes compas_timber geladen ist (das
-    offizielle Plugin, 1.0.5), das kein `compas_timber.structural` kennt.
+    See TektonInfo when this fails. The purge is needed because Rhino may
+    already have another compas_timber loaded (the official plugin, 1.0.5),
+    which knows no `compas_timber.structural`.
     """
     root = None
     for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
@@ -32,11 +31,11 @@ def _setup(explicit_repo=None):
             break
     if root is None:
         raise RuntimeError(
-            "Tekton-Repo nicht gefunden. Eine Komponente mit 'repo'-Input "
-            "(TektonInfo, TektonTranslate, TektonBackend) einmal auf dem Canvas "
-            "setzen — der Pfad gilt dann fuer die ganze Sitzung. Siehe TektonInfo."
+            "Tekton repo not found. Place one component with a 'repo' input "
+            "(TektonInfo, TektonTranslate, TektonBackend) on the canvas once - "
+            "the path then applies for the whole session. See TektonInfo."
         )
-    # Fuer die Komponenten ohne eigenen repo-Input hinterlegen.
+    # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     for package in ("tekton_gh", "compas_timber_fea"):
         src = os.path.join(root, "packages", package, "src")
@@ -67,7 +66,7 @@ from compas_timber_fea.core.model import StructuralLoadCase
 VALID = ("PERMANENT", "VARIABLE", "SNOW", "WIND")
 action = (category or "PERMANENT").upper()
 if action not in VALID:
-    _warn("Unbekannte Kategorie '{}'. Erlaubt: {}. Es wird PERMANENT verwendet.".format(action, ", ".join(VALID)))
+    _warn("Unknown category '{}'. Allowed: {}. PERMANENT is used instead.".format(action, ", ".join(VALID)))
     action = "PERMANENT"
 
 load_case = StructuralLoadCase(
@@ -77,6 +76,6 @@ load_case = StructuralLoadCase(
     self_weight=bool(self_weight),
 )
 
-print("Lastfall {}: '{}' ({}{})".format(
+print("Load case {}: '{}' ({}{})".format(
     load_case.id, load_case.name, load_case.action_category,
-    ", Eigengewicht" if load_case.self_weight else ""))
+    ", self-weight" if load_case.self_weight else ""))

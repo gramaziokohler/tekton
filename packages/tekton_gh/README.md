@@ -1,155 +1,155 @@
-# tekton_gh — Grasshopper-Komponenten
+# tekton_gh — Grasshopper components
 
-*Stand: 2026-09-10 — die Kette steht durchgehend: Authoring → Translate →
-Preflight → Worker → Ergebnisse zurück, offline getestet. Was noch fehlt, steht
-unter „Was noch nicht echt ist"; was nur mit laufendem RFEM prüfbar ist, ist
-dort benannt. Konzept: [`docs/concepts/gh-addon.md`](../../docs/concepts/gh-addon.md).*
+*Status: 2026-09-10 — the chain runs end to end: authoring → translate →
+preflight → worker → results back, tested offline. What is still missing is
+listed under "What is not real yet"; what can only be checked against a
+running RFEM is named there. Concept:
+[`docs/concepts/gh-addon.md`](../../docs/concepts/gh-addon.md).*
 
-## Warum zwei Prozesse
+## Why two processes
 
-Rhino 8 fährt CPython **3.9**. `dlubal-api` verlangt **≥ 3.10** und zieht
-grpcio, pandas und vtk mit. Der RFEM-Client kann also prinzipiell nicht in
-Rhino laufen — unabhängig davon, wie wir unseren eigenen Code schreiben.
+Rhino 8 ships CPython **3.9**. `dlubal-api` requires **≥ 3.10** and pulls in
+grpcio, pandas and vtk. So the RFEM client fundamentally cannot run inside
+Rhino — regardless of how we write our own code.
 
 ```text
 ┌─ Rhino 8 (CPython 3.9) ────────────────┐      ┌─ Worker (repo .venv, 3.12) ─┐
-│ compas_timber (structural-Branch)      │      │ compas_dlubal → RFEM        │
-│ compas_timber_fea  ← läuft hier, ✅     │ JSON │ compas_saf    → xlsx        │
-│ tekton_gh (dieses Paket)               │ ───→ │                             │
-│  Authoring, Translate, Inspect          │ ←─── │ rechnet, liest Ergebnisse   │
+│ compas_timber (structural branch)      │      │ compas_dlubal → RFEM        │
+│ compas_timber_fea  ← runs here, ✅      │ JSON │ compas_saf    → xlsx        │
+│ tekton_gh (this package)               │ ───→ │                             │
+│  authoring, translate, inspect          │ ←─── │ calculates, reads results   │
 └────────────────────────────────────────┘      └─────────────────────────────┘
 ```
 
-Die Prozessgrenze ist die JSON-Serialisierung des neutralen Modells. Kein
-eigenes Protokoll — und jeder Lauf hinterlässt nebenbei ein diffbares Modell,
-dasselbe Artefakt, das an Statiker übergeben wird.
+The process boundary is the JSON serialisation of the neutral model. No
+protocol of our own — and every run leaves behind a diffable model as a side
+effect, the same artefact that gets handed to engineers.
 
-**Verifiziert** (am 2026-08-28 in einer laufenden Rhino-8-Instanz):
-`compas_timber_fea` importiert unter 3.9, `TimberToStructural.translate()`
-läuft durch (Testmodell: 84 Balken → 344 Knoten, 404 Stäbe), JSON-Roundtrip
-funktioniert.
+**Verified** (on 2026-08-28 in a running Rhino 8 instance):
+`compas_timber_fea` imports under 3.9, `TimberToStructural.translate()`
+completes (test model: 84 beams → 344 nodes, 404 members), the JSON roundtrip
+works.
 
-## Einrichtung
+## Setup
 
-**1. Rhino-venv anlegen.** Tekton braucht `compas_timber` von der Branch
-`structural_graph_plates` — `compas_timber.structural` existiert nur dort. Das
-offizielle COMPAS-Timber-Plugin bringt eine ältere Version mit, die *nicht*
-reicht. In Rhino ein eigenes venv anlegen und dort die gepinnte Revision
-installieren. Der Name muss zum Header jeder Komponente passen — derzeit
-`# venv: tekton-test`, weil genau dieses Env auf der Maschine schon
-existierte. Rhino legt bei einem unbekannten Namen stillschweigend ein
-**leeres** Env an, und dann fehlt compas_timber; der Name ist also nicht
-kosmetisch.
+**1. Create the Rhino venv.** Tekton needs `compas_timber` from the branch
+`structural_graph_plates` — `compas_timber.structural` exists only there. The
+official COMPAS Timber plugin ships an older version that is *not* enough.
+Create a dedicated venv in Rhino and install the pinned revision into it. The
+name has to match the header of every component — currently
+`# venv: tekton-test`, because that env already existed on this machine. Given
+an unknown name, Rhino silently creates an **empty** env, and then
+compas_timber is missing; the name is not cosmetic.
 
-**2. Repo-Pfad bekannt machen.** Entweder am Input `repo` der Komponenten,
-oder einmalig als Umgebungsvariable:
-
-```bash
-export TEKTON_REPO="/Pfad/zum/tekton"
-```
-
-**3. Worker-venv.** Im Repo `uv sync --extra dev` — das ist das 3.12-Env, das
-`TektonRun` aufruft.
-
-**4. Prüfen.** Die Komponente **Tekton Info** auf den Canvas ziehen. Sie ist
-die einzige, die auch ohne funktionierendes Setup etwas Sinnvolles ausgibt,
-und nennt genau, was fehlt.
-
-## Komponenten bauen
-
-Schritt 1, normales Terminal-Python:
+**2. Make the repo path known.** Either at the `repo` input of the components,
+or once as an environment variable:
 
 ```bash
-python3 _componentizer/build_metadata.py   # metadata.json + Platzhalter-Icons
+export TEKTON_REPO="/path/to/tekton"
 ```
 
-Schritt 2 braucht .NET (`clr`), also einen Rhino-Prozess. Zwei Wege:
+**3. Worker venv.** In the repo, `uv sync --extra dev` — that is the 3.12 env
+`TektonRun` calls.
+
+**4. Check.** Drag the **Tekton Info** component onto the canvas. It is the
+only one that produces something useful even without a working setup, and it
+names exactly what is missing.
+
+## Building the components
+
+Step 1, plain terminal Python:
 
 ```bash
-bash _componentizer/componetize.bash       # via RhinoCode-CLI
+python3 _componentizer/build_metadata.py   # metadata.json + placeholder icons
 ```
 
-**Falls das stumm bleibt** (Exit-Code 0, aber kein `componentizer.log` und
-kein `ghuser_build/`): `_componentizer/build_in_rhino.py` im Rhino-Python-Editor
-öffnen und ausführen. Das ist derselbe Vorgang aus einer laufenden
-Rhino-Instanz heraus. Am 2026-08-28 war die CLI auf diesem Rechner
-wirkungslos — auch für den unveränderten Componentizer in `lorin-gh-tools`,
-es liegt also nicht an Tekton. Der Weg über die laufende Instanz baute alle
-20 Komponenten fehlerfrei.
-
-Schritt 3, installieren — dafuer gibt es `_componentizer/install.sh`:
+Step 2 needs .NET (`clr`), so a Rhino process. Two ways:
 
 ```bash
-bash _componentizer/install.sh    # -> UserObjects/tekton/, dann Rhino neu starten
+bash _componentizer/componetize.bash       # via the RhinoCode CLI
 ```
 
-Zielordner ist
+**If that stays silent** (exit code 0, but no `componentizer.log` and no
+`ghuser_build/`): open `_componentizer/build_in_rhino.py` in the Rhino Python
+editor and run it. That is the same operation from inside a running Rhino
+instance. On 2026-08-28 the CLI had no effect on this machine — including for
+the unmodified componentizer in `lorin-gh-tools`, so it is not Tekton's fault.
+The route through the running instance built all 20 components without error.
+
+Step 3, installing — `_componentizer/install.sh` does that:
+
+```bash
+bash _componentizer/install.sh    # -> UserObjects/tekton/, then restart Rhino
+```
+
+The target folder is
 `~/Library/Application Support/McNeel/Rhinoceros/8.0/Plug-ins/Grasshopper (b45a29b1-…)/UserObjects/tekton/`
-— der Unterordner haelt die Tekton-Komponenten von den uebrigen getrennt.
-Grasshopper liest UserObjects nur beim Start, ein Neustart ist also noetig.
+— the subfolder keeps the Tekton components separate from the rest.
+Grasshopper reads UserObjects only at startup, so a restart is required.
 
-Der Componentizer stammt aus `lorin-gh-tools` und ist hier bewusst kopiert
-statt referenziert — das Repo soll für sich baubar bleiben. Einzige Änderung:
-`components/` liegt eine Ebene über dem Werkzeugordner.
+The componentizer comes from `lorin-gh-tools` and is deliberately copied here
+rather than referenced — the repo should stay buildable on its own. The only
+change: `components/` sits one level above the tool folder.
 
-## Aufbau
+## Layout
 
 ```text
-components/<name>/        code.py + metadata.json + icon.png   (ein Bundle = eine Komponente)
-icons/                    Icon-Quellen: <name>.svg + <name>_96.png
-src/tekton_gh/            geteilte Laufzeit: env.py, worker.py, rhino_io.py
-_componentizer/           Build-Werkzeug, Metadaten-Generator, install.sh
+components/<name>/        code.py + metadata.json + icon.png   (one bundle = one component)
+icons/                    icon sources: <name>.svg + <name>_96.png
+src/tekton_gh/            shared runtime: env.py, worker.py, rhino_io.py
+_componentizer/           build tool, metadata generator, install.sh
 ```
 
-Icons liegen an zwei Orten, und das ist kein Versehen: `icons/` hält die
-bearbeitbaren SVGs, `components/<name>/icon.png` die 24px-Fassung, die der
-Componentizer neben `code.py` erwartet. Details in
-[icons/README.md](icons/README.md), Motive und Farben in [ICONS.md](ICONS.md).
+Icons live in two places, and that is not an oversight: `icons/` holds the
+editable SVGs, `components/<name>/icon.png` the 24px version the componentizer
+expects next to `code.py`. Details in [icons/README.md](icons/README.md),
+motifs and colours in [ICONS.md](ICONS.md).
 
-Die Gegenseite der Prozessgrenze liegt in `tekton_app`:
-`packages/tekton_app/src/tekton_app/worker.py` — aufgerufen als
-`python -m tekton_app.worker model.json --backend rfem --out ergebnis.json`.
-Er lässt sich unabhängig von Grasshopper testen, und genau das tut
-`tests/unit/test_worker_cli.py`.
+The other side of the process boundary lives in `tekton_app`:
+`packages/tekton_app/src/tekton_app/worker.py` — invoked as
+`python -m tekton_app.worker model.json --backend rfem --out result.json`.
+It can be tested independently of Grasshopper, and that is exactly what
+`tests/unit/test_worker_cli.py` does.
 
-`build_metadata.py` enthält die **Komponententabelle** — Name, Kategorie,
-Inputs, Outputs, Beschreibungen. Neue Komponente: dort einen Eintrag mit
-frischer `uid` anhängen, Skript laufen lassen, `code.py` schreiben.
+`build_metadata.py` holds the **component table** — name, category, inputs,
+outputs, descriptions. To add a component: append an entry there with a fresh
+`uid`, run the script, write `code.py`.
 
-Die `uid` bestimmt die InstanceGuid und ist **stabil**: eine geänderte GUID
-macht aus einer aktualisierten Komponente eine neue, und bestehende
-Definitionen verlieren ihre Verkabelung. Nur anhängen, nie neu vergeben.
+The `uid` determines the InstanceGuid and is **stable**: a changed GUID turns
+an updated component into a new one, and existing definitions lose their
+wiring. Only append, never reassign.
 
-## Die Komponenten
+## The components
 
-**0 | Setup** — `Tekton Info`: Diagnose. Erste Anlaufstelle bei Problemen.
+**0 | Setup** — `Tekton Info`: diagnostics. First place to look when something
+goes wrong.
 
-**1 | Author** — was heute nur in Python ging: `Material`, `Support`,
-`Load Case`, `Point Load`, `Member Load`, `Load Combination`, `Joint Policy`,
-`Plate Policy`.
+**1 | Author** — what used to be possible only in Python: `Material`,
+`Support`, `Load Case`, `Point Load`, `Member Load`, `Load Combination`,
+`Joint Policy`, `Plate Policy`.
 
-**2 | Translate** — `Translate` (TimberModel → StructuralModel, mit
-Annahmenprotokoll), `Apply Loads` (Lasten aufs übersetzte Modell),
-`Preflight` (Auflager? zusammenhängend? plausibel?).
+**2 | Translate** — `Translate` (TimberModel → StructuralModel, with an
+assumptions report), `Apply Loads` (loads onto the translated model),
+`Preflight` (supports? connected? plausible?).
 
-**3 | Run** — `Backend` (Auswahl + Verbindung), `Run` (push, rechnen,
-Ergebnisse zurück — **nur per Button**).
+**3 | Run** — `Backend` (selection + connection), `Run` (push, calculate,
+results back — **by button only**).
 
-**4 | Results** — `Results` (Hüllwerte je Balken), `Attach Results` (zurück
-aufs Timber-Modell), `Visualize` (einfärben), `Inspect` (Ersatzsystem
-anschauen).
+**4 | Results** — `Results` (envelope values per beam), `Attach Results` (back
+onto the timber model), `Visualize` (colouring), `Inspect` (look at the
+analysis model).
 
-**5 | IO** — `Save Model` / `Load Model` (JSON; zugleich das Übergabeformat).
+**5 | IO** — `Save Model` / `Load Model` (JSON; also the handover format).
 
-## Rauchtest
+## Smoke test
 
-`examples/tekton_smoke_test.ghx` zeigt die ganze Kette an einem Beispielmodell
-und ist am 2026-09-10 in Rhino 8 durchgelaufen: 84 Balken → 344 Knoten /
-404 Stäbe, 4 Auflager gesetzt, Preflight ohne Befunde, Worker-Subprozess
-schreibt eine SAF-Datei mit 404 Stäben. Vor dem Öffnen die beiden Pfad-Panels
-anpassen — Details in [examples/README.md](examples/README.md).
+`examples/tekton_smoke_test.ghx` shows the whole chain on an example model and
+ran through in Rhino 8 on 2026-09-10: 84 beams → 344 nodes / 404 members,
+4 supports set, preflight with no findings, the worker subprocess writes a SAF
+file with 404 members. Adjust the two path panels before opening — details in
+[examples/README.md](examples/README.md).
 
-## Typischer Ablauf
+## Typical flow
 
 ```text
 TimberModel ─→ Support ─→ Translate ─→ Preflight ─→ Run ─→ Results ─→ Visualize
@@ -159,53 +159,52 @@ TimberModel ─→ Support ─→ Translate ─→ Preflight ─→ Run ─→ R
           Point/Member Load ─→ Apply Loads
 ```
 
-## Was noch nicht echt ist
+## What is not real yet
 
-Das Scaffold hat die richtige Form, aber diese Stellen sind Platzhalter —
-jeweils mit `TODO(scaffold)` im Code markiert:
+The scaffold has the right shape, but these spots are placeholders — each one
+marked `TODO(scaffold)` in the code:
 
-| Was | Warum | Blockiert durch |
+| What | Why | Blocked by |
 |---|---|---|
-| **Ausnutzung** | kommt aus dem Bemessungs-Addon von RFEM, nicht angebunden | Live-Test mit RFEM |
-| **Material-Overrides** | Material ist heute nur ein Namens-String | Material-Dataclass (`discussion/materials.md`) |
-| **Lagertypen** | der Translator erzeugt immer gelenkige Lager | neutrales Modell |
+| **Utilisation** | comes from RFEM's design add-on, which is not wired up | live test against RFEM |
+| **Material overrides** | material is only a name string today | material dataclass (`discussion/materials.md`) |
+| **Support types** | the translator always creates pinned supports | neutral model |
 
-Erledigt seit dem ersten Scaffold: der **Worker-CLI** (`tekton_app.worker`)
-existiert und ist getestet, der **Ergebnis-Reader** liest inzwischen echte
-Tabellen (Stabschnittgrößen, Knotenverformungen, Auflagerreaktionen), die
-**Tragrichtung** wird auf die Flächen geschrieben statt nur protokolliert, und
-die **Icons** sind gezeichnet. Der Weg Rhino → Backend → Rhino ist damit
-durchgehend; ungetestet ist er nur gegen ein laufendes RFEM.
+Done since the first scaffold: the **worker CLI** (`tekton_app.worker`) exists
+and is tested, the **result reader** now reads real tables (member internal
+forces, nodal deflections, support reactions), the **span direction** is
+written onto the surfaces instead of only being logged, and the **icons** are
+drawn. The path Rhino → backend → Rhino is therefore complete; it is only
+untested against a running RFEM.
 
-## Fallstricke
+## Pitfalls
 
-**Ergebnisse veralten still.** Grasshopper hält alte Outputs fest — die Zahlen
-am Canvas können ein längst geändertes Modell beschreiben. Das ist der
-gefährlichste Fehlermodus dieses Workflows, und Grasshopper begünstigt ihn.
-Gegenmaßnahme ist scharf: `TektonRun` stempelt den Modell-Fingerprint in jeden
-Ergebnissatz, `TektonResults` vergleicht ihn gegen das angeschlossene Modell
-und setzt `stale` plus eine Warnung, sobald beides auseinanderläuft.
+**Results go stale silently.** Grasshopper holds on to old outputs — the
+numbers on the canvas may describe a model that changed long ago. This is the
+most dangerous failure mode of this workflow, and Grasshopper encourages it.
+The countermeasure is blunt: `TektonRun` stamps the model fingerprint into
+every result set, `TektonResults` compares it against the connected model and
+sets `stale` plus a warning as soon as the two diverge.
 
-**Den Canvas nie während eines Solves verändern.** Ein `AddObject` oder
-`ExpireSolution(True)` mitten in der eigenen Ausführung bringt Rhino zum
-Absturz — hier am 2026-09-10 passiert, als `TektonMaterialLibrary` sich ihr
-Auswahlmenü anhängen wollte. Der richtige Weg ist
-`doc.ScheduleSolution(delay, callback)`: der Rückruf läuft, wenn der aktuelle
-Solve fertig ist. Gilt für jede Komponente, die Objekte anlegt oder verkabelt.
+**Never modify the canvas during a solve.** An `AddObject` or
+`ExpireSolution(True)` in the middle of your own execution crashes Rhino — it
+happened here on 2026-09-10 when `TektonMaterialLibrary` tried to attach its
+own value list. The right way is `doc.ScheduleSolution(delay, callback)`: the
+callback runs once the current solve has finished. This applies to every
+component that creates or wires objects.
 
-**Nie automatisch rechnen.** `TektonRun` blockiert Grasshopper, solange
-gerechnet wird, und jeder Lauf baut das Backend-Modell neu auf. Darum
-Button-getriggert, mit Zwischenspeicher, damit ein Canvas-Update die
-Ergebnisse nicht wegwirft.
+**Never calculate automatically.** `TektonRun` blocks Grasshopper while it
+calculates, and every run rebuilds the backend model from scratch. Hence
+button-triggered, with a cache, so a canvas update does not throw the results
+away.
 
-**Einheiten.** Rhino-Dokumente sind typisch mm, das neutrale Modell rechnet in
-Metern. `TektonTranslate` liest die Dokumenteinheit selbst aus; wer sie
-überschreibt, sollte wissen warum. Ein falscher Wert erzeugt lautlos ein
-200-Meter-Bauteil.
+**Units.** Rhino documents are typically mm, the neutral model works in
+metres. `TektonTranslate` reads the document unit itself; anyone overriding it
+should know why. A wrong value silently produces a 200-metre element.
 
-**API-Key.** Nicht in den Canvas — die `.gh`-Datei wandert weiter. Stattdessen
-`TEKTON_API_KEY` in der Umgebung.
+**API key.** Not on the canvas — the `.gh` file gets passed around. Use
+`TEKTON_API_KEY` in the environment instead.
 
-**compas_timber-Version.** Der häufigste Setup-Fehler. Wenn `Tekton Info`
-sagt, `compas_timber.structural` fehle, ist das falsche `compas_timber` im
-Zugriff — meist das des offiziellen Plugins.
+**compas_timber version.** The most common setup error. If `Tekton Info` says
+`compas_timber.structural` is missing, the wrong `compas_timber` is on the
+path — usually the one from the official plugin.

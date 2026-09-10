@@ -1,0 +1,111 @@
+{
+    "name": "Tekton Support Nodes",
+    "nickname": "TSupN",
+    "category": "Tekton",
+    "subcategory": "2 | Translate",
+    "description": "Add supports directly to nodes of the analysis model, selected by a plane or by proximity to points. Needed for plates: the translator reads support_points off beams only, so a plate model reaches analysis unsupported - a mechanism. Runs after Translate, because nodes only exist from then on.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000022",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel from TektonTranslate.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "points",
+                "nickname": "points",
+                "description": "Support locations. Empty = use the level below.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "point",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "level",
+                "nickname": "level",
+                "description": "Alternative: every node at this z (document units).",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "support_type",
+                "nickname": "support_type",
+                "description": "'pinned' (default) | 'fixed' | 'roller'.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "tolerance",
+                "nickname": "tolerance",
+                "description": "Match radius in document units. Default 1.0.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel with supports",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "nodes",
+                "nickname": "nodes",
+                "description": "Supported node points",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "report",
+                "nickname": "report",
+                "description": "What was matched, and what was not",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

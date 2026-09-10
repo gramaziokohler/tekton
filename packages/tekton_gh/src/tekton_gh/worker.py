@@ -1,26 +1,25 @@
-"""Aufruf des Backend-Workers aus Rhino heraus.
+"""Calling the backend worker from inside Rhino.
 
-Warum überhaupt ein zweiter Prozess: `dlubal-api` verlangt Python >= 3.10 und
-zieht grpcio, pandas und vtk mit. Rhino 8 fährt CPython 3.9. Der RFEM-Client
-kann also prinzipiell nicht in-process laufen — unabhängig davon, wie wir
-unseren eigenen Code schreiben.
+Why a second process at all: `dlubal-api` requires Python >= 3.10 and pulls in
+grpcio, pandas and vtk. Rhino 8 runs CPython 3.9. The RFEM client therefore
+cannot run in-process on principle - regardless of how we write our own code.
 
-Die Prozessgrenze ist die JSON-Serialisierung des neutralen Modells
-(`StructuralModel.to_json` / `.from_json`). Kein eigenes Protokoll, und jeder
-Lauf hinterlässt nebenbei ein diffbares Modell — dasselbe Artefakt, das an
-Statiker übergeben wird.
+The process boundary is the JSON serialisation of the neutral model
+(`StructuralModel.to_json` / `.from_json`). No protocol of our own, and every
+run leaves behind a diffable model as a side effect - the same artefact that
+is handed over to engineers.
 
-Ablauf::
+Flow::
 
-    Rhino                          Worker (repo-venv, Py 3.12)
+    Rhino                          Worker (repo venv, Py 3.12)
     -----                          --------------------------
     model.to_json(in.json)   -->   from_json, push, calculate, read
-    from_json(out.json)      <--   model.results gefüllt, to_json
+    from_json(out.json)      <--   model.results filled, to_json
 
-TODO(scaffold): Der Worker-CLI (`tekton run ...`) existiert noch nicht.
-Er gehört nach `tekton_app`, das compas_dlubal und compas_saf ohnehin schon
-als Abhängigkeit hat. Bis dahin wirft `run_backend` eine WorkerError mit
-einer Anleitung, wie man denselben Schritt von Hand ausführt.
+TODO(scaffold): The worker CLI (`tekton run ...`) does not exist yet. It
+belongs in `tekton_app`, which already depends on compas_dlubal and compas_saf
+anyway. Until then `run_backend` raises a WorkerError with instructions for
+doing the same step by hand.
 """
 
 import json
@@ -31,13 +30,13 @@ import tempfile
 
 
 class WorkerError(RuntimeError):
-    """Der Worker lief nicht, oder er lief und war unglücklich."""
+    """The worker did not run, or it ran and was unhappy."""
 
 
 def worker_python(repo_root):
-    """Interpreter des Repo-venvs finden.
+    """Find the interpreter of the repo venv.
 
-    Rhinos eigener Interpreter taugt nicht — der ist 3.9 und hat kein grpc.
+    Rhino's own interpreter will not do - it is 3.9 and has no grpc.
     """
     candidates = [
         os.path.join(repo_root, ".venv", "bin", "python"),
@@ -47,8 +46,8 @@ def worker_python(repo_root):
         if os.path.isfile(candidate):
             return candidate
     raise WorkerError(
-        "Kein venv im Repo gefunden ({}). Erwartet: .venv im Repo-Root — "
-        "'uv sync --extra dev' im Repo ausfuehren.".format(repo_root)
+        "No venv found in the repo ({}). Expected: .venv in the repo root - "
+        "run 'uv sync --extra dev' in the repo.".format(repo_root)
     )
 
 
@@ -63,29 +62,29 @@ def run_backend(
     calculate=True,
     timeout=600,
 ):
-    """Modell an ein Backend schicken und (bei RFEM) Ergebnisse zurückholen.
+    """Send the model to a backend and (for RFEM) fetch results back.
 
     Parameters
     ----------
     structural_model : compas_timber_fea.core.model.StructuralModel
     repo_root : str
-        Wurzel des Monorepos; dort liegt das venv mit den Backend-Paketen.
+        Root of the monorepo; the venv with the backend packages lives there.
     backend : {'rfem', 'rstab', 'saf'}
     load_cases : list of int, optional
-        Lastfälle, deren Ergebnisse gelesen werden. None = alle.
+        Load cases whose results are read. None = all.
     api_key : str, optional
-        Niemals in die GH-Datei schreiben — die wandert per Mail weiter.
-        Besser: Umgebungsvariable, die der Worker selbst liest.
+        Never write this into the GH file - that file gets mailed around.
+        Better: an environment variable the worker reads itself.
     output_path : str, optional
-        Wohin das Ergebnismodell geschrieben wird. None = temporär.
+        Where the result model is written. None = temporary.
     calculate : bool
-        Bei False nur pushen, nicht rechnen (Handoff-Fall).
+        When False, only push, do not calculate (the handoff case).
 
     Returns
     -------
     tuple
-        ``(model_with_results, log_lines)`` — das *neu geladene* Modell, nicht
-        das übergebene. Die Ergebnisse kommen aus dem Worker-Prozess zurück.
+        ``(model_with_results, log_lines)`` - the *newly loaded* model, not
+        the one passed in. The results come back out of the worker process.
 
     Raises
     ------
@@ -130,11 +129,11 @@ def run_backend(
             timeout=timeout,
         )
     except OSError as exc:
-        raise WorkerError("Worker nicht startbar: {}".format(exc))
+        raise WorkerError("Worker could not be started: {}".format(exc))
     except subprocess.TimeoutExpired:
         raise WorkerError(
-            "Worker-Timeout nach {}s. RFEM rechnet noch, oder es wartet ein "
-            "modaler Dialog auf Bestaetigung.".format(timeout)
+            "Worker timed out after {}s. RFEM is still calculating, or a modal "
+            "dialog is waiting for confirmation.".format(timeout)
         )
 
     output = completed.stdout.decode("utf-8", "replace") if completed.stdout else ""
@@ -142,14 +141,14 @@ def run_backend(
 
     if completed.returncode != 0:
         raise WorkerError(
-            "Worker beendet mit Code {}.\n{}".format(completed.returncode, output[-2000:])
+            "Worker exited with code {}.\n{}".format(completed.returncode, output[-2000:])
         )
 
     if backend == "saf":
         return None, log_lines
 
     if not os.path.isfile(out_path):
-        raise WorkerError("Worker meldete Erfolg, schrieb aber kein Ergebnis nach {}".format(out_path))
+        raise WorkerError("Worker reported success but wrote no result to {}".format(out_path))
 
     from compas_timber_fea.core.model import StructuralModel
 
@@ -157,17 +156,17 @@ def run_backend(
 
 
 def model_fingerprint(structural_model):
-    """Kurzer Hash über die statisch relevanten Modelldaten.
+    """Short hash over the structurally relevant model data.
 
-    Wozu: Grasshopper hält alte Outputs fest. Ergebnisse am Canvas können ein
-    längst geändertes Modell beschreiben — der gefährlichste Failure-Mode
-    dieses Workflows (siehe ``discussion/roundtrip.md``). Der Fingerprint wird
-    beim Rechnen mitgeschrieben und von den Ergebnis-Komponenten gegen das
-    aktuelle Modell geprüft: weicht er ab, warnen sie 'Ergebnisse veraltet'.
+    What for: Grasshopper holds on to old outputs. Results on the canvas can
+    describe a model that changed long ago - the most dangerous failure mode
+    of this workflow (see ``discussion/roundtrip.md``). The fingerprint is
+    written alongside every calculation and checked by the result components
+    against the current model: if it differs, they warn 'results stale'.
 
-    TODO(scaffold): Sollte in die neutrale Schicht wandern, sobald die
-    Provenance-Struktur aus roundtrip.md steht — hier ist nur der GH-nahe
-    Platzhalter, damit die Komponenten schon die richtige Form haben.
+    TODO(scaffold): Should move into the neutral layer once the provenance
+    structure from roundtrip.md exists - this is only the GH-side placeholder,
+    so the components already have the right shape.
     """
     import hashlib
 
@@ -182,7 +181,7 @@ def model_fingerprint(structural_model):
 
 
 def python_version_note():
-    """Einzeiler für Fehlermeldungen, der die häufigste Ursache nennt."""
-    return "Rhino-Python: {}. Backends brauchen >= 3.10 und laufen daher im Worker.".format(
+    """One-liner for error messages that names the most common cause."""
+    return "Rhino Python: {}. Backends need >= 3.10 and therefore run in the worker.".format(
         sys.version.split()[0]
     )

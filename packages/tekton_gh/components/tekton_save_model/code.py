@@ -1,11 +1,11 @@
-"""Tekton Save Model — neutrales Modell als JSON schreiben.
+"""Tekton Save Model - write the neutral model as JSON.
 
-Das ist zugleich das Uebergabeformat an Statiker: nachvollziehbar,
-versionierbar, diskutierbar. Guenstiger, als im RFEM-Modell selbst
-ueber Annahmen zu streiten.
+This is at the same time the handover format for engineers: traceable,
+versionable, discussable. Cheaper than arguing about assumptions inside the
+RFEM model itself.
 
-Das Annahmenprotokoll aus TektonTranslate wird als Textdatei daneben
-gelegt — es gehoert zur Uebergabe.
+The assumptions report from TektonTranslate is put alongside as a text file -
+it is part of the handover.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -17,11 +17,11 @@ ghenv.Component.Message = "Save"  # type: ignore # noqa: F821
 
 
 def _setup(explicit_repo=None):
-    """compas_timber_fea + tekton_gh importierbar machen.
+    """Make compas_timber_fea + tekton_gh importable.
 
-    Siehe TektonInfo, wenn das fehlschlaegt. Der Purge ist noetig, weil in
-    Rhino womoeglich schon ein anderes compas_timber geladen ist (das
-    offizielle Plugin, 1.0.5), das kein `compas_timber.structural` kennt.
+    See TektonInfo when this fails. The purge is needed because Rhino may
+    already have another compas_timber loaded (the official plugin, 1.0.5),
+    which knows no `compas_timber.structural`.
     """
     root = None
     for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
@@ -30,11 +30,11 @@ def _setup(explicit_repo=None):
             break
     if root is None:
         raise RuntimeError(
-            "Tekton-Repo nicht gefunden. Eine Komponente mit 'repo'-Input "
-            "(TektonInfo, TektonTranslate, TektonBackend) einmal auf dem Canvas "
-            "setzen — der Pfad gilt dann fuer die ganze Sitzung. Siehe TektonInfo."
+            "Tekton repo not found. Place one component with a 'repo' input "
+            "(TektonInfo, TektonTranslate, TektonBackend) on the canvas once - "
+            "the path then applies for the whole session. See TektonInfo."
         )
-    # Fuer die Komponenten ohne eigenen repo-Input hinterlegen.
+    # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     for package in ("tekton_gh", "compas_timber_fea"):
         src = os.path.join(root, "packages", package, "src")
@@ -62,9 +62,9 @@ save: bool  # type: ignore
 path = None
 
 if not save:
-    print("Bereit. 'save' auf True setzen zum Schreiben.")
+    print("Ready. Set 'save' to True to write.")
 elif structural is None or not filepath:
-    _warn("structural und filepath werden gebraucht.")
+    _warn("structural and filepath are both needed.")
 else:
     _setup()
 
@@ -78,13 +78,13 @@ else:
 
     structural.to_json(target, pretty=True)
     path = target
-    print("Modell geschrieben: {}".format(target))
+    print("Model written: {}".format(target))
 
     if report:
-        report_path = os.path.splitext(target)[0] + "_annahmen.txt"
+        report_path = os.path.splitext(target)[0] + "_assumptions.txt"
         with open(report_path, "w") as handle:
             handle.write("\n".join(str(line) for line in report))
             handle.write("\n")
-        print("Annahmenprotokoll: {}".format(report_path))
+        print("Assumptions report: {}".format(report_path))
     else:
-        _warn("Kein Annahmenprotokoll angeschlossen — bei einer Uebergabe gehoert es dazu.")
+        _warn("No assumptions report connected - a handover should include one.")

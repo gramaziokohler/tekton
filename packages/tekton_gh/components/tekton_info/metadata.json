@@ -3,7 +3,7 @@
     "nickname": "TInfo",
     "category": "Tekton",
     "subcategory": "0 | Setup",
-    "description": "Zustandsbericht der Tekton-Umgebung: Python-Version, compas_timber-Version, ob compas_timber.structural vorhanden ist, ob das Repo und das Worker-venv gefunden werden. Erste Anlaufstelle, wenn eine Komponente rot wird.",
+    "description": "Status report of the Tekton environment: Python version, compas_timber version, whether compas_timber.structural is present, whether the repo and the worker venv are found. First place to look when a component turns red.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000001",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "repo",
                 "nickname": "repo",
-                "description": "Pfad zum Tekton-Monorepo. Leer = Umgebungsvariable TEKTON_REPO.",
+                "description": "Path to the Tekton monorepo. Empty = environment variable TEKTON_REPO.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -29,7 +29,7 @@
             {
                 "name": "report",
                 "nickname": "report",
-                "description": "Diagnose-Zeilen",
+                "description": "Diagnostic lines",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -37,7 +37,7 @@
             {
                 "name": "ok",
                 "nickname": "ok",
-                "description": "True, wenn alles Noetige da ist",
+                "description": "True when everything needed is there",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

@@ -1,11 +1,11 @@
-"""Tekton Translate — TimberModel -> neutrales StructuralModel.
+"""Tekton Translate - TimberModel -> neutral StructuralModel.
 
-Kern der Brücke. Erzeugt aus physischen Bauteilen ein mechanisches
-Ersatzsystem: Systemlinien, Knoten, Querschnitte, Gelenke, Lager.
+Core of the bridge. Turns physical elements into a mechanical analysis model:
+system lines, nodes, cross-sections, releases, supports.
 
-Der 'report'-Ausgang ist kein Debug-Output. Er listet die getroffenen
-Idealisierungsannahmen — das, worüber der Statiker später diskutiert. Auf den
-Canvas legen, nicht wegwerfen.
+The 'report' output is not debug output. It lists the idealisation assumptions
+that were made - the thing the engineer will later argue about. Put it on the
+canvas, do not throw it away.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -28,11 +28,11 @@ repo: str  # type: ignore
 
 
 def _setup(explicit_repo):
-    """compas_timber_fea importierbar machen.
+    """Make compas_timber_fea importable.
 
-    In Rhino hat das offizielle COMPAS-Timber-Plugin womöglich schon eine
-    andere Version geladen (1.0.5), die kein `compas_timber.structural`
-    kennt. Deshalb Purge + Pfad-Priorität, nicht nur ein Append.
+    In Rhino the official COMPAS Timber plugin may already have loaded another
+    version (1.0.5) which knows no `compas_timber.structural`. Hence purge +
+    path priority, not just an append.
     """
     root = None
     for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
@@ -41,11 +41,11 @@ def _setup(explicit_repo):
             break
     if root is None:
         raise RuntimeError(
-            "Tekton-Repo nicht gefunden. Eine Komponente mit 'repo'-Input "
-            "(TektonInfo, TektonTranslate, TektonBackend) einmal auf dem Canvas "
-            "setzen — der Pfad gilt dann fuer die ganze Sitzung. Siehe TektonInfo."
+            "Tekton repo not found. Place one component with a 'repo' input "
+            "(TektonInfo, TektonTranslate, TektonBackend) on the canvas once - "
+            "the path then applies for the whole session. See TektonInfo."
         )
-    # Fuer die Komponenten ohne eigenen repo-Input hinterlegen.
+    # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
 
     for name in [m for m in list(sys.modules) if m.split(".")[0] in ("compas_timber", "compas_timber_fea", "tekton_gh")]:
@@ -68,7 +68,7 @@ preview = []
 if model is None:
     ghenv.Component.AddRuntimeMessage(  # type: ignore # noqa: F821
         __import__("Grasshopper").Kernel.GH_RuntimeMessageLevel.Warning,
-        "Kein TimberModel angeschlossen.",
+        "No TimberModel connected.",
     )
 else:
     _setup(repo)
@@ -78,15 +78,15 @@ else:
 
     from tekton_gh.rhino_io import document_units, member_lines
 
-    # Einheiten: das Modell kommt aus Rhino, ist also typisch mm; das neutrale
-    # Modell rechnet in Metern. Ohne diese Uebersetzung wird ein mm-Modell
-    # stumm zu einer 200-Meter-Platte.
+    # Units: the model comes out of Rhino, so it is typically mm; the neutral
+    # model works in metres. Without this translation a mm model silently turns
+    # into a 200-metre plate.
     source_units = units or document_units(default="m")
 
-    # TODO(scaffold): material ist heute nur ein Namens-String, den RFEM gegen
-    # seine eigene Bibliothek aufloest. Sobald die Material-Dataclass mit
-    # Presets existiert (discussion/materials.md), hier das Objekt durchreichen
-    # und die Eigenschaften ins neutrale Modell schreiben.
+    # TODO(scaffold): material is only a name string today, which RFEM
+    # resolves against its own library. Once the Material dataclass with presets
+    # exists (discussion/materials.md), pass the object through here and write
+    # the properties into the neutral model.
     material_name = material if isinstance(material, str) else (getattr(material, "name", None) or "C24")
 
     policy = joint_policy if joint_policy is not None else JointPolicy.conservative()
@@ -102,10 +102,10 @@ else:
     structural = translator.translate(model)
     report = list(translator.report)
 
-    # Tragrichtungs-Override aus der Plate Policy anwenden. Erst hier moeglich:
-    # vor dem Uebersetzen gibt es keine Flaechen. Die Richtung entscheidet, wie
-    # Plattenergebnisse zu lesen sind (RFEMs m_x folgt den Flaechenachsen), und
-    # wird spaeter zu SurfaceRegion.frame.x im Plattengraph.
+    # Apply the span direction override from the plate policy. Only possible
+    # here: before translating there are no surfaces. The direction decides how
+    # plate results are to be read (RFEM's m_x follows the surface axes), and
+    # later becomes SurfaceRegion.frame.x in the plate graph.
     override = getattr(plate_policy, "span_direction_override", None)
     if override and structural.surfaces:
         from compas.geometry import Vector
@@ -113,20 +113,20 @@ else:
         for surface in structural.surfaces:
             surface.span_direction = Vector(*override)
         report.append(
-            "Tragrichtung aller {} Flaechen auf ({:.3f}, {:.3f}, {:.3f}) gesetzt "
-            "(Override aus der Plate Policy).".format(len(structural.surfaces), *override)
+            "Span direction of all {} surfaces set to ({:.3f}, {:.3f}, {:.3f}) "
+            "(override from the plate policy).".format(len(structural.surfaces), *override)
         )
 
-    report.insert(0, "Einheiten des Timber-Modells: {}".format(source_units))
+    report.insert(0, "Units of the timber model: {}".format(source_units))
     report.insert(1, "Material (global): {}".format(material_name))
     if joint_policy is None:
-        report.insert(2, "Verbindungen: konservativ (gelenkig) — keine Policy angeschlossen.")
+        report.insert(2, "Joints: conservative (pinned) - no policy connected.")
 
-    # Vorschau in Dokumenteinheiten: das neutrale Modell ist in Metern.
+    # Preview in document units: the neutral model is in metres.
     scale = {"mm": 1000.0, "cm": 100.0, "dm": 10.0, "m": 1.0}.get(source_units, 1.0)
     preview = member_lines(structural, scale=scale)
 
-    print("{} Knoten, {} Staebe, {} Flaechen, {} Lager".format(
+    print("{} nodes, {} members, {} surfaces, {} supports".format(
         len(structural.nodes), len(structural.members),
         len(structural.surfaces), len(structural.supports)))
 
@@ -135,6 +135,6 @@ else:
 
         ghenv.Component.AddRuntimeMessage(  # type: ignore # noqa: F821
             Grasshopper.Kernel.GH_RuntimeMessageLevel.Warning,
-            "Modell hat keine Auflager. TektonSupport verwenden — sonst rechnet "
-            "das Backend ein schwebendes System.",
+            "Model has no supports. Use TektonSupport - otherwise the backend "
+            "calculates a floating system.",
         )

@@ -3,7 +3,7 @@
     "nickname": "TPolicy",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Regel, wie Holzverbindungen mechanisch idealisiert werden (gelenkig, steif, Feder). Das ist eine Ingenieurentscheidung, keine Geometrie \u2014 darum explizit, ueberschreibbar und im Annahmenprotokoll dokumentiert.",
+    "description": "Rule for how timber joints are idealised mechanically (pinned, rigid, spring). That is an engineering decision, not geometry - so it is explicit, overridable and documented in the assumptions report.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000008",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "preset",
                 "nickname": "preset",
-                "description": "'conservative' (alles gelenkig) | 'rigid' | 'catalogue'.",
+                "description": "'conservative' (everything pinned) | 'rigid' | 'catalogue'.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -27,7 +27,7 @@
             {
                 "name": "joint_types",
                 "nickname": "joint_types",
-                "description": "Verbindungstypen, die abweichen sollen.",
+                "description": "Joint types that should deviate.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "releases",
                 "nickname": "releases",
-                "description": "Zugehoerig: 'rigid'|'pinned'|'spherical', parallel zu joint_types.",
+                "description": "Matching: 'rigid'|'pinned'|'spherical', parallel to joint_types.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -57,7 +57,7 @@
             {
                 "name": "policy",
                 "nickname": "policy",
-                "description": "JointPolicy fuer TektonTranslate",
+                "description": "JointPolicy for TektonTranslate",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -65,7 +65,7 @@
             {
                 "name": "info",
                 "nickname": "info",
-                "description": "Aufgeloeste Regeln",
+                "description": "Resolved rules",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

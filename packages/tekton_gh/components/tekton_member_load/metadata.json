@@ -3,7 +3,7 @@
     "nickname": "TMLoad",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Streckenlast auf Balken. Die Zuordnung laeuft ueber die Bauteil-GUID, nicht ueber Stabnummern \u2014 ein physischer Balken wird beim Idealisieren in mehrere Staebe geteilt, die Last muss auf alle davon.",
+    "description": "Line load on beams. The assignment goes through the element GUID, not through member numbers - one physical beam is split into several members when it is idealised, and the load has to reach all of them.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000006",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "beams",
                 "nickname": "beams",
-                "description": "Balken (COMPAS Timber) oder deren GUIDs.",
+                "description": "Beams (COMPAS Timber) or their GUIDs.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -27,7 +27,7 @@
             {
                 "name": "force",
                 "nickname": "force",
-                "description": "Streckenlast [kN/m].",
+                "description": "Line load [kN/m].",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "load_case",
                 "nickname": "load_case",
-                "description": "Lastfall aus TektonLoadCase.",
+                "description": "Load case from TektonLoadCase.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -55,7 +55,7 @@
             {
                 "name": "start",
                 "nickname": "start",
-                "description": "Relativer Beginn 0..1. Default 0.",
+                "description": "Relative start 0..1. Default 0.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -69,7 +69,7 @@
             {
                 "name": "end",
                 "nickname": "end",
-                "description": "Relatives Ende 0..1. Default 1.",
+                "description": "Relative end 0..1. Default 1.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -85,7 +85,7 @@
             {
                 "name": "load",
                 "nickname": "load",
-                "description": "Streckenlast fuer TektonApplyLoads",
+                "description": "Line load for TektonApplyLoads",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

@@ -1,12 +1,11 @@
-"""Tekton Joint Policy — Idealisierungsregel fuer Verbindungen.
+"""Tekton Joint Policy - idealisation rule for joints.
 
-Wie wird eine Holzverbindung mechanisch abgebildet: gelenkig, steif,
-oder als Feder? Das ist eine Ingenieurentscheidung, die sich nicht aus
-der Geometrie ableiten laesst — darum explizit, ueberschreibbar und im
-Annahmenprotokoll dokumentiert.
+How is a timber joint represented mechanically: pinned, rigid, or as a spring?
+That is an engineering decision which cannot be derived from the geometry -
+hence explicit, overridable, and documented in the assumptions report.
 
-'conservative' setzt alles gelenkig: die sichere Annahme fuer
-Verformungen, aber sie unterschaetzt die Steifigkeit.
+'conservative' makes everything pinned: the safe assumption for deflections,
+but it underestimates the stiffness.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -18,11 +17,11 @@ ghenv.Component.Message = "Joint Policy"  # type: ignore # noqa: F821
 
 
 def _setup(explicit_repo=None):
-    """compas_timber_fea + tekton_gh importierbar machen.
+    """Make compas_timber_fea + tekton_gh importable.
 
-    Siehe TektonInfo, wenn das fehlschlaegt. Der Purge ist noetig, weil in
-    Rhino womoeglich schon ein anderes compas_timber geladen ist (das
-    offizielle Plugin, 1.0.5), das kein `compas_timber.structural` kennt.
+    See TektonInfo when this fails. The purge is needed because Rhino may
+    already have another compas_timber loaded (the official plugin, 1.0.5),
+    which knows no `compas_timber.structural`.
     """
     root = None
     for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
@@ -31,11 +30,11 @@ def _setup(explicit_repo=None):
             break
     if root is None:
         raise RuntimeError(
-            "Tekton-Repo nicht gefunden. Eine Komponente mit 'repo'-Input "
-            "(TektonInfo, TektonTranslate, TektonBackend) einmal auf dem Canvas "
-            "setzen — der Pfad gilt dann fuer die ganze Sitzung. Siehe TektonInfo."
+            "Tekton repo not found. Place one component with a 'repo' input "
+            "(TektonInfo, TektonTranslate, TektonBackend) on the canvas once - "
+            "the path then applies for the whole session. See TektonInfo."
         )
-    # Fuer die Komponenten ohne eigenen repo-Input hinterlegen.
+    # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     for package in ("tekton_gh", "compas_timber_fea"):
         src = os.path.join(root, "packages", package, "src")
@@ -63,6 +62,8 @@ _setup()
 from compas_timber_fea.core.joint_policy import JointPolicy
 from compas_timber_fea.core.releases import MemberRelease
 
+from tekton_gh.rhino_io import attach_value_list
+
 PRESETS = {
     "conservative": JointPolicy.conservative,
     "rigid": JointPolicy.rigid,
@@ -74,22 +75,25 @@ RELEASES = {
     "spherical": MemberRelease.spherical,
 }
 
-key = (preset or "conservative").lower()
+# Offer the presets as a drop-down rather than asking for a typed string.
+attach_value_list(ghenv, sorted(PRESETS), param_index=0, nickname="Preset")  # type: ignore # noqa: F821
+
+key = (preset or "conservative").lower().strip('"')
 if key not in PRESETS:
-    _warn("Unbekanntes Preset '{}'. Erlaubt: {}.".format(key, ", ".join(sorted(PRESETS))))
+    _warn("Unknown preset '{}'. Allowed: {}.".format(key, ", ".join(sorted(PRESETS))))
     key = "conservative"
 
 policy = PRESETS[key]()
-info = ["Preset: {} (Default: {})".format(key, policy.default.name)]
+info = ["Preset: {} (default: {})".format(key, policy.default.name)]
 
 if joint_types and releases:
     if len(joint_types) != len(releases):
-        _warn("joint_types ({}) und releases ({}) muessen gleich lang sein.".format(len(joint_types), len(releases)))
+        _warn("joint_types ({}) and releases ({}) must be the same length.".format(len(joint_types), len(releases)))
     else:
         for joint_type, release_name in zip(joint_types, releases):
             factory = RELEASES.get(str(release_name).lower())
             if factory is None:
-                _warn("Unbekannte Freigabe '{}' fuer {}. Erlaubt: {}.".format(
+                _warn("Unknown release '{}' for {}. Allowed: {}.".format(
                     release_name, joint_type, ", ".join(sorted(RELEASES))))
                 continue
             policy.override_type(joint_type, factory())

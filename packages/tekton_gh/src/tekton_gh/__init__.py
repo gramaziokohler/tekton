@@ -1,17 +1,18 @@
-"""Grasshopper-Laufzeitschicht für Tekton.
+"""Grasshopper runtime layer for Tekton.
 
-Läuft **in-process in Rhino 8 (CPython 3.9)**. Darum gilt hier, anders als im
-Rest des Monorepos, Python-3.9-Syntax: keine PEP-604-Unions (``int | None``),
-kein ``match``, keine ``slots=``-Dataclasses.
+Runs **in-process in Rhino 8 (CPython 3.9)**. So unlike the rest of the
+monorepo, Python 3.9 syntax applies here: no PEP 604 unions (``int | None``),
+no ``match``, no ``slots=`` dataclasses.
 
-Was hier hineingehört: alles, was mehr als eine Komponente braucht — Pfad-Setup,
-der Aufruf des Backend-Workers, Konvertierungen COMPAS <-> Rhino. Was *nicht*
-hineingehört: Fachlogik. Die lebt in ``compas_timber_fea``; dieses Paket ist
-Verkabelung.
+What belongs here: anything more than one component needs - path setup, the
+backend worker call, COMPAS <-> Rhino conversions. What does *not* belong
+here: domain logic. That lives in ``compas_timber_fea``; this package is
+wiring.
 """
 
 from .env import ensure_tekton_path, remember_repo_root, tekton_repo_root, diagnose
 from .rhino_io import (
+    attach_value_list,
     document_units,
     line_to_rhino,
     point_to_rhino_pt,
@@ -24,6 +25,7 @@ __all__ = [
     "remember_repo_root",
     "tekton_repo_root",
     "diagnose",
+    "attach_value_list",
     "document_units",
     "line_to_rhino",
     "point_to_rhino_pt",

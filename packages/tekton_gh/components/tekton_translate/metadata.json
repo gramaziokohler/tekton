@@ -3,7 +3,7 @@
     "nickname": "TTrans",
     "category": "Tekton",
     "subcategory": "2 | Translate",
-    "description": "Kern der Bruecke: TimberModel -> neutrales StructuralModel. Erzeugt Systemlinien, Knoten, Querschnitte, Gelenke, Lager. Der 'report'-Ausgang listet alle getroffenen Annahmen \u2014 das ist kein Debug-Output, sondern das, worueber der Statiker spaeter diskutiert.",
+    "description": "The core of the bridge: TimberModel -> neutral StructuralModel. Produces system lines, nodes, cross-sections, releases, supports. The 'report' output lists every assumption made - that is not debug output, it is what the engineer will argue about later.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000010",
     "ghpython": {
@@ -27,7 +27,7 @@
             {
                 "name": "material",
                 "nickname": "material",
-                "description": "Aus TektonMaterial. Leer = C24.",
+                "description": "From TektonMaterial. Empty = C24.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "joint_policy",
                 "nickname": "joint_policy",
-                "description": "Aus TektonJointPolicy. Leer = konservativ (gelenkig).",
+                "description": "From TektonJointPolicy. Empty = conservative (pinned).",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -55,7 +55,7 @@
             {
                 "name": "plate_policy",
                 "nickname": "plate_policy",
-                "description": "Aus TektonPlatePolicy.",
+                "description": "From TektonPlatePolicy.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -69,7 +69,7 @@
             {
                 "name": "load_cases",
                 "nickname": "load_cases",
-                "description": "Aus TektonLoadCase. Leer = nur Eigengewicht.",
+                "description": "From TektonLoadCase. Empty = self-weight only.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -83,7 +83,7 @@
             {
                 "name": "units",
                 "nickname": "units",
-                "description": "Einheiten des Timber-Modells. Leer = Rhino-Dokumenteinheit.",
+                "description": "Units of the timber model. Empty = Rhino document unit.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -97,7 +97,7 @@
             {
                 "name": "repo",
                 "nickname": "repo",
-                "description": "Pfad zum Tekton-Monorepo (siehe TektonInfo).",
+                "description": "Path to the Tekton monorepo (see TektonInfo).",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -113,7 +113,7 @@
             {
                 "name": "structural",
                 "nickname": "structural",
-                "description": "Neutrales StructuralModel",
+                "description": "Neutral StructuralModel",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -121,7 +121,7 @@
             {
                 "name": "report",
                 "nickname": "report",
-                "description": "Annahmenprotokoll \u2014 lesen!",
+                "description": "Assumptions report - read it!",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -129,7 +129,7 @@
             {
                 "name": "preview",
                 "nickname": "preview",
-                "description": "Systemlinien zur Kontrolle",
+                "description": "System lines for checking",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

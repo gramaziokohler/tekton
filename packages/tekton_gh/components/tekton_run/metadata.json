@@ -3,7 +3,7 @@
     "nickname": "TRun",
     "category": "Tekton",
     "subcategory": "3 | Run",
-    "description": "Modell ans Backend schicken, rechnen lassen, Ergebnisse zurueckholen. Laeuft in einem eigenen Prozess (Backends brauchen Python >= 3.10). NUR per Button ausloesen \u2014 jeder Lauf baut das RFEM-Modell neu auf und blockiert Grasshopper, solange gerechnet wird.",
+    "description": "Send the model to the backend, calculate, fetch the results back. Runs in a separate process (backends need Python >= 3.10). Trigger by button ONLY - every run rebuilds the RFEM model from scratch and blocks Grasshopper while it calculates.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000013",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "structural",
                 "nickname": "structural",
-                "description": "StructuralModel aus TektonTranslate.",
+                "description": "StructuralModel from TektonTranslate.",
                 "optional": false,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -27,7 +27,7 @@
             {
                 "name": "backend",
                 "nickname": "backend",
-                "description": "Aus TektonBackend.",
+                "description": "From TektonBackend.",
                 "optional": false,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "load_cases",
                 "nickname": "load_cases",
-                "description": "Lastfaelle, deren Ergebnisse gelesen werden. Leer = alle.",
+                "description": "Load cases whose results are read. Empty = all.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -55,7 +55,7 @@
             {
                 "name": "model_name",
                 "nickname": "model_name",
-                "description": "Name des Modells im Backend.",
+                "description": "Name of the model in the backend.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -69,7 +69,7 @@
             {
                 "name": "calculate",
                 "nickname": "calculate",
-                "description": "False = nur uebergeben, nicht rechnen (Handoff).",
+                "description": "False = only hand over, do not calculate (handoff).",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -83,7 +83,7 @@
             {
                 "name": "run",
                 "nickname": "run",
-                "description": "Button. Ausloesen des Laufs.",
+                "description": "Button. Triggers the run.",
                 "optional": false,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -99,7 +99,7 @@
             {
                 "name": "structural",
                 "nickname": "structural",
-                "description": "Modell mit Ergebnissen",
+                "description": "Model with results",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -107,7 +107,7 @@
             {
                 "name": "log",
                 "nickname": "log",
-                "description": "Worker-Ausgabe",
+                "description": "Worker output",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -115,7 +115,7 @@
             {
                 "name": "stamp",
                 "nickname": "stamp",
-                "description": "Fingerprint + Zeitpunkt des Laufs",
+                "description": "Fingerprint + timestamp of the run",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

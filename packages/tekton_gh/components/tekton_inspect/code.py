@@ -1,11 +1,11 @@
-"""Tekton Inspect — das Ersatzsystem selbst anschauen.
+"""Tekton Inspect - look at the analysis model itself.
 
-Systemlinien, Knoten, Lagersymbole, Gelenkmarker. Zum Pruefen der
-Idealisierung, bevor gerechnet wird — bewusst getrennt von der
-Ergebnisdarstellung.
+System lines, nodes, support symbols, release markers. For checking the
+idealisation before calculating - deliberately separate from the result
+display.
 
-Das ist die Ansicht, in der man sieht, ob die Idealisierung das
-getan hat, was man erwartet hat: wo geteilt wurde, wo Gelenke sitzen.
+This is the view that shows whether the idealisation did what you expected:
+where it split, where the releases sit.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -17,11 +17,11 @@ ghenv.Component.Message = "Inspect"  # type: ignore # noqa: F821
 
 
 def _setup(explicit_repo=None):
-    """compas_timber_fea + tekton_gh importierbar machen.
+    """Make compas_timber_fea + tekton_gh importable.
 
-    Siehe TektonInfo, wenn das fehlschlaegt. Der Purge ist noetig, weil in
-    Rhino womoeglich schon ein anderes compas_timber geladen ist (das
-    offizielle Plugin, 1.0.5), das kein `compas_timber.structural` kennt.
+    See TektonInfo when this fails. The purge is needed because Rhino may
+    already have another compas_timber loaded (the official plugin, 1.0.5),
+    which knows no `compas_timber.structural`.
     """
     root = None
     for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
@@ -30,11 +30,11 @@ def _setup(explicit_repo=None):
             break
     if root is None:
         raise RuntimeError(
-            "Tekton-Repo nicht gefunden. Eine Komponente mit 'repo'-Input "
-            "(TektonInfo, TektonTranslate, TektonBackend) einmal auf dem Canvas "
-            "setzen — der Pfad gilt dann fuer die ganze Sitzung. Siehe TektonInfo."
+            "Tekton repo not found. Place one component with a 'repo' input "
+            "(TektonInfo, TektonTranslate, TektonBackend) on the canvas once - "
+            "the path then applies for the whole session. See TektonInfo."
         )
-    # Fuer die Komponenten ohne eigenen repo-Input hinterlegen.
+    # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     for package in ("tekton_gh", "compas_timber_fea"):
         src = os.path.join(root, "packages", package, "src")
@@ -64,7 +64,7 @@ supports = []
 releases = []
 
 if structural is None:
-    _warn("Kein StructuralModel angeschlossen.")
+    _warn("No StructuralModel connected.")
 else:
     _setup()
     import Rhino.Geometry as rg
@@ -84,7 +84,7 @@ else:
         nodes = [rg.Point3d(p[0] * factor, p[1] * factor, p[2] * factor) for p in node_points.values()]
 
     if "supports" in wanted:
-        # Lager als kleines Achsenkreuz nach unten — reicht, um sie zu finden.
+        # Supports as a small downward tick - enough to spot them.
         for support in structural.supports:
             for node_id in support.nodes:
                 point = node_points.get(node_id)
@@ -95,7 +95,7 @@ else:
                 supports.append(rg.Line(base, tip))
 
     if "releases" in wanted:
-        # Gelenke als kurzer Strich am Stabende, wo etwas freigegeben ist.
+        # Releases as a short stroke at the member end where something is free.
         for member in structural.members:
             start, end = node_points.get(member.node_start), node_points.get(member.node_end)
             if start is None or end is None:
@@ -112,5 +112,5 @@ else:
                 direction.Unitize()
                 releases.append(rg.Line(ax, ax + direction * symbol * 0.5))
 
-    print("{} Staebe, {} Knoten, {} Lager, {} Gelenkmarker".format(
+    print("{} members, {} nodes, {} supports, {} release markers".format(
         len(members), len(nodes), len(supports), len(releases)))
