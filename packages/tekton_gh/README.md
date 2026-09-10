@@ -186,12 +186,19 @@ The countermeasure is blunt: `TektonRun` stamps the model fingerprint into
 every result set, `TektonResults` compares it against the connected model and
 sets `stale` plus a warning as soon as the two diverge.
 
-**Never modify the canvas during a solve.** An `AddObject` or
-`ExpireSolution(True)` in the middle of your own execution crashes Rhino — it
-happened here on 2026-09-10 when `TektonMaterialLibrary` tried to attach its
-own value list. The right way is `doc.ScheduleSolution(delay, callback)`: the
-callback runs once the current solve has finished. This applies to every
-component that creates or wires objects.
+**Never let a component modify the canvas.** An `AddObject` or
+`ExpireSolution(True)` in the middle of your own execution crashes Rhino, and
+the documented remedy does not save it: `doc.ScheduleSolution(delay, callback)`
+moves the work out of the solve, but the callback is a Python closure that has
+to survive across the .NET delegate boundary. If it is collected before
+Grasshopper invokes it, the process dies instantly and silently — no exception,
+no log entry. `TektonMaterialLibrary` took Rhino down twice this way
+(2026-09-10 with the naive version, 2026-09-11 with the scheduled one).
+
+Components therefore only *report* what a value list should contain; the user
+drops one in via right-click > Manage Value List Collection. One extra gesture,
+and nothing that can end the session. See `value_list_items` in
+`tekton_gh.rhino_io`.
 
 **Never calculate automatically.** `TektonRun` blocks Grasshopper while it
 calculates, and every run rebuilds the backend model from scratch. Hence
