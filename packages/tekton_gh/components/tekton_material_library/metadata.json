@@ -1,0 +1,55 @@
+{
+    "name": "Tekton Material Library",
+    "nickname": "TMatLib",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Werkstoff aus der Bibliothek waehlen. Haengt sich beim Platzieren selbst ein Auswahlmenue mit allen Gueteklassen an \u2014 kein Tippen, keine Tippfehler. Ohne Auswahl listet sie, was verfuegbar ist, samt Kennwerten.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000021",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "grade",
+                "nickname": "grade",
+                "description": "Gueteklasse. Leer = nur auflisten.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "material",
+                "nickname": "material",
+                "description": "Material fuer TektonTranslate",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "grades",
+                "nickname": "grades",
+                "description": "Alle verfuegbaren Gueteklassen",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "properties",
+                "nickname": "properties",
+                "description": "Kennwerte der Auswahl",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

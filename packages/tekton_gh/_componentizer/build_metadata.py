@@ -110,6 +110,26 @@ COMPONENTS = [
         outputs=[o("material", "Material fuer TektonTranslate"), o("info", "Was tatsaechlich gesetzt wurde")],
     ),
     dict(
+        folder="tekton_material_library",
+        uid=21,
+        name="Tekton Material Library",
+        nickname="TMatLib",
+        sub=SUB_AUTHOR,
+        description=(
+            "Werkstoff aus der Bibliothek waehlen. Haengt sich beim Platzieren selbst ein "
+            "Auswahlmenue mit allen Gueteklassen an — kein Tippen, keine Tippfehler. "
+            "Ohne Auswahl listet sie, was verfuegbar ist, samt Kennwerten."
+        ),
+        inputs=[
+            p("grade", "str", desc="Gueteklasse. Leer = nur auflisten."),
+        ],
+        outputs=[
+            o("material", "Material fuer TektonTranslate"),
+            o("grades", "Alle verfuegbaren Gueteklassen"),
+            o("properties", "Kennwerte der Auswahl"),
+        ],
+    ),
+    dict(
         folder="tekton_support",
         uid=3,
         name="Tekton Support",

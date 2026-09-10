@@ -186,6 +186,13 @@ Gegenmaßnahme ist scharf: `TektonRun` stempelt den Modell-Fingerprint in jeden
 Ergebnissatz, `TektonResults` vergleicht ihn gegen das angeschlossene Modell
 und setzt `stale` plus eine Warnung, sobald beides auseinanderläuft.
 
+**Den Canvas nie während eines Solves verändern.** Ein `AddObject` oder
+`ExpireSolution(True)` mitten in der eigenen Ausführung bringt Rhino zum
+Absturz — hier am 2026-09-10 passiert, als `TektonMaterialLibrary` sich ihr
+Auswahlmenü anhängen wollte. Der richtige Weg ist
+`doc.ScheduleSolution(delay, callback)`: der Rückruf läuft, wenn der aktuelle
+Solve fertig ist. Gilt für jede Komponente, die Objekte anlegt oder verkabelt.
+
 **Nie automatisch rechnen.** `TektonRun` blockiert Grasshopper, solange
 gerechnet wird, und jeder Lauf baut das Backend-Modell neu auf. Darum
 Button-getriggert, mit Zwischenspeicher, damit ein Canvas-Update die
