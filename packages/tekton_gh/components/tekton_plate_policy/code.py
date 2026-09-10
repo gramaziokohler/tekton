@@ -4,11 +4,17 @@ Gelenkige Kante (Default) oder durchlaufend. Pendant zur Joint Policy
 fuer den Plattenpfad.
 
 span_direction ist bei Holz nicht optional: Plattenwerkstoffe sind
-orthotrop (E0 zu E90 unterscheiden sich um etwa Faktor 30). Ohne
-festgelegte Tragrichtung sind Plattenergebnisse nicht interpretierbar.
+orthotrop (E0 zu E90 unterscheiden sich um etwa Faktor 30). Und sie
+entscheidet, wie Ergebnisse zu lesen sind — RFEMs m_x folgt den
+Flaechenachsen, ohne fixierte Richtung sind die Momente nicht
+interpretierbar.
 
-TODO(scaffold): Die Orthotropie-Richtung fehlt im Datenmodell noch
-(docs/handoff.md, Punkt 3); der Input wird bisher nur protokolliert.
+Der Translator leitet die Richtung selbst aus dem Plattenframe ab
+(`frame.xaxis`, geometrische Hauptachse). Dieser Input ist ein
+**Override** fuer den Fall, dass die Faserrichtung davon abweicht — er
+wird auf alle Flaechen des Modells geschrieben. Im Plattengraph-Design
+ist das spaeter `SurfaceRegion.frame.x`; der Vektor wandert also ohne
+Umbau in die Chain-Schicht.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -68,11 +74,20 @@ else:
 
 print("Plattenkanten: {} (Default {})".format(key, policy.default.name))
 
+# Die Tragrichtung haengt an der Policy, weil sie zusammen mit ihr
+# authoriert wird; TektonTranslate schreibt sie nach dem Uebersetzen auf
+# die Flaechen. Sie hier direkt ins Modell zu schreiben ginge nicht — zu
+# diesem Zeitpunkt existiert noch keine Flaeche.
 if span_direction is None:
-    _warn(
-        "Keine Tragrichtung gesetzt. Bei orthotropen Plattenwerkstoffen sind "
-        "die Ergebnisse dann nicht eindeutig interpretierbar."
-    )
+    policy.span_direction_override = None
+    print("Tragrichtung: aus dem Plattenframe abgeleitet (geometrische Hauptachse).")
 else:
-    print("Tragrichtung: ({:.3f}, {:.3f}, {:.3f}) — TODO: wird noch nicht ins Modell geschrieben.".format(
-        span_direction.X, span_direction.Y, span_direction.Z))
+    vector = [float(span_direction.X), float(span_direction.Y), float(span_direction.Z)]
+    length = sum(v * v for v in vector) ** 0.5
+    if length < 1e-9:
+        _warn("Tragrichtung ist ein Nullvektor — ignoriert.")
+        policy.span_direction_override = None
+    else:
+        policy.span_direction_override = [v / length for v in vector]
+        print("Tragrichtung (Override, normiert): ({:.3f}, {:.3f}, {:.3f})".format(
+            *policy.span_direction_override))

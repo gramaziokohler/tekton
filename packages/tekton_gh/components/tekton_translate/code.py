@@ -96,6 +96,21 @@ else:
     structural = translator.translate(model)
     report = list(translator.report)
 
+    # Tragrichtungs-Override aus der Plate Policy anwenden. Erst hier moeglich:
+    # vor dem Uebersetzen gibt es keine Flaechen. Die Richtung entscheidet, wie
+    # Plattenergebnisse zu lesen sind (RFEMs m_x folgt den Flaechenachsen), und
+    # wird spaeter zu SurfaceRegion.frame.x im Plattengraph.
+    override = getattr(plate_policy, "span_direction_override", None)
+    if override and structural.surfaces:
+        from compas.geometry import Vector
+
+        for surface in structural.surfaces:
+            surface.span_direction = Vector(*override)
+        report.append(
+            "Tragrichtung aller {} Flaechen auf ({:.3f}, {:.3f}, {:.3f}) gesetzt "
+            "(Override aus der Plate Policy).".format(len(structural.surfaces), *override)
+        )
+
     report.insert(0, "Einheiten des Timber-Modells: {}".format(source_units))
     report.insert(1, "Material (global): {}".format(material_name))
     if joint_policy is None:
