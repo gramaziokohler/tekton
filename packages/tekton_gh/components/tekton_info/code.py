@@ -45,6 +45,9 @@ if root is None:
     report.append("  -> Input 'repo' setzen oder Umgebungsvariable TEKTON_REPO.")
 else:
     report.append("Repo: {}".format(root))
+    # Fuer die Sitzung hinterlegen: die meisten Komponenten haben keinen
+    # eigenen repo-Input und wuerden ihn sonst nicht finden.
+    os.environ["TEKTON_REPO"] = root
 
     # Die in Rhino lauffaehige Schicht importierbar machen. compas_dlubal und
     # compas_saf fehlen hier bewusst: die brauchen grpc/pandas/vtk und Python

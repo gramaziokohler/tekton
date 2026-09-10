@@ -23,8 +23,38 @@ DEFAULT_REPO_ENV_VAR = "TEKTON_REPO"
 IN_PROCESS_PACKAGES = ("compas_timber_fea",)
 
 
+def _valid(candidate):
+    """Ist das eine Monorepo-Wurzel?"""
+    if not candidate:
+        return None
+    candidate = os.path.expanduser(str(candidate))
+    return candidate if os.path.isdir(os.path.join(candidate, "packages")) else None
+
+
+def remember_repo_root(root):
+    """Repo-Wurzel für die restliche Rhino-Sitzung merken.
+
+    Nur wenige Komponenten haben einen `repo`-Input — es wäre Unfug, ihn an
+    jede der zwanzig zu verkabeln. Wer ihn hat und einen gültigen Pfad
+    bekommt, hinterlegt ihn hier; alle anderen finden ihn wieder.
+
+    Abgelegt wird in ``os.environ``, weil das prozessweit gilt und der
+    Worker-Subprozess es ohnehin erbt. Der Pfad überlebt damit auch das
+    Schliessen der Definition, aber nicht den Rhino-Neustart — was der
+    Erwartung entspricht: ein Canvas arbeitet an einem Repo.
+    """
+    root = _valid(root)
+    if root:
+        os.environ[DEFAULT_REPO_ENV_VAR] = root
+    return root
+
+
 def tekton_repo_root(explicit=None):
     """Wurzel des Tekton-Monorepos ermitteln.
+
+    Reihenfolge: expliziter Input > was sich die Sitzung gemerkt hat >
+    Umgebungsvariable. Die ersten beiden fallen in derselben Variablen
+    zusammen, weil `remember_repo_root` dorthin schreibt.
 
     Parameters
     ----------
@@ -35,18 +65,7 @@ def tekton_repo_root(explicit=None):
     -------
     str or None
     """
-    candidates = []
-    if explicit:
-        candidates.append(explicit)
-    env_value = os.environ.get(DEFAULT_REPO_ENV_VAR)
-    if env_value:
-        candidates.append(env_value)
-
-    for candidate in candidates:
-        candidate = os.path.expanduser(candidate)
-        if os.path.isdir(os.path.join(candidate, "packages")):
-            return candidate
-    return None
+    return _valid(explicit) or _valid(os.environ.get(DEFAULT_REPO_ENV_VAR))
 
 
 def ensure_tekton_path(repo_root=None, purge_conflicting=True):
@@ -74,6 +93,8 @@ def ensure_tekton_path(repo_root=None, purge_conflicting=True):
         still nichts tut, ist schlimmer als eine, die rot wird.
     """
     root = tekton_repo_root(repo_root)
+    if root is not None:
+        remember_repo_root(root)
     if root is None:
         raise RuntimeError(
             "Tekton-Repo nicht gefunden. Setze den Input 'repo' der Komponente "

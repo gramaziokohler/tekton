@@ -26,7 +26,13 @@ def _setup(explicit_repo=None):
             root = os.path.expanduser(candidate)
             break
     if root is None:
-        raise RuntimeError("Tekton-Repo nicht gefunden — siehe TektonInfo.")
+        raise RuntimeError(
+            "Tekton-Repo nicht gefunden. Eine Komponente mit 'repo'-Input "
+            "(TektonInfo, TektonTranslate, TektonBackend) einmal auf dem Canvas "
+            "setzen — der Pfad gilt dann fuer die ganze Sitzung. Siehe TektonInfo."
+        )
+    # Fuer die Komponenten ohne eigenen repo-Input hinterlegen.
+    os.environ["TEKTON_REPO"] = root
     for package in ("tekton_gh", "compas_timber_fea"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
@@ -46,7 +52,7 @@ def _warn(message):
 name: str  # type: ignore
 load_cases = load_cases  # type: ignore # noqa: F821
 factors = factors  # type: ignore # noqa: F821
-type: str  # type: ignore
+combination_type: str  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
@@ -64,6 +70,6 @@ else:
         id=1,
         name=name or "Combination",
         factors={getattr(lc, "id", i + 1): float(f) for i, (lc, f) in enumerate(zip(load_cases, factors))},
-        combination_type=(type or "ULS").upper(),
+        combination_type=(combination_type or "ULS").upper(),
     )
     print("{} '{}': {}".format(combination.combination_type, combination.name, combination.factors))

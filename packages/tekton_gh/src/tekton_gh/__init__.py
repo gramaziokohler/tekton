@@ -10,7 +10,7 @@ hineingehört: Fachlogik. Die lebt in ``compas_timber_fea``; dieses Paket ist
 Verkabelung.
 """
 
-from .env import ensure_tekton_path, tekton_repo_root, diagnose
+from .env import ensure_tekton_path, remember_repo_root, tekton_repo_root, diagnose
 from .rhino_io import (
     document_units,
     line_to_rhino,
@@ -21,6 +21,7 @@ from .worker import WorkerError, run_backend
 
 __all__ = [
     "ensure_tekton_path",
+    "remember_repo_root",
     "tekton_repo_root",
     "diagnose",
     "document_units",

@@ -123,7 +123,7 @@ COMPONENTS = [
         inputs=[
             p("model", desc="TimberModel (COMPAS Timber).", optional=False),
             p("points", "point", access="list", desc="Auflagerpunkte."),
-            p("type", "str", desc="'pinned' | 'fixed' | 'roller'. Default: pinned."),
+            p("support_type", "str", desc="'pinned' | 'fixed' | 'roller'. Default: pinned."),
             p("tolerance", "float", desc="Suchradius zur Balkenachse. Default 1e-4 (Modelleinheiten)."),
         ],
         outputs=[
@@ -203,7 +203,7 @@ COMPONENTS = [
             p("name", "str", desc="Name, z.B. 'ULS 1'."),
             p("load_cases", access="list", desc="Lastfaelle."),
             p("factors", "float", access="list", desc="Beiwerte, parallel zu load_cases."),
-            p("type", "str", desc="ULS | SLS. Default ULS."),
+            p("combination_type", "str", desc="ULS | SLS. Default ULS."),
         ],
         outputs=[o("combination", "Kombination fuer TektonApplyLoads")],
     ),

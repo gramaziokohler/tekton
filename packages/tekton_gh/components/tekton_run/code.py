@@ -67,9 +67,15 @@ elif structural is None or backend is None:
     _error("structural und backend werden beide gebraucht.")
 
 else:
-    repo = backend.get("repo") if isinstance(backend, dict) else getattr(backend, "repo", None)
-    kind = backend.get("backend") if isinstance(backend, dict) else getattr(backend, "backend", "rfem")
-    api_key = backend.get("api_key") if isinstance(backend, dict) else getattr(backend, "api_key", None)
+    def _cfg(key, default=None):
+        if isinstance(backend, dict):
+            return backend.get(key, default)
+        return getattr(backend, key, default)
+
+    repo = _cfg("repo")
+    kind = _cfg("backend", "rfem")
+    api_key = _cfg("api_key")
+    filepath = _cfg("filepath")
 
     gh_src = os.path.join(repo or "", "packages", "tekton_gh", "src")
     if os.path.isdir(gh_src) and gh_src not in sys.path:
@@ -90,6 +96,9 @@ else:
             model_name=model_name or "tekton-gh",
             api_key=api_key,
             calculate=True if calculate is None else bool(calculate),
+            # Ohne den Pfad landet ein SAF-Export im Temp-Ordner statt dort,
+            # wo TektonBackend ihn hingelegt haben will.
+            output_path=filepath,
         )
     except WorkerError as exc:
         _error(str(exc))

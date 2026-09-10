@@ -53,8 +53,8 @@
                 "simplify": false
             },
             {
-                "name": "type",
-                "nickname": "type",
+                "name": "combination_type",
+                "nickname": "combination_type",
                 "description": "ULS | SLS. Default ULS.",
                 "optional": true,
                 "allowTreeAccess": true,

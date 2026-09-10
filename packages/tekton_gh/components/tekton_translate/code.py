@@ -40,7 +40,13 @@ def _setup(explicit_repo):
             root = os.path.expanduser(candidate)
             break
     if root is None:
-        raise RuntimeError("Tekton-Repo nicht gefunden — siehe TektonInfo.")
+        raise RuntimeError(
+            "Tekton-Repo nicht gefunden. Eine Komponente mit 'repo'-Input "
+            "(TektonInfo, TektonTranslate, TektonBackend) einmal auf dem Canvas "
+            "setzen — der Pfad gilt dann fuer die ganze Sitzung. Siehe TektonInfo."
+        )
+    # Fuer die Komponenten ohne eigenen repo-Input hinterlegen.
+    os.environ["TEKTON_REPO"] = root
 
     for name in [m for m in list(sys.modules) if m.split(".")[0] in ("compas_timber", "compas_timber_fea", "tekton_gh")]:
         del sys.modules[name]

@@ -141,6 +141,14 @@ anschauen).
 
 **5 | IO** — `Save Model` / `Load Model` (JSON; zugleich das Übergabeformat).
 
+## Rauchtest
+
+`examples/tekton_smoke_test.ghx` zeigt die ganze Kette an einem Beispielmodell
+und ist am 2026-09-10 in Rhino 8 durchgelaufen: 84 Balken → 344 Knoten /
+404 Stäbe, 4 Auflager gesetzt, Preflight ohne Befunde, Worker-Subprozess
+schreibt eine SAF-Datei mit 404 Stäben. Vor dem Öffnen die beiden Pfad-Panels
+anpassen — Details in [examples/README.md](examples/README.md).
+
 ## Typischer Ablauf
 
 ```text

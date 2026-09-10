@@ -39,8 +39,8 @@
                 "simplify": false
             },
             {
-                "name": "type",
-                "nickname": "type",
+                "name": "support_type",
+                "nickname": "support_type",
                 "description": "'pinned' | 'fixed' | 'roller'. Default: pinned.",
                 "optional": true,
                 "allowTreeAccess": true,

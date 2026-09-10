@@ -46,6 +46,9 @@ for candidate in (repo, os.environ.get("TEKTON_REPO")):
 if root is None:
     _warn("Repo nicht gefunden — TektonRun wird fehlschlagen. Siehe TektonInfo.")
 else:
+    # Fuer die uebrigen Komponenten hinterlegen (die meisten haben keinen
+    # eigenen repo-Input).
+    os.environ["TEKTON_REPO"] = root
     venv = os.path.join(root, ".venv", "bin", "python")
     if not os.path.isfile(venv):
         venv = os.path.join(root, ".venv", "Scripts", "python.exe")
@@ -55,12 +58,26 @@ else:
 if api_key:
     _warn("API-Key im Canvas. Diese GH-Datei nicht weitergeben — besser TEKTON_API_KEY setzen.")
 
-backend = {
-    "backend": kind,
-    "repo": root,
-    "api_key": api_key or None,
-    "filepath": filepath or None,
-}
+class BackendConfig(object):
+    """Backend-Einstellungen als ein Wert.
+
+    Bewusst eine kleine Klasse und kein dict: Grasshopper iteriert ein dict
+    beim Ausgeben und schickt dann nur dessen *Schluessel* weiter — TektonRun
+    bekaeme vier Strings statt einer Konfiguration. Ein Objekt reicht GH als
+    ein Element durch.
+    """
+
+    def __init__(self, backend, repo, api_key, filepath):
+        self.backend = backend
+        self.repo = repo
+        self.api_key = api_key
+        self.filepath = filepath
+
+    def __repr__(self):
+        return "Backend({}, repo={})".format(self.backend, self.repo)
+
+
+backend = BackendConfig(kind, root, api_key or None, filepath or None)
 
 print("Backend: {}".format(kind))
 print("Repo: {}".format(root or "NICHT GEFUNDEN"))
