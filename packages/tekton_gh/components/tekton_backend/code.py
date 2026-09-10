@@ -7,7 +7,7 @@ Umgebungsvariable TEKTON_API_KEY setzen — der Worker liest sie selbst.
 'repo' ist der Pfad zum Monorepo; dort liegt das venv mit den
 Backend-Paketen (Python >= 3.10).
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

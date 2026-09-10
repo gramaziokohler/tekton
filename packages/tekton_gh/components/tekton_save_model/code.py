@@ -7,7 +7,7 @@ ueber Annahmen zu streiten.
 Das Annahmenprotokoll aus TektonTranslate wird als Textdatei daneben
 gelegt — es gehoert zur Uebergabe.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

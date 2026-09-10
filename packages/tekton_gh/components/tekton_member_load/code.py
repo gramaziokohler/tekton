@@ -6,7 +6,7 @@ ein physischer Balken wird beim Idealisieren in mehrere Staebe geteilt
 
 Einheit: kN/m.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

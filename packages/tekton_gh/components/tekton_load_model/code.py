@@ -3,7 +3,7 @@
 Holt ein gespeichertes Modell samt Ergebnissen zurueck auf den Canvas:
 einen frueheren Rechenlauf, oder das, was der Statiker zurueckschickt.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

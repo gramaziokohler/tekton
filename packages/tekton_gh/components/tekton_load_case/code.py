@@ -9,7 +9,7 @@ Modells derzeit noch und nutzt einen fest verdrahteten Katalog
 (Prioritaet 1 in docs/handoff.md). Bis das behoben ist, kommt in RFEM
 nicht unbedingt an, was hier steht.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

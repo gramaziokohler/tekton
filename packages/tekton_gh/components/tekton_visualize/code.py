@@ -4,7 +4,7 @@ Werte oberhalb der Obergrenze werden hart rot statt weiter
 interpoliert: eine Ueberschreitung soll ins Auge springen, nicht sanft
 ausbleichen.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

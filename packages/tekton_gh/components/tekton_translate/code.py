@@ -7,7 +7,7 @@ Der 'report'-Ausgang ist kein Debug-Output. Er listet die getroffenen
 Idealisierungsannahmen — das, worüber der Statiker später diskutiert. Auf den
 Canvas legen, nicht wegwerfen.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

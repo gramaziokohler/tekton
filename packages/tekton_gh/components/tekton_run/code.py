@@ -9,7 +9,7 @@ NUR per Button auslösen. Zwei Gründe: der Lauf blockiert Grasshopper, solange
 gerechnet wird, und jeder Lauf baut das Modell im Backend neu auf. Ein
 Auto-Recompute bei jedem Slider-Wackeln wäre fatal.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

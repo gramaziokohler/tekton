@@ -34,9 +34,12 @@ funktioniert.
 **1. Rhino-venv anlegen.** Tekton braucht `compas_timber` von der Branch
 `structural_graph_plates` — `compas_timber.structural` existiert nur dort. Das
 offizielle COMPAS-Timber-Plugin bringt eine ältere Version mit, die *nicht*
-reicht. In Rhino ein eigenes venv namens `tekton` anlegen und dort die
-gepinnte Revision installieren (siehe `# venv: tekton` im Kopf jeder
-Komponente).
+reicht. In Rhino ein eigenes venv anlegen und dort die gepinnte Revision
+installieren. Der Name muss zum Header jeder Komponente passen — derzeit
+`# venv: tekton-test`, weil genau dieses Env auf der Maschine schon
+existierte. Rhino legt bei einem unbekannten Namen stillschweigend ein
+**leeres** Env an, und dann fehlt compas_timber; der Name ist also nicht
+kosmetisch.
 
 **2. Repo-Pfad bekannt machen.** Entweder am Input `repo` der Komponenten,
 oder einmalig als Umgebungsvariable:
@@ -74,9 +77,16 @@ wirkungslos — auch für den unveränderten Componentizer in `lorin-gh-tools`,
 es liegt also nicht an Tekton. Der Weg über die laufende Instanz baute alle
 20 Komponenten fehlerfrei.
 
-Die fertigen `.ghuser`-Dateien nach
-`~/Library/Application Support/McNeel/Rhinoceros/8.0/Grasshopper/UserObjects/`
-kopieren, Rhino neu starten.
+Schritt 3, installieren — dafuer gibt es `_componentizer/install.sh`:
+
+```bash
+bash _componentizer/install.sh    # -> UserObjects/tekton/, dann Rhino neu starten
+```
+
+Zielordner ist
+`~/Library/Application Support/McNeel/Rhinoceros/8.0/Plug-ins/Grasshopper (b45a29b1-…)/UserObjects/tekton/`
+— der Unterordner haelt die Tekton-Komponenten von den uebrigen getrennt.
+Grasshopper liest UserObjects nur beim Start, ein Neustart ist also noetig.
 
 Der Componentizer stammt aus `lorin-gh-tools` und ist hier bewusst kopiert
 statt referenziert — das Repo soll für sich baubar bleiben. Einzige Änderung:

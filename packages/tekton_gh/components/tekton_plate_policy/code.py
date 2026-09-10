@@ -10,7 +10,7 @@ festgelegte Tragrichtung sind Plattenergebnisse nicht interpretierbar.
 TODO(scaffold): Die Orthotropie-Richtung fehlt im Datenmodell noch
 (docs/handoff.md, Punkt 3); der Input wird bisher nur protokolliert.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

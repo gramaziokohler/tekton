@@ -11,7 +11,7 @@ derzeit noch und verwendet einen fest verdrahteten Katalog (Priorität 1 in
 docs/handoff.md). Bis das behoben ist, kommt in RFEM nicht zwingend an, was
 hier gesetzt wird.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

@@ -4,7 +4,7 @@ Kombiniert Lastfaelle mit Teilsicherheitsbeiwerten. Heute Handarbeit;
 spaeter waere ein EC0-Generator (staendig/veraenderlich, psi-Beiwerte)
 der eigentliche Komfortgewinn.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

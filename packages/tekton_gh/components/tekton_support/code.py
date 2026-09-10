@@ -9,7 +9,7 @@ Die Toleranz ist in Modelleinheiten, nicht in Metern — bei einem
 mm-Dokument ist 1e-4 also ein Zehntel Mikrometer. Meist will man hier
 einen groesseren Wert.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

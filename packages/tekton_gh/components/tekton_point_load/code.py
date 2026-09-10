@@ -6,7 +6,7 @@ existieren die Knoten noch gar nicht.
 
 Einheiten: Kraft in kN, Moment in kNm (Vertrag des neutralen Modells).
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

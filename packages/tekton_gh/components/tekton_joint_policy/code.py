@@ -8,7 +8,7 @@ Annahmenprotokoll dokumentiert.
 'conservative' setzt alles gelenkig: die sichere Annahme fuer
 Verformungen, aber sie unterschaetzt die Steifigkeit.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

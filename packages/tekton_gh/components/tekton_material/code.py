@@ -9,7 +9,7 @@ TODO(scaffold): Sobald die Material-Dataclass mit Presets existiert
 (discussion/materials.md), gibt diese Komponente ein Objekt statt eines
 Strings aus, und die Overrides unten werden wirksam.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

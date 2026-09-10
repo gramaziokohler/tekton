@@ -8,7 +8,7 @@ Modellstand, welche Kombination, wann' ist eine Haftungsfrage. Der
 schlimmste Fehlermodus ist, dass Ergebnisse eine Entwurfsaenderung
 still ueberleben.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

@@ -7,7 +7,7 @@ Ergebnisdarstellung.
 Das ist die Ansicht, in der man sieht, ob die Idealisierung das
 getan hat, was man erwartet hat: wo geteilt wurde, wo Gelenke sitzen.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

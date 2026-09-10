@@ -7,7 +7,7 @@ ein Worker-venv.
 Diese Komponente ist bewusst die einzige, die *ohne* funktionierendes Setup
 noch etwas Sinnvolles ausgibt — sie darf nie hart fehlschlagen.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

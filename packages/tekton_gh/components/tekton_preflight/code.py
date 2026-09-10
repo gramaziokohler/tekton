@@ -14,7 +14,7 @@ Fehler ("error") sind Bedingungen, unter denen eine Berechnung sinnlos ist
 Export: ein Push ohne Auflager ist legitim, wenn der Statiker sie in RFEM
 ergaenzt.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os

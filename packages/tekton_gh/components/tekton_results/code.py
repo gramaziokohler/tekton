@@ -11,7 +11,7 @@ Ausnutzung ist die eine Groesse, die noch fehlt: sie kommt aus dem
 Bemessungs-Addon von RFEM und ist nicht angebunden. Schnittgroessen,
 Verformungen und Auflagerreaktionen werden gelesen.
 """
-# venv: tekton
+# venv: tekton-test
 # r: compas, compas_timber
 
 import os
