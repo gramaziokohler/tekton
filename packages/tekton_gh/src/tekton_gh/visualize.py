@@ -40,12 +40,77 @@ QUANTITIES = {
 #: Whether the quantity is drawn by its absolute value (forces alternate in sign).
 SIGNED = {"N", "Vy", "Vz", "Mt", "My", "Mz"}
 
+#: Surface quantities: name -> function(StructuralSurfaceResult) -> float.
+#: Membrane forces in kN/m, moments in kNm/m, shear from the sample metadata.
+SURFACE_QUANTITIES = {
+    "displacement": lambda r: r.displacement.length if r.displacement is not None else 0.0,
+    "n_x": lambda r: r.membrane_force_x,
+    "n_y": lambda r: r.membrane_force_y,
+    "n_xy": lambda r: r.membrane_force_xy,
+    "m_x": lambda r: r.moment_x,
+    "m_y": lambda r: r.moment_y,
+    "m_xy": lambda r: r.moment_xy,
+    "v_x": lambda r: float((r.metadata or {}).get("v_x", 0.0) or 0.0),
+    "v_y": lambda r: float((r.metadata or {}).get("v_y", 0.0) or 0.0),
+}
+
 
 def quantity_of(row, quantity):
     """Value of ``quantity`` on one result row; forces by absolute value."""
     getter = QUANTITIES.get(quantity or "displacement", QUANTITIES["displacement"])
     value = getter(row) or 0.0
     return abs(value) if quantity in SIGNED else value
+
+
+def surface_quantity_of(sample, quantity):
+    """Value of ``quantity`` on one surface sample; forces by absolute value. Unknown -> 0."""
+    getter = SURFACE_QUANTITIES.get(quantity or "displacement")
+    if getter is None:
+        return 0.0
+    value = getter(sample) or 0.0
+    return abs(value) if quantity != "displacement" else value
+
+
+def surface_outline(structural_model, surface):
+    """The surface's corner points, in model units."""
+    points = {n.id: n.point for n in structural_model.nodes}
+    outline = [points.get(n) for n in surface.nodes]
+    return [] if any(p is None for p in outline) else outline
+
+
+def surface_stations(structural_model, result_set, surface, quantity="displacement"):
+    """Sample points of a surface: the result mesh nodes when read, else the corners.
+
+    Each station carries the point, its displacement and the value of
+    ``quantity``, so the caller can draw a deformed, coloured mesh. Without
+    surface results the corners move with the nodal deformations, which is
+    enough to see the plate go along with its neighbours, not to see it bend.
+    """
+    node_results = (result_set.node_results or {}) if result_set else {}
+    samples = ((result_set.surface_results or {}).get(surface.id) or []) if result_set else []
+    stations = []
+    for sample in samples:
+        if sample.position is None:
+            continue
+        stations.append(Station(0.0, Point(*sample.position), sample.displacement, surface_quantity_of(sample, quantity)))
+    if stations:
+        return stations
+    corners = surface_corner_stations(structural_model, result_set, surface)
+    if quantity != "displacement":
+        for station in corners:
+            station.value = 0.0
+    return corners
+
+
+def surface_corner_stations(structural_model, result_set, surface):
+    """The surface's corners with their nodal displacements - the deformed outline."""
+    node_results = (result_set.node_results or {}) if result_set else {}
+    stations = []
+    for node_id, point in zip(surface.nodes, surface_outline(structural_model, surface)):
+        result = node_results.get(node_id)
+        displacement = Vector(*result.displacement) if result is not None and result.displacement is not None else Vector(0, 0, 0)
+        stations.append(Station(0.0, point, displacement, displacement.length))
+    return stations
 
 
 def colour_rgb(value, low=0.0, high=1.0):
@@ -232,7 +297,12 @@ def _orthogonalize(v, unit):
 
 __all__ = [
     "QUANTITIES",
+    "SURFACE_QUANTITIES",
     "Station",
+    "surface_quantity_of",
+    "surface_outline",
+    "surface_stations",
+    "surface_corner_stations",
     "colour_rgb",
     "quantity_of",
     "member_stations",

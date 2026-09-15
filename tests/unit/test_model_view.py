@@ -190,3 +190,20 @@ def test_legend_counts():
     assert lines[1] == "Supports: 1x pinned"
     assert lines[2] == "Loads LC1: 1 point, 1 member"
     assert lines[3] == "Self-weight: LC1"
+
+
+def test_surfaces_and_edge_connections():
+    from compas_timber_fea.core.model import StructuralSurface, StructuralSurfaceConnection, StructuralThickness
+    from tekton_gh.model_view import surface_connection_specs, surface_specs
+
+    m = _model()
+    m.nodes += [StructuralNode(id=4, point=Point(0, 1, 0)), StructuralNode(id=5, point=Point(2, 1, 0))]
+    m.thicknesses = [StructuralThickness(id=1, name="t", material_id=1, thickness=0.1)]
+    m.surfaces = [StructuralSurface(id=1, nodes=[1, 2, 5, 4], thickness_id=1)]
+    m.surface_connections = [StructuralSurfaceConnection(id=1, nodes=[1, 2], release=MemberRelease(rx=0.0, name="edge"))]
+
+    slabs = surface_specs(m, scale=1000.0)
+    edges = surface_connection_specs(m)
+
+    assert len(slabs) == 1 and slabs[0]["thickness"] == 100.0 and len(slabs[0]["points"]) == 4
+    assert len(edges) == 1 and edges[0]["colour"] == COLOURS["coupling"] and edges[0]["label"].startswith("edge hinge")

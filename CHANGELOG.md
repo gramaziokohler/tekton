@@ -9,12 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **tekton_gh**: `Tekton Visualize` draws the deformed shape — polylines through the RFEM stations, sections swept along them as vertex-coloured meshes, one colour per member; quantities `displacement | N | Vy | Vz | Mt | My | Mz | utilization`, `exaggeration` input, auto-scaled colour range. Geometry lives in `tekton_gh.visualize` (pure, tested).
+- **compas_dlubal**: the result reader reads surface results per mesh node (global deformations, basic internal forces) into `StructuralSurfaceResult`.
+- **tekton_gh**: `Tekton Display` draws surfaces (mid-plane extruded by the thickness, semi-transparent) and their edge connections; `Tekton Visualize` draws surfaces deformed and coloured from the mesh-node samples (quantities `n_x n_y n_xy m_x m_y m_xy v_x v_y displacement`).
+- **examples**: `tekton_test_plates.ghx` - beams and plates in one definition; `plate_box_component.py` builds the CLT box from sliders.
 - **compas_dlubal**: the result reader reads member deformations (`STATIC_ANALYSIS_MEMBERS_GLOBAL_DEFORMATIONS`) and merges them into the force stations.
 - **compas_dlubal**: a failed calculation is reported with RFEM's own error text (`has_results()` + errors-and-warnings table) instead of empty results.
 - **tekton_app**: the worker reads the API key from `TEKTON_API_KEY`, `DLUBAL_API_KEY`, or the repo's `.env`.
 - **compas_timber_fea**: `reconstruct.structural_to_timber` rebuilds a TimberModel from a StructuralModel (beams exact: GUID, axis, section, orientation; plates when 1:1; results attached; joints not). GH component `Tekton To Timber`.
 - **compas_timber_fea**: `results.samples_by_beam` projects member stations onto the physical beam axis without a timber model.
 - **compas_timber_fea**: attached results carry the displacement vector per sample and in the envelope (plain tuples).
+- **tekton_gh**: `Tekton Display` gets a `geometry` toggle (member geometry off by default) and an icon; `Tekton To Timber` gets an icon; both listed in ICONS.md.
 - **tekton_gh**: new `Tekton Display`, the model view: elements, connections (rigid/coupling/hinge/shared node), support symbols by condition with labels, load arrows and moment rings, reaction arrows; vertex-coloured meshes, text-dot labels. Logic in `tekton_gh.model_view`.
 - **tekton_gh**: `build_value_list` kept as a compatibility shim so definitions with pre-2026-09-15 component instances open without errors.
 - **tekton_gh**: `Tekton Results` reworked: samples and parameters as trees with t on the beam axis (was member-local), signed envelope (was absolute), JSON record, optional TimberModel input that returns the Beam objects in order; staleness check kept.
@@ -30,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **tekton_gh**: the Grasshopper worker call passes `--delete-all` for rfem/rstab, matching the documented "every run rebuilds" contract.
 
 ### Fixed
+- **compas_dlubal**: surfaces now calculate in RFEM - the library timber material (1D model) cannot carry a plate; the importer pushes an orthotropic-2D variant per material for the thicknesses.
+- **tekton_gh**: `Tekton Run` no longer uses the backend's SAF filepath as the result path for rfem/rstab.
+- **examples**: the plate box's slab sits on centre-line dimensions, so it shares nodes with the wall tops (was floating 9 cm above them).
 - **compas_dlubal**: unit factor at the Dlubal boundary — the neutral model is kN/kNm, the API is N/Nm. Loads were sent 1000× too small and results read 1000× too large.
 - **tekton_gh**: first RFEM roundtrip from Grasshopper verified live (2026-09-15).
 

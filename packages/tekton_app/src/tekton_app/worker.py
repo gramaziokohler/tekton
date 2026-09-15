@@ -137,8 +137,9 @@ def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, dele
 
     for case_id, result_set in sorted(model.results.items()):
         metadata = getattr(result_set, "metadata", {}) or {}
-        log("  Lastfall {}: {} Staebe, {} Knoten".format(
-            case_id, len(result_set.member_results or {}), len(result_set.node_results or {})))
+        log("  Lastfall {}: {} Staebe, {} Knoten, {} Flaechen".format(
+            case_id, len(result_set.member_results or {}), len(result_set.node_results or {}),
+            len(getattr(result_set, "surface_results", None) or {})))
         # Fehlende Ergebnistabellen sind der haeufigste stille Teilausfall:
         # eine Tabelle fehlt, die anderen kommen durch, und niemand merkt es.
         for table, error in (metadata.get("errors") or {}).items():

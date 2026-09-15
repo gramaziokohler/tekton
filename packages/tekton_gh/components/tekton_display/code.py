@@ -76,7 +76,7 @@ def _warn(message):
 
 
 class TektonDisplay(Grasshopper.Kernel.GH_ScriptInstance):
-    def RunScript(self, structural, show, load_case, scale, load_scale, opacity):
+    def RunScript(self, structural, show, geometry, load_case, scale, load_scale, opacity):
         elements = []
         members = []
         connections = []
@@ -109,7 +109,7 @@ class TektonDisplay(Grasshopper.Kernel.GH_ScriptInstance):
             import tekton_gh.model_view
             import tekton_gh.visualize
             importlib.reload(tekton_gh.model_view)
-            from tekton_gh.model_view import connection_specs, element_specs, legend as _legend, load_specs, reaction_specs, support_specs
+            from tekton_gh.model_view import connection_specs, element_specs, legend as _legend, load_specs, reaction_specs, support_specs, surface_connection_specs, surface_specs
             from tekton_gh.rhino_io import member_lines
             from tekton_gh.visualize import section_mesh
 
@@ -190,6 +190,31 @@ class TektonDisplay(Grasshopper.Kernel.GH_ScriptInstance):
                     if m is None:
                         return None
                     return painted(m, colour)
+                if kind == "slab":
+                    # The mid-plane outline extruded by +-t/2 along its normal.
+                    pts = [P(p) for p in spec["points"]]
+                    n = len(pts)
+                    normal = rg.Vector3d.CrossProduct(pts[1] - pts[0], pts[2] - pts[0])
+                    if not normal.Unitize():
+                        return None
+                    half = normal * (spec["thickness"] / 2.0)
+                    m = rg.Mesh()
+                    for p in pts:
+                        m.Vertices.Add(p - half)
+                    for p in pts:
+                        m.Vertices.Add(p + half)
+                    for i in range(n):
+                        j = (i + 1) % n
+                        m.Faces.AddFace(i, j, n + j, n + i)
+                    if n == 4:
+                        m.Faces.AddFace(3, 2, 1, 0)
+                        m.Faces.AddFace(n, n + 1, n + 2, n + 3)
+                    else:
+                        for i in range(1, n - 1):
+                            m.Faces.AddFace(0, i + 1, i)
+                            m.Faces.AddFace(n, n + i, n + i + 1)
+                    m.Normals.ComputeNormals()
+                    return painted(m, colour)
                 if kind == "beam":
                     vertices, faces, _c = section_mesh([spec["start"], spec["end"]], spec["width"], spec["height"], spec["orientation"])
                     m = rg.Mesh()
@@ -213,20 +238,24 @@ class TektonDisplay(Grasshopper.Kernel.GH_ScriptInstance):
                         anchor = spec.get("start", spec.get("point"))
                         labels.append(rg.TextDot(spec["label"], P(anchor)))
 
-            ALL = {"elements", "members", "connections", "supports", "loads", "reactions"}
-            # Solid elements hide the connections (a coupling is 4 cm long and sits
-            # inside the timber), so they are opt-in; the default is the wire model.
-            DEFAULT = ALL
+            ALL = {"members", "connections", "supports", "loads", "reactions"}
             wanted = set(str(s).lower().strip('"') for s in (show or [])) & ALL
             if show and not wanted:
-                _warn("'show' has no known entry ({}) - showing the default set. Allowed: {}.".format(", ".join(str(s) for s in show), ", ".join(sorted(ALL))))
-            wanted = wanted or DEFAULT
+                _warn("'show' has no known entry ({}) - showing everything. Allowed: {}.".format(", ".join(str(s) for s in show), ", ".join(sorted(ALL))))
+            wanted = wanted or ALL
+            # The member geometry (beam sections, plate slabs) is its own
+            # toggle, off by default: it is drawn semi-transparent by
+            # DrawViewportMeshes, but still clutters the wire model.
+            if geometry:
+                wanted.add("elements")
             if "members" in wanted:
                 members = member_lines(structural, scale=factor)
             if "elements" in wanted:
                 build(element_specs(structural, scale=factor), elements)
+                build(surface_specs(structural, scale=factor), elements)
             if "connections" in wanted:
                 build(connection_specs(structural, scale=factor, size=size), connections)
+                build(surface_connection_specs(structural, scale=factor, size=size), connections)
             if "supports" in wanted:
                 build(support_specs(structural, scale=factor, size=size), supports)
             if "loads" in wanted:

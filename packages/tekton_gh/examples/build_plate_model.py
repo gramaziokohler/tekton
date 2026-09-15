@@ -12,9 +12,11 @@ Two things about the geometry are not cosmetic:
   the neighbouring plate's mid-plane. A model that merely looks right - walls
   standing under a slab - produces no coupling at all, and the analysis model
   falls apart into loose pieces.
-- **The walls meet each other at vertical edges.** Wall-to-slab coupling does
-  not currently survive compas_timber's mid-surface generation (see
-  KNOWN_ISSUE below), so the box carries itself through the wall corners.
+- **The slab sits on centre-line dimensions too.** Its mid-plane must contain
+  the walls' top edges (z = HEIGHT, inset by half a wall thickness), so its
+  outline starts half a slab thickness below HEIGHT and is inset by T_WALL/2.
+  With the slab merely "on top" its mid-plane floats 9 cm above the walls,
+  the graph finds no shared nodes, and the analysis model is two pieces.
 
 Dimensions in mm, matching the Rhino convention.
 """
@@ -68,8 +70,10 @@ def build():
             T_WALL, vector=Vector(1, 0, 0)),
     ]
 
+    h = T_WALL / 2.0
+    z0 = HEIGHT - T_SLAB / 2.0
     slab = Plate.from_outline_thickness(
-        rect([(0, 0, HEIGHT), (WIDTH, 0, HEIGHT), (WIDTH, DEPTH, HEIGHT), (0, DEPTH, HEIGHT)]),
+        rect([(h, h, z0), (WIDTH - h, h, z0), (WIDTH - h, DEPTH - h, z0), (h, DEPTH - h, z0)]),
         T_SLAB, vector=Vector(0, 0, 1))
 
     for element in walls + [slab]:

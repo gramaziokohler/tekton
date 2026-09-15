@@ -175,3 +175,22 @@ def test_string_material_still_maps(member_mapper):
     proto = member_mapper.map_material(2, "C24")
 
     assert proto.name == "C24 | EN 338:2016-04"
+
+
+def test_surface_material_variant_is_orthotropic_2d(member_mapper):
+    """A plate cannot use the library's 1D timber model; the surface variant is orthotropic 2D, offset in number."""
+    proto = member_mapper.map_material(1, "C24", for_surfaces=True)
+
+    models = proto.DESCRIPTOR.fields_by_name["material_model"].enum_type
+    assert proto.no == 1001
+    assert proto.material_model == models.values_by_name["MATERIAL_MODEL_ORTHOTROPIC_2D"].number
+    assert proto.name == "C24 | EN 338:2016-04"
+
+
+def test_thickness_can_point_at_the_surface_material(core):
+    from compas_dlubal.dlubal.mappers.mapper_thicknesses import ThicknessMapper
+    from compas_timber_fea.core.model import StructuralThickness
+
+    proto = ThicknessMapper(core).map(StructuralThickness(id=1, name="t", material_id=1, thickness=0.1), material_id=1001)
+
+    assert proto.material == 1001

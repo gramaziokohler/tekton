@@ -4,6 +4,7 @@ from compas_dlubal.dlubal.result_parsing import parse_member_deformations
 from compas_dlubal.dlubal.result_parsing import parse_member_internal_forces
 from compas_dlubal.dlubal.result_parsing import parse_node_deformations
 from compas_dlubal.dlubal.result_parsing import parse_support_forces
+from compas_dlubal.dlubal.result_parsing import parse_surface_results
 from compas_timber_fea.core.model import StructuralResultSet
 
 
@@ -45,6 +46,7 @@ class DlubalResultReader:
         """
         load_cases = load_cases or [1]
         member_lengths = member_lengths_from_model(structural_model) if structural_model else {}
+        self._has_surfaces = bool(structural_model.surfaces) if structural_model is not None else True
 
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
             calculation_method = None
@@ -83,6 +85,11 @@ class DlubalResultReader:
             "node_deformations": results_type.STATIC_ANALYSIS_NODES_GLOBAL_DEFORMATIONS,
             "support_forces": results_type.STATIC_ANALYSIS_NODES_SUPPORT_FORCES,
         }
+        # Surface tables only exist for models with surfaces; asking for them
+        # otherwise is an error the metadata would record for nothing.
+        if getattr(self, "_has_surfaces", True):
+            tables["surface_deformations"] = results_type.STATIC_ANALYSIS_SURFACES_GLOBAL_DEFORMATIONS_MESH_NODES
+            tables["surface_forces"] = results_type.STATIC_ANALYSIS_SURFACES_BASIC_INTERNAL_FORCES_MESH_NODES
         loading_label = "LC{}".format(load_case_id)
 
         frames = {}
@@ -115,11 +122,16 @@ class DlubalResultReader:
         if "support_forces" in frames:
             node_results = parse_support_forces(frames["support_forces"], load_case_id, node_results)
 
+        surface_results = {}
+        if "surface_deformations" in frames or "surface_forces" in frames:
+            surface_results = parse_surface_results(frames.get("surface_deformations"), frames.get("surface_forces"), load_case_id)
+
         return StructuralResultSet(
             load_case_id=load_case_id,
             name=f"Load Case {load_case_id}",
             node_results=node_results,
             member_results=member_results,
+            surface_results=surface_results,
             metadata=metadata,
         )
 

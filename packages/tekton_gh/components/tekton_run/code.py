@@ -102,9 +102,11 @@ else:
             model_name=model_name or "tekton-gh",
             api_key=api_key,
             calculate=True if calculate is None else bool(calculate),
-            # Without the path a SAF export lands in the temp folder instead
-            # of where TektonBackend wanted it put.
-            output_path=filepath,
+            # The backend's filepath is the SAF target - without it the xlsx
+            # lands in the temp folder. For rfem/rstab the result model goes
+            # to a temp file the component reads back; a SAF path left over
+            # from another backend must not become the result path.
+            output_path=filepath if kind == "saf" else None,
         )
     except WorkerError as exc:
         _error(str(exc))

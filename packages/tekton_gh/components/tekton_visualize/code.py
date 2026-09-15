@@ -119,15 +119,16 @@ else:
     import importlib
     import tekton_gh.visualize
     importlib.reload(tekton_gh.visualize)
-    from tekton_gh.visualize import QUANTITIES, deformed_polyline, member_stations, section_mesh
+    from tekton_gh.visualize import QUANTITIES, SURFACE_QUANTITIES, deformed_polyline, member_stations, section_mesh, surface_corner_stations, surface_outline, surface_stations
 
     units = getattr(structural, "source_units", "m")
     scale = {"mm": 1000.0, "cm": 100.0, "dm": 10.0, "m": 1.0}.get(units, 1.0)
     geometry = member_lines(structural, scale=scale)
 
     quantity = quantity or "displacement"
-    if quantity not in QUANTITIES:
-        _warn("Unknown quantity '{}'. Allowed: {}.".format(quantity, ", ".join(sorted(QUANTITIES))))
+    if quantity not in QUANTITIES and quantity not in SURFACE_QUANTITIES:
+        _warn("Unknown quantity '{}'. Members: {}. Surfaces: {}.".format(
+            quantity, ", ".join(sorted(QUANTITIES)), ", ".join(sorted(SURFACE_QUANTITIES))))
         quantity = "displacement"
     factor = 1.0 if exaggeration is None else float(exaggeration)
     build_mesh = True if mesh is None else bool(mesh)
@@ -150,6 +151,11 @@ else:
     for member in structural.members:
         stations = member_stations(structural, result_set, member, quantity)
         per_member.append((member, stations))
+        values.append(max((s.value for s in stations), default=0.0))
+    per_surface = []
+    for surface in getattr(structural, "surfaces", []) or []:
+        stations = surface_stations(structural, result_set, surface, quantity)
+        per_surface.append((surface, stations))
         values.append(max((s.value for s in stations), default=0.0))
 
     lo = 0.0 if low is None else float(low)
@@ -178,6 +184,43 @@ else:
             )
             meshes.append(_rhino_mesh(vertices, faces, vertex_colours))
 
+    # Surfaces: the result mesh nodes (or the corners) as a tessellated,
+    # deformed, vertex-coloured mesh. Rhino triangulates the sample points in
+    # the surface's plane; a plate that bends shows it, because every mesh
+    # node carries its own displacement.
+    for surface, stations in per_surface:
+        if len(stations) < 3:
+            continue
+        outline = surface_outline(structural, surface)
+        if len(outline) < 3:
+            continue
+        o = [rg.Point3d(p.x * scale, p.y * scale, p.z * scale) for p in outline]
+        plane = rg.Plane(o[0], o[1], o[2])
+        flat = [rg.Point3d(s.point.x * scale, s.point.y * scale, s.point.z * scale) for s in stations]
+        mesh_ = None
+        try:
+            mesh_ = rg.Mesh.CreateFromTessellation(flat, None, plane, False)
+        except Exception:
+            mesh_ = None
+        if mesh_ is None or mesh_.Vertices.Count != len(flat):
+            # Fallback: the outline as a fan; stations are then the corners.
+            mesh_ = rg.Mesh()
+            for p in o:
+                mesh_.Vertices.Add(p)
+            for i in range(1, len(o) - 1):
+                mesh_.Faces.AddFace(0, i, i + 1)
+            stations = surface_corner_stations(structural, result_set, surface) if len(stations) != len(o) else stations
+        for i, s in enumerate(stations[:mesh_.Vertices.Count]):
+            p = s.deformed(factor, scale)
+            mesh_.Vertices.SetVertex(i, p.x, p.y, p.z)
+        mesh_.VertexColors.Clear()
+        for s in stations[:mesh_.Vertices.Count]:
+            mesh_.VertexColors.Add(colour_ramp(s.value, lo, hi))
+        mesh_.Normals.ComputeNormals()
+        meshes.append(mesh_)
+        corners = [rg.Point3d(*st.deformed(factor, scale)) for st in surface_corner_stations(structural, result_set, surface)]
+        deformed.append(rg.PolylineCurve(corners + corners[:1]))
+
     colours = [colour_ramp(value, lo, hi) for value in values]
 
     unit_of = {"displacement": "m", "utilization": "-"}
@@ -190,7 +233,7 @@ else:
     ]
     if values and high is not None and max(values) > hi:
         _warn("Maximum value {:.4g} is above the scale upper bound {:.4g}.".format(max(values), hi))
-    if result_set is not None and not any(
+    if result_set is not None and structural.members and not any(
         row.displacement is not None for rows in (result_set.member_results or {}).values() for row in rows
     ):
         _warn("Results carry no member deformations - the deformed shape is interpolated between nodes only. Re-run with the current reader.")

@@ -131,3 +131,32 @@ def test_member_lengths_from_model():
     model.members.append(StructuralMember(id=1, node_start=1, node_end=2, section_id=1))
 
     assert member_lengths_from_model(model) == {1: 3.0}
+
+
+def test_surface_results_merge_deformation_and_forces_per_mesh_node():
+    """Two tables, one sample per (surface, mesh node): position Z-up, N/m -> kN/m, Nm/m -> kNm/m."""
+    from compas_dlubal.dlubal.result_parsing import parse_surface_results
+
+    deformations = pd.DataFrame({"surface_no": [1, 1], "mesh_node_no": [1, 2], "location_x": [0.0, 1.0], "location_y": [0.0, 0.0], "location_z": [-2.8, -2.8], "u_z": [0.001, 0.002]})
+    forces = pd.DataFrame({"surface_no": [1, 1], "mesh_node_no": [1, 2], "location_x": [0.0, 1.0], "location_y": [0.0, 0.0], "location_z": [-2.8, -2.8], "m_x": [-15.5, 20.0], "n_x": [-22500.0, 100.0], "v_x": [5.0, 6.0]})
+
+    results = parse_surface_results(deformations, forces, load_case_id=1)
+
+    samples = results[1]
+    assert len(samples) == 2
+    assert samples[0].position.z == 2.8  # Dlubal Z-down -> neutral Z-up
+    assert samples[0].displacement.z == -0.001
+    assert samples[0].moment_x == -0.0155  # Nm/m -> kNm/m
+    assert samples[0].membrane_force_x == -22.5  # N/m -> kN/m
+    assert samples[0].metadata["v_x"] == 0.005
+
+
+def test_surface_results_tolerate_a_missing_table():
+    from compas_dlubal.dlubal.result_parsing import parse_surface_results
+
+    forces = pd.DataFrame({"surface_no": [2], "mesh_node_no": [7], "m_y": [1000.0]})
+
+    results = parse_surface_results(None, forces, load_case_id=1)
+
+    assert results[2][0].moment_y == 1.0
+    assert results[2][0].position is None

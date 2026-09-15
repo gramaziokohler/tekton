@@ -205,12 +205,29 @@ class MemberMapper:
                 self.hinge_numbers[(member.id, end)] = hinge_no
         return hinges
 
-    def map_material(self, mat_id: int, material):
+    #: Offset for the surface variant of a material (see map_material).
+    SURFACE_MATERIAL_OFFSET = 1000
+
+    @classmethod
+    def surface_material_id(cls, mat_id: int) -> int:
+        return mat_id + cls.SURFACE_MATERIAL_OFFSET
+
+    def map_material(self, mat_id: int, material, for_surfaces: bool = False):
         """Map a neutral material (Material object or grade-name string).
 
         RFEM resolves the name against its own library; the neutral object's
         physical properties are not pushed here - the library material is the
         richer native representation.
+
+        ``for_surfaces`` asks for the variant a plate can use. The library's
+        timber grades come with the 1D timber model (E and G, no Poisson's
+        ratio), which is fine for members but leaves a surface without a
+        stiffness matrix: RFEM then refuses to calculate and reports nothing
+        in its errors table. Observed live on 2026-09-15 with C24 on a CLT
+        box - S235 calculated, C24 did not, C24 as ORTHOTROPIC_2D did. So a
+        model with surfaces gets a second material per grade, orthotropic 2D,
+        numbered ``mat_id + SURFACE_MATERIAL_OFFSET``, and the thicknesses
+        reference that one.
         """
         material = NeutralMaterial.resolve(material)
 
@@ -220,11 +237,12 @@ class MemberMapper:
         # Resolve full name using library or use fallback
         full_name = self.MATERIAL_LIBRARY.get(material.name, material.name)
 
-        return self.Core.Material(
-            no=mat_id,
-            name=full_name,
-            material_type=timber_type_id
-        )
+        kwargs = dict(no=mat_id, name=full_name, material_type=timber_type_id)
+        if for_surfaces:
+            models = self.Core.Material.DESCRIPTOR.fields_by_name['material_model'].enum_type
+            kwargs["no"] = self.surface_material_id(mat_id)
+            kwargs["material_model"] = models.values_by_name['MATERIAL_MODEL_ORTHOTROPIC_2D'].number
+        return self.Core.Material(**kwargs)
 
     def map_section(self, section: StructuralSection):
         # In RSTAB heißt es CrossSection, in RFEM oft auch Section

@@ -66,6 +66,34 @@ blocks Grasshopper and rebuilds the backend model from scratch. It is pressed
 on purpose, not triggered in passing.
 
 
+## `tekton_test_plates.ghx`
+
+Beams **and** plates in one definition: the beams pipeline on top (as in the
+smoke test), the plate example below it, both sharing one `Tekton Backend`.
+Ran the full RFEM roundtrip on 2026-09-15: 3 surfaces, 8 nodes, 4 pinned
+supports at level 0, ~27 s, surface results back (per mesh node: deformation
+and basic internal forces), the one-way slab visibly bending at ×100.
+
+The plate geometry is built on the canvas by the **Plate Box** script
+component (source: `plate_box_component.py`) from five sliders: width,
+depth, height, t_wall, t_slab (document units, metres). Two CLT walls at
+x = 0 and x = width carrying a slab that spans between them, on centre-line
+dimensions - the slab's mid-plane contains the wall tops, so the graph
+merges the nodes (no plate joints needed). Then Translate → Support Nodes
+(level 0) → Preflight → Display / Run → Results / Visualize / Attach / Save.
+
+Two things the plate path taught, both fixed in code:
+
+- **The slab must sit on the centre-line too.** With the slab "on top of"
+  the walls its mid-plane floats half a slab thickness above the wall tops,
+  the graph finds no shared nodes and the model falls into two pieces - that,
+  not the upstream frame bug, was the "two parts" preflight finding.
+- **RFEM's library timber material cannot carry a surface.** C24 comes with
+  the 1D timber model; a plate needs a stiffness matrix. RFEM then refuses to
+  calculate and says nothing in its errors table. The importer now pushes a
+  second, orthotropic-2D variant of every material for the thicknesses
+  (`compas_dlubal.mappers.mapper_members.map_material(for_surfaces=True)`).
+
 ## `plate_box_model.json` + `build_plate_model.py`
 
 A plate model that makes structural sense: four CLT wall panels forming a
@@ -92,9 +120,9 @@ plate's edge lies *in* the neighbouring plate's mid-plane. A model that merely
 looks right - walls standing under a slab - produces no coupling at all and
 falls apart into loose pieces.
 
-**Wall-to-slab coupling does not currently work**, which is why the box carries
-itself through its four vertical corners and the slab sits on top as a separate
-surface. The cause is upstream in compas_timber (`structural.py`): the
+**Wall-to-slab coupling through a joint does not currently work**; the slab
+connects through shared nodes instead (its mid-plane contains the wall tops),
+which RFEM treats as a rigid line connection. The cause is upstream in compas_timber (`structural.py`): the
 mid-surface frame is built as `Frame(origin, direction, normal)`, which puts the
 plate normal into the frame's *y*-axis - so `frame.normal` ends up lying **in**
 the plate plane. The connection finder projects onto that normal, so it only

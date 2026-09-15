@@ -177,12 +177,14 @@ vertex-coloured meshes, one colour per member; `quantity` is
 scales the deformation), `Inspect` (bare debug view: system lines, nodes,
 support ticks, release markers), `Display` (the analysis model as a picture:
 system lines, connections highlighted - rigid links dark, couplings magenta
-with a white sphere at the hinged end, shared nodes grey - supports as
-engineering symbols derived from their six stiffnesses (pyramid on a plate =
-pinned, rollers along the free direction, ball, block = fixed) with a label,
-loads as arrows scaled by value, moments as rings, reactions in blue once
-results exist; `elements` adds the solid sections, opt-in because they hide
-the connections. Logic in `tekton_gh.model_view`, pure and tested).
+with a black sphere at the hinged end, shared nodes grey, plate edges -
+supports as engineering symbols derived from their six stiffnesses in RFEM's
+grammar (pyramid = a rotation is free, cylinder/ball at the apex for one/two
+free rotations, rails or a second plate for free translations, block = fixed)
+with a label, loads as arrows scaled by value, moments as rings, reactions in
+blue once results exist; `geometry` toggles the member geometry - beam
+sections and plate slabs - drawn semi-transparent by the component itself.
+Logic in `tekton_gh.model_view`, pure and tested).
 
 **5 | IO** — `Save Model` / `Load Model` (JSON; also the handover format),
 `To Timber` (rebuilds the TimberModel from a StructuralModel — beams exact
@@ -219,11 +221,12 @@ TimberModel ─→ Support ─→ Translate ─→ Preflight ─→ Run ─→ R
 | **Hinge side on couplings** | the hinge goes to the end where a beam terminates; for crossings (X-lap) the side is arbitrary — the 4 cm lever arm lands on one beam | split the connector at the joint face if that asymmetry ever matters |
 | **Material overrides** | material is a name string, one grade for the whole model | material dataclass (`discussion/materials.md`) |
 | **Support types** | supports are pinned unless authored via `Tekton Support Nodes` | neutral model |
-| **Plate results** | surfaces are pushed; no surface result table is read | `STATIC_ANALYSIS_SURFACES_*` via `get_results`, same pattern as members |
+| **Plate results in the containers** | read per mesh node (deformation, n/m/v), drawn by Visualize; not yet on the plates (`Attach Results` is beam-only) | extend `results.py` to surfaces |
 | **Engineer's edits in RFEM** | every run does `delete_all` and rebuilds | BackendMap / incremental update (`discussion/roundtrip.md`) |
 
 Done: worker CLI, result reader against live tables (forces, member and
-nodal deformations, reactions), calculation-failure detection, unit contract
+nodal deformations, reactions, surface deformations and internal forces per
+mesh node), plate roundtrip (`examples/tekton_test_plates.ghx`), calculation-failure detection, unit contract
 kN ↔ N enforced at the Dlubal boundary, one-sided coupling hinges, deformed
 and coloured visualisation, results back on the beams
 (`beam.attributes["analysis"]`: per load case 11 samples at the beam

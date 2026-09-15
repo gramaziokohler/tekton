@@ -120,3 +120,21 @@ def test_quantity_lookup_defaults_to_displacement():
     assert quantity_of(row, None) == pytest.approx(0.003)
     assert quantity_of(row, "N") == 4.0
     assert quantity_of(row, "utilization") == 0.0
+
+
+def test_surface_stations_use_result_samples_or_fall_back_to_corners():
+    from compas_timber_fea.core.model import StructuralSurface, StructuralSurfaceResult
+    from tekton_gh.visualize import surface_stations
+
+    model = StructuralModel()
+    model.nodes = [StructuralNode(id=i, point=Point(*p)) for i, p in ((1, (0, 0, 0)), (2, (2, 0, 0)), (3, (2, 1, 0)), (4, (0, 1, 0)))]
+    surface = StructuralSurface(id=1, nodes=[1, 2, 3, 4], thickness_id=1)
+    model.surfaces = [surface]
+
+    corners = surface_stations(model, StructuralResultSet(load_case_id=1, node_results={3: StructuralNodeResult(node_id=3, load_case_id=1, displacement=Vector(0, 0, -0.01))}), surface)
+    assert len(corners) == 4 and corners[2].displacement.z == -0.01
+
+    sample = StructuralSurfaceResult(surface_id=1, load_case_id=1, position=Point(1, 0.5, 0), displacement=Vector(0, 0, -0.02), moment_x=-1.5)
+    result_set = StructuralResultSet(load_case_id=1, surface_results={1: [sample]})
+    samples = surface_stations(model, result_set, surface, quantity="m_x")
+    assert len(samples) == 1 and samples[0].value == 1.5 and samples[0].point == Point(1, 0.5, 0)

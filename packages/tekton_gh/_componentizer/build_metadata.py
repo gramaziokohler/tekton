@@ -516,12 +516,14 @@ COMPONENTS = [
             "supports as engineering symbols by condition (pyramid on a plate = pinned, "
             "rollers = free direction, ball, block = fixed) with a label, loads as arrows "
             "scaled by value, moments as rings, reactions in blue once results exist. "
+            "Member geometry (beams, plates) on a toggle, drawn semi-transparent. "
             "Vertex-coloured meshes - no Custom Preview needed. The presentation view; "
             "Tekton Inspect is the bare debug view."
         ),
         inputs=[
             p("structural", desc="StructuralModel.", optional=False),
-            p("show", "str", access="list", desc="Any of 'elements' | 'members' | 'connections' | 'supports' | 'loads' | 'reactions'. Empty = all."),
+            p("show", "str", access="list", desc="Any of 'members' | 'connections' | 'supports' | 'loads' | 'reactions'. Empty = all."),
+            p("geometry", "bool", desc="Show the member geometry - beam sections and plate slabs - semi-transparent. Default False."),
             p("load_case", "int", desc="Only this load case's loads and reactions. Empty = all loads, first result set."),
             p("scale", "float", desc="Symbol size in metres. Default 0.15."),
             p("load_scale", "float", desc="Arrow length per kN in metres. Default 0.25."),

@@ -16,6 +16,7 @@ A spec is a dict with a ``kind`` and whatever that kind needs, plus a
 - ``arrow``     start, end, colour            - load or reaction, head at end
 - ``arc``       point, axis, radius           - moment, drawn as a ring with a head
 - ``text``      point, text                   - label
+- ``slab``      points, thickness             - a surface: its mid-plane outline, extruded
 
 Support symbols follow the engineering convention: a pinned support is a
 pyramid on a plate, a roller adds cylinders under the plate along the free
@@ -293,6 +294,38 @@ def reaction_specs(structural_model, load_case_id=None, scale=1.0, size=0.1, per
     return specs
 
 
+def surface_specs(structural_model, scale=1.0):
+    """Surfaces as their mid-plane outline with the thickness, one spec each."""
+    points = {n.id: n.point for n in structural_model.nodes}
+    thicknesses = {t.id: t.thickness for t in structural_model.thicknesses}
+    specs = []
+    for surface in structural_model.surfaces:
+        outline = [points.get(n) for n in surface.nodes]
+        if any(p is None for p in outline) or len(outline) < 3:
+            continue
+        specs.append({"kind": "slab", "points": [_scaled(p, scale) for p in outline],
+                      "thickness": thicknesses.get(surface.thickness_id, 0.0) * scale, "colour": COLOURS["element"]})
+    return specs
+
+
+def surface_connection_specs(structural_model, scale=1.0, size=0.1):
+    """Surface-to-surface connections as rods along the shared edge; hinged edges in the coupling colour."""
+    points = {n.id: n.point for n in structural_model.nodes}
+    specs = []
+    s = size * scale
+    for connection in structural_model.surface_connections:
+        nodes = [points.get(n) for n in connection.nodes]
+        if any(p is None for p in nodes) or len(nodes) < 2:
+            continue
+        release = connection.release
+        rigid = release is None or release.is_rigid()
+        colour = COLOURS["rigid"] if rigid else COLOURS["coupling"]
+        label = "rigid edge" if rigid else "edge hinge " + "/".join(release.released_dofs())
+        for a, b in zip(nodes, nodes[1:]):
+            specs.append({"kind": "rod", "start": _scaled(a, scale), "end": _scaled(b, scale), "radius": s * 0.12, "colour": colour, "label": label})
+    return specs
+
+
 def element_specs(structural_model, scale=1.0):
     """Beam members as section sweeps (straight), one spec per member."""
     points = {n.id: n.point for n in structural_model.nodes}
@@ -318,7 +351,9 @@ def legend(structural_model, load_case_id=None):
     kinds = {}
     for member in structural_model.members:
         kinds[member.member_type] = kinds.get(member.member_type, 0) + 1
-    lines = ["Members: " + ", ".join("{} {}".format(v, k.lower()) for k, v in sorted(kinds.items()))]
+    lines = ["Members: " + (", ".join("{} {}".format(v, k.lower()) for k, v in sorted(kinds.items())) or "none")]
+    if structural_model.surfaces:
+        lines.append("Surfaces: {} ({} edge connections)".format(len(structural_model.surfaces), len(structural_model.surface_connections)))
     lines.append("Supports: " + (", ".join("{}x {}".format(v, k) for k, v in sorted(supports.items())) or "none"))
     n_point = sum(1 for l in structural_model.point_loads if load_case_id is None or l.load_case_id == load_case_id)
     n_member = sum(1 for l in structural_model.member_loads if load_case_id is None or l.load_case_id == load_case_id)
@@ -351,5 +386,7 @@ __all__ = [
     "load_specs",
     "reaction_specs",
     "element_specs",
+    "surface_specs",
+    "surface_connection_specs",
     "legend",
 ]

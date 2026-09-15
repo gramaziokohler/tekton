@@ -13,8 +13,11 @@ column list is kept in the result metadata for exactly that calibration.
 
 import math
 
+from compas.geometry import Point
+
 from compas_timber_fea.core.model import StructuralMemberResult
 from compas_timber_fea.core.model import StructuralNodeResult
+from compas_timber_fea.core.model import StructuralSurfaceResult
 
 from compas_dlubal.dlubal.conventions import force_from_dlubal
 from compas_dlubal.dlubal.conventions import vector_from_dlubal
@@ -37,6 +40,27 @@ MEMBER_DEFORMATION_COLUMNS = {
     "ux": ("displacement_u_x", "u_x", "ux"),
     "uy": ("displacement_u_y", "u_y", "uy"),
     "uz": ("displacement_u_z", "u_z", "uz"),
+}
+
+#: Surface tables come per mesh node, with the node's position; both the
+#: deformation and the internal-force table share (surface_no, mesh_node_no).
+SURFACE_COLUMNS = {
+    "surface": ("surface_no", "surface", "no"),
+    "mesh_node": ("mesh_node_no", "mesh_node", "node_no"),
+    "x": ("location_x", "x"),
+    "y": ("location_y", "y"),
+    "z": ("location_z", "z"),
+    "ux": ("displacement_u_x", "u_x", "ux"),
+    "uy": ("displacement_u_y", "u_y", "uy"),
+    "uz": ("displacement_u_z", "u_z", "uz"),
+    "n_x": ("n_x", "nx"),
+    "n_y": ("n_y", "ny"),
+    "n_xy": ("n_xy", "nxy"),
+    "m_x": ("m_x", "mx"),
+    "m_y": ("m_y", "my"),
+    "m_xy": ("m_xy", "mxy"),
+    "v_x": ("v_x", "vx"),
+    "v_y": ("v_y", "vy"),
 }
 
 NODE_DEFORMATION_COLUMNS = {
@@ -179,6 +203,61 @@ def parse_member_deformations(dataframe, load_case_id, member_lengths=None, memb
     return results
 
 
+def parse_surface_results(deformations, forces, load_case_id):
+    """Surface deformation + basic internal force tables (per mesh node) -> {surface_id: [StructuralSurfaceResult]}.
+
+    Either frame may be None. Rows are matched on (surface, mesh node); the
+    position comes back into the neutral Z-up space, forces from N/m and Nm/m
+    into kN/m and kNm/m. Membrane forces land in ``membrane_force_*``,
+    moments in ``moment_*``, shear in ``metadata["v_x"|"v_y"]``.
+    """
+    samples = {}
+
+    def rows_of(frame, keys):
+        if frame is None or len(frame) == 0:
+            return
+        columns = {key: _resolve(frame, names, key, required=key in ("surface", "mesh_node")) for key, names in SURFACE_COLUMNS.items()}
+        for _, row in frame.iterrows():
+            surface_id = _int(row[columns["surface"]])
+            node = _int(row[columns["mesh_node"]])
+            if surface_id is None or node is None:
+                continue
+
+            def value(key, row=row):
+                column = columns.get(key)
+                return _float(row[column]) if column else 0.0
+
+            sample = samples.get((surface_id, node))
+            if sample is None:
+                sample = StructuralSurfaceResult(surface_id=surface_id, load_case_id=load_case_id)
+                if columns.get("x"):
+                    x, y, z = vector_from_dlubal(value("x"), value("y"), value("z"))
+                    sample.position = Point(x, y, z)
+                samples[(surface_id, node)] = sample
+            keys(sample, value)
+
+    def deformation(sample, value):
+        sample.displacement = vector_from_dlubal(value("ux"), value("uy"), value("uz"))
+
+    def force(sample, value):
+        sample.membrane_force_x = force_from_dlubal(value("n_x"))
+        sample.membrane_force_y = force_from_dlubal(value("n_y"))
+        sample.membrane_force_xy = force_from_dlubal(value("n_xy"))
+        sample.moment_x = force_from_dlubal(value("m_x"))
+        sample.moment_y = force_from_dlubal(value("m_y"))
+        sample.moment_xy = force_from_dlubal(value("m_xy"))
+        sample.metadata["v_x"] = force_from_dlubal(value("v_x"))
+        sample.metadata["v_y"] = force_from_dlubal(value("v_y"))
+
+    rows_of(deformations, deformation)
+    rows_of(forces, force)
+
+    results = {}
+    for (surface_id, _node), sample in sorted(samples.items()):
+        results.setdefault(surface_id, []).append(sample)
+    return results
+
+
 def parse_node_deformations(dataframe, load_case_id):
     """DataFrame of the nodes-global-deformations table -> {node_id: StructuralNodeResult}.
 
@@ -248,6 +327,7 @@ __all__ = [
     "parse_member_internal_forces",
     "parse_member_deformations",
     "parse_node_deformations",
+    "parse_surface_results",
     "parse_support_forces",
     "member_lengths_from_model",
 ]

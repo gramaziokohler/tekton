@@ -223,6 +223,13 @@ markers. For checking the idealisation before calculating.
 *Motif:* a magnifier over a system-line truss with visible nodes. The
 difference from Results: here the **system**, there the **numbers**.
 
+### Tekton Display (`TDisplay`)
+The analysis model as a picture: connections, support symbols by condition,
+load arrows, reactions; member geometry semi-transparent on a toggle. The
+presentation view - Inspect is the debug view.
+*Motif:* a beam on two pinned supports (triangles on base lines) with a load
+arrow from above - the textbook sketch, in the Results accent.
+
 ---
 
 ## 5 | IO — dark grey `#7a8288`
@@ -231,6 +238,12 @@ difference from Results: here the **system**, there the **numbers**.
 Writes the neutral model as JSON — also the handover format for engineers,
 assumptions report included.
 *Motif:* a system-line figure flowing into a document/file; arrow downward/in.
+
+### Tekton To Timber (`TToTimber`)
+Rebuilds the TimberModel from a StructuralModel: system line in, beam out,
+results attached. For when only the analysis model is at hand.
+*Motif:* a system line with an arrow down into a beam box (the reverse of
+Translate's motif).
 
 ### Tekton Load Model (`TLoad`)
 Reads a saved model, results included, back onto the canvas.

@@ -100,17 +100,20 @@ class DlubalImporter:
             # 3. Mapping from neutral -> Dlubal objects
             objects = []
             
-            # Materials
+            # Materials - and, when there are surfaces, the plate-capable
+            # variant of each (see MemberMapper.map_material).
             for mat_id, mat_name in structural_model.materials.items():
                 objects.append(member_mapper.map_material(mat_id, mat_name))
+                if structural_model.surfaces:
+                    objects.append(member_mapper.map_material(mat_id, mat_name, for_surfaces=True))
 
             # Nodes
             for n in structural_model.nodes:
                 objects.append(node_mapper.map(n))
 
-            # Thicknesses
+            # Thicknesses reference the surface variant of their material
             for t in structural_model.thicknesses:
-                objects.append(thickness_mapper.map(t))
+                objects.append(thickness_mapper.map(t, material_id=member_mapper.surface_material_id(t.material_id)))
 
             # Sections
             for s in structural_model.sections:

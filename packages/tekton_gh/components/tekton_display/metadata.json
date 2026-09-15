@@ -3,7 +3,7 @@
     "nickname": "TDisplay",
     "category": "Tekton",
     "subcategory": "4 | Results",
-    "description": "The analysis model as a picture: elements as their sections, connections highlighted (rigid links dark, couplings magenta with white hinge spheres), supports as engineering symbols by condition (pyramid on a plate = pinned, rollers = free direction, ball, block = fixed) with a label, loads as arrows scaled by value, moments as rings, reactions in blue once results exist. Vertex-coloured meshes - no Custom Preview needed. The presentation view; Tekton Inspect is the bare debug view.",
+    "description": "The analysis model as a picture: elements as their sections, connections highlighted (rigid links dark, couplings magenta with white hinge spheres), supports as engineering symbols by condition (pyramid on a plate = pinned, rollers = free direction, ball, block = fixed) with a label, loads as arrows scaled by value, moments as rings, reactions in blue once results exist. Member geometry (beams, plates) on a toggle, drawn semi-transparent. Vertex-coloured meshes - no Custom Preview needed. The presentation view; Tekton Inspect is the bare debug view.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000025",
     "ghpython": {
@@ -27,7 +27,7 @@
             {
                 "name": "show",
                 "nickname": "show",
-                "description": "Any of 'elements' | 'members' | 'connections' | 'supports' | 'loads' | 'reactions'. Empty = all.",
+                "description": "Any of 'members' | 'connections' | 'supports' | 'loads' | 'reactions'. Empty = all.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -35,6 +35,20 @@
                 "wireDisplay": "default",
                 "sourceCount": 0,
                 "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "geometry",
+                "nickname": "geometry",
+                "description": "Show the member geometry - beam sections and plate slabs - semi-transparent. Default False.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
                 "reverse": false,
                 "simplify": false
             },
