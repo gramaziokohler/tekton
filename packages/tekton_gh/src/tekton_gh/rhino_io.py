@@ -178,6 +178,18 @@ def attach_value_list(ghenv, names, param_index=0, nickname="Options"):
                 return
             if component.Attributes is None or param.SourceCount:
                 return
+            # A replaced component solves once before the upgrade tool restores
+            # its wires. If a list with this name already sits where we would
+            # put ours, it is the previous instance's menu: wire it, do not
+            # duplicate it.
+            for existing in _document.Objects:
+                if isinstance(existing, Grasshopper.Kernel.Special.GH_ValueList) and existing.NickName == nickname:
+                    dx = component.Attributes.Pivot.X - existing.Attributes.Pivot.X
+                    dy = abs(component.Attributes.Pivot.Y - existing.Attributes.Pivot.Y)
+                    if 0 < dx < 400 and dy < 120 and existing.Recipients.Count == 0:
+                        param.AddSource(existing)
+                        component.ExpireSolution(False)
+                        return
             value_list = Grasshopper.Kernel.Special.GH_ValueList()
             value_list.CreateAttributes()
             value_list.Name = nickname
@@ -217,3 +229,15 @@ def value_list_items(ghenv, names, param_index=0):
     if param.SourceCount:
         return []
     return ["{}: {}".format(param.NickName, " | ".join(names))]
+
+
+def build_value_list(ghenv, names, param_index=0, nickname="Options"):
+    """Compatibility shim for component instances built before 2026-09-15.
+
+    Those carried a 'menu' button that called this on demand. The drop-down
+    now attaches itself; keep the old name so a saved definition with an old
+    instance does not turn red on open.
+    """
+    scheduled = attach_value_list(ghenv, names, param_index=param_index, nickname=nickname)
+    return scheduled, "drop-down {} - this component is outdated, replace it from the ribbon".format(
+        "scheduled" if scheduled else "already there or not possible")

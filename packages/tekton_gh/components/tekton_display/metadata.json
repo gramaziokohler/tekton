@@ -1,0 +1,165 @@
+{
+    "name": "Tekton Display",
+    "nickname": "TDisplay",
+    "category": "Tekton",
+    "subcategory": "4 | Results",
+    "description": "The analysis model as a picture: elements as their sections, connections highlighted (rigid links dark, couplings magenta with white hinge spheres), supports as engineering symbols by condition (pyramid on a plate = pinned, rollers = free direction, ball, block = fixed) with a label, loads as arrows scaled by value, moments as rings, reactions in blue once results exist. Vertex-coloured meshes - no Custom Preview needed. The presentation view; Tekton Inspect is the bare debug view.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000025",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "show",
+                "nickname": "show",
+                "description": "Any of 'elements' | 'members' | 'connections' | 'supports' | 'loads' | 'reactions'. Empty = all.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_case",
+                "nickname": "load_case",
+                "description": "Only this load case's loads and reactions. Empty = all loads, first result set.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "int",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "scale",
+                "nickname": "scale",
+                "description": "Symbol size in metres. Default 0.15.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_scale",
+                "nickname": "load_scale",
+                "description": "Arrow length per kN in metres. Default 0.25.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "opacity",
+                "nickname": "opacity",
+                "description": "Opacity of the beams, 0..1. Default 0.35 - the connections inside stay visible.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "elements",
+                "nickname": "elements",
+                "description": "Section meshes of the beam members (drawn by the component with 'opacity'; solid meshes for downstream use)",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "members",
+                "nickname": "members",
+                "description": "System lines",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "connections",
+                "nickname": "connections",
+                "description": "Connector rods, hinge spheres, shared-node markers",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "supports",
+                "nickname": "supports",
+                "description": "Support symbols",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "loads",
+                "nickname": "loads",
+                "description": "Load arrows and moment rings",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "reactions",
+                "nickname": "reactions",
+                "description": "Reaction arrows (with results)",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "labels",
+                "nickname": "labels",
+                "description": "Text dots: support conditions, load and reaction values",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "legend",
+                "nickname": "legend",
+                "description": "Counts and scales",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

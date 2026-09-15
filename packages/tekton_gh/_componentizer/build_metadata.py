@@ -505,6 +505,40 @@ COMPONENTS = [
     ),
     # ---------------- IO ----------------
     dict(
+        folder="tekton_display",
+        uid=25,
+        name="Tekton Display",
+        nickname="TDisplay",
+        sub=SUB_RESULTS,
+        description=(
+            "The analysis model as a picture: elements as their sections, connections "
+            "highlighted (rigid links dark, couplings magenta with white hinge spheres), "
+            "supports as engineering symbols by condition (pyramid on a plate = pinned, "
+            "rollers = free direction, ball, block = fixed) with a label, loads as arrows "
+            "scaled by value, moments as rings, reactions in blue once results exist. "
+            "Vertex-coloured meshes - no Custom Preview needed. The presentation view; "
+            "Tekton Inspect is the bare debug view."
+        ),
+        inputs=[
+            p("structural", desc="StructuralModel.", optional=False),
+            p("show", "str", access="list", desc="Any of 'elements' | 'members' | 'connections' | 'supports' | 'loads' | 'reactions'. Empty = all."),
+            p("load_case", "int", desc="Only this load case's loads and reactions. Empty = all loads, first result set."),
+            p("scale", "float", desc="Symbol size in metres. Default 0.15."),
+            p("load_scale", "float", desc="Arrow length per kN in metres. Default 0.25."),
+            p("opacity", "float", desc="Opacity of the beams, 0..1. Default 0.35 - the connections inside stay visible."),
+        ],
+        outputs=[
+            o("elements", "Section meshes of the beam members (drawn by the component with 'opacity'; solid meshes for downstream use)"),
+            o("members", "System lines"),
+            o("connections", "Connector rods, hinge spheres, shared-node markers"),
+            o("supports", "Support symbols"),
+            o("loads", "Load arrows and moment rings"),
+            o("reactions", "Reaction arrows (with results)"),
+            o("labels", "Text dots: support conditions, load and reaction values"),
+            o("legend", "Counts and scales"),
+        ],
+    ),
+    dict(
         folder="tekton_save_model",
         uid=18,
         name="Tekton Save Model",

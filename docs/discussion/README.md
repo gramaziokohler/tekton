@@ -10,6 +10,7 @@ argued with, not treated as spec.
 | [materials.md](materials.md) | Material library, presets, physical properties, overrides |
 | [plate-model.md](plate-model.md) | How a plate is represented, and who tessellates |
 | [software-comparison.md](software-comparison.md) | One table: how each target software wants things |
+| [opensees-backend.md](opensees-backend.md) | OpenSees as a backend: what was verified, what an adapter needs |
 | [roundtrip.md](roundtrip.md) | Getting results back and attaching them to timber elements |
 | [workflow.md](workflow.md) | Who does what, where, in which package |
 

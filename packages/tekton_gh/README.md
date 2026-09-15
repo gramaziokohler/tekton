@@ -174,7 +174,15 @@ samples and envelope, plus provenance; all load cases or one), `Visualize` (defo
 through the deformed RFEM stations, sections swept along them as
 vertex-coloured meshes, one colour per member; `quantity` is
 `displacement | N | Vy | Vz | Mt | My | Mz | utilization`, `exaggeration`
-scales the deformation), `Inspect` (look at the analysis model).
+scales the deformation), `Inspect` (bare debug view: system lines, nodes,
+support ticks, release markers), `Display` (the analysis model as a picture:
+system lines, connections highlighted - rigid links dark, couplings magenta
+with a white sphere at the hinged end, shared nodes grey - supports as
+engineering symbols derived from their six stiffnesses (pyramid on a plate =
+pinned, rollers along the free direction, ball, block = fixed) with a label,
+loads as arrows scaled by value, moments as rings, reactions in blue once
+results exist; `elements` adds the solid sections, opt-in because they hide
+the connections. Logic in `tekton_gh.model_view`, pure and tested).
 
 **5 | IO** — `Save Model` / `Load Model` (JSON; also the handover format),
 `To Timber` (rebuilds the TimberModel from a StructuralModel — beams exact

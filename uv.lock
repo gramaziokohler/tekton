@@ -111,7 +111,7 @@ requires-dist = [
 [[package]]
 name = "compas-timber"
 version = "2.1.1rc1"
-source = { git = "https://github.com/gramaziokohler/compas_timber.git?rev=83aa5a8fb67d8fc4ff578601e8226361b029ced2#83aa5a8fb67d8fc4ff578601e8226361b029ced2" }
+source = { git = "https://github.com/gramaziokohler/compas_timber.git?rev=4f45dc2019a8bee35c03665d17ce05412c64989e#4f45dc2019a8bee35c03665d17ce05412c64989e" }
 dependencies = [
     { name = "compas" },
     { name = "compas-model" },
@@ -130,7 +130,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "compas-timber", git = "https://github.com/gramaziokohler/compas_timber.git?rev=83aa5a8fb67d8fc4ff578601e8226361b029ced2" }]
+requires-dist = [{ name = "compas-timber", git = "https://github.com/gramaziokohler/compas_timber.git?rev=4f45dc2019a8bee35c03665d17ce05412c64989e" }]
 
 [[package]]
 name = "contourpy"

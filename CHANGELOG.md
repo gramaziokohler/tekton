@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **compas_timber_fea**: `reconstruct.structural_to_timber` rebuilds a TimberModel from a StructuralModel (beams exact: GUID, axis, section, orientation; plates when 1:1; results attached; joints not). GH component `Tekton To Timber`.
 - **compas_timber_fea**: `results.samples_by_beam` projects member stations onto the physical beam axis without a timber model.
 - **compas_timber_fea**: attached results carry the displacement vector per sample and in the envelope (plain tuples).
+- **tekton_gh**: new `Tekton Display`, the model view: elements, connections (rigid/coupling/hinge/shared node), support symbols by condition with labels, load arrows and moment rings, reaction arrows; vertex-coloured meshes, text-dot labels. Logic in `tekton_gh.model_view`.
+- **tekton_gh**: `build_value_list` kept as a compatibility shim so definitions with pre-2026-09-15 component instances open without errors.
 - **tekton_gh**: `Tekton Results` reworked: samples and parameters as trees with t on the beam axis (was member-local), signed envelope (was absolute), JSON record, optional TimberModel input that returns the Beam objects in order; staleness check kept.
 - **tekton_gh**: `Tekton Attach Results` delegates to `compas_timber_fea.results.attach_results_to_timber` (beam-parameter samples across segments) instead of its own member-local copy, and attaches every load case unless one is chosen.
 - **tekton_gh**: `Tekton Backend` accepts a file path in `api_key`; `Tekton Run` and `Tekton Visualize` reload their runtime module on every solve.
