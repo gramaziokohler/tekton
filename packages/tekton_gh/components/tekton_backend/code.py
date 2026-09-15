@@ -39,7 +39,15 @@ filepath: str  # type: ignore
 # --------------------- SCRIPT ---------------------
 
 VALID = ("rfem", "rstab", "saf")
-kind = (backend or "rfem").lower()
+try:
+    _gh_src = os.path.join(os.path.expanduser(repo or os.environ.get("TEKTON_REPO", "")), "packages", "tekton_gh", "src")
+    if os.path.isdir(_gh_src) and _gh_src not in sys.path:
+        sys.path.insert(0, _gh_src)
+    from tekton_gh.rhino_io import attach_value_list
+    attach_value_list(ghenv, list(VALID), param_index=0, nickname="Backend")  # type: ignore # noqa: F821
+except Exception:
+    pass  # no repo yet - the warning below says so; the menu is a convenience
+kind = (backend or "rfem").lower().strip('"')
 if kind not in VALID:
     _warn("Unknown backend '{}'. Allowed: {}.".format(kind, ", ".join(VALID)))
     kind = "rfem"

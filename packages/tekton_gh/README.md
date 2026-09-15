@@ -232,22 +232,27 @@ The countermeasure is blunt: `TektonRun` stamps the model fingerprint into
 every result set, `TektonResults` compares it against the connected model and
 sets `stale` plus a warning as soon as the two diverge.
 
-**Never let a component modify the canvas.** An `AddObject` or
-`ExpireSolution(True)` in the middle of your own execution crashes Rhino, and
-the documented remedy does not save it: `doc.ScheduleSolution(delay, callback)`
-moves the work out of the solve, but the callback is a Python closure that has
-to survive across the .NET delegate boundary. If it is collected before
-Grasshopper invokes it, the process dies instantly and silently — no exception,
-no log entry. `TektonMaterialLibrary` took Rhino down twice this way
-(2026-09-10 with the naive version, 2026-09-11 with the scheduled one).
+**Never touch the canvas during a solve - and never assume the component
+is still there afterwards.** An `AddObject` in the middle of your own
+execution crashes Rhino. The documented remedy, `doc.ScheduleSolution(delay,
+callback)`, moves the work out of the solve - and still crashed Rhino twice
+(2026-09-10/11). The diagnosis at the time ("the Python closure gets
+collected") was wrong; the real pattern showed on 2026-09-15: the crashes
+happened when components were **replaced**. The old instance leaves the
+document while its callback is still queued; the callback then touches the
+`Attributes` of a dead component, which is a native crash with no exception.
+And any Python exception escaping the delegate kills the process just as
+silently.
 
-Components therefore never build one by themselves. They *report* what a value
-list should contain, and Material Library, Joint Policy and Plate Policy carry
-a `menu` input: set it True once and the drop-down is created and wired, then
-set it back to False. Behind a button the document is between solves and the
-object is created directly, with no callback that has to survive anything -
-the mechanism that did the damage is gone. See `build_value_list` and
-`value_list_items` in `tekton_gh.rhino_io`.
+`attach_value_list` in `tekton_gh.rhino_io` therefore has three guards:
+schedule once per component instance, check that the component is still in
+the document before doing anything, and let nothing escape the callback. With
+those in place the drop-downs attach themselves on placement again (Material
+Library, Joint Policy, Plate Policy, Backend, Support, Support Nodes, Load
+Case, Results, Visualize). Verified on 2026-09-15 by scheduling a menu and
+removing the component in the same UI call: Rhino survives, the queued
+callback backs off, the surviving component gets its menu, a second schedule
+on the same instance is refused. The `menu` buttons are gone.
 
 **Never calculate automatically.** `TektonRun` blocks Grasshopper while it
 calculates, and every run rebuilds the backend model from scratch. Hence

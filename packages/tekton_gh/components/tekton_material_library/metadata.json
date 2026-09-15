@@ -3,7 +3,7 @@
     "nickname": "TMatLib",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Pick a material from the library. On placement it attaches its own value list with all grades - no typing, no typos. Without a selection it lists what is available, along with the property values.",
+    "description": "Pick a material from the library. On placement it attaches its own drop-down with all grades - no typing, no typos. Without a selection it lists what is available, along with the property values.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000021",
     "ghpython": {
@@ -21,20 +21,6 @@
                 "wireDisplay": "default",
                 "sourceCount": 0,
                 "typeHintID": "str",
-                "reverse": false,
-                "simplify": false
-            },
-            {
-                "name": "menu",
-                "nickname": "menu",
-                "description": "Set True once to create a drop-down for 'grade', then back to False.",
-                "optional": true,
-                "allowTreeAccess": true,
-                "showTypeHints": true,
-                "scriptParamAccess": "item",
-                "wireDisplay": "default",
-                "sourceCount": 0,
-                "typeHintID": "bool",
                 "reverse": false,
                 "simplify": false
             }

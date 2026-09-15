@@ -43,26 +43,20 @@ def _setup(explicit_repo=None):
 
 # --------------------- INPUTS ---------------------
 grade: str  # type: ignore
-menu: bool  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
 _setup()
 from compas_timber_fea.core.materials import PRESETS, Material  # noqa: E402
 
-from tekton_gh.rhino_io import build_value_list, value_list_items  # noqa: E402
+from tekton_gh.rhino_io import attach_value_list, value_list_items  # noqa: E402
 
 grades = sorted(PRESETS)
 
-# The allowed grades as a hint. Deliberately not a value list the component
-# builds itself - see value_list_items for why that costs Rhino its life.
+# Place the component, the menu is there - see attach_value_list for the
+# guards that make this safe.
+attach_value_list(ghenv, grades, param_index=0, nickname="Grade")  # type: ignore # noqa: F821
 hint = value_list_items(ghenv, grades)  # type: ignore # noqa: F821
-# The drop-down is built on an explicit button press, never by the component
-# itself: touching the canvas during a solve is what crashed Rhino twice.
-if menu:  # noqa: F821
-    _created, _message = build_value_list(
-        ghenv, grades, param_index=0, nickname="Grade")  # type: ignore # noqa: F821
-    print(_message)
 
 material = None
 properties = []

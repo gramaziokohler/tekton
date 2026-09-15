@@ -60,6 +60,17 @@ tolerance: float  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
+# Drop-down on 'support_type' the moment the component lands on the canvas. Needs
+# the repo path for the import; without it the menu simply does not appear
+# and TektonInfo says what is missing.
+try:
+    _setup()
+    from tekton_gh.rhino_io import attach_value_list
+
+    attach_value_list(ghenv, ['pinned', 'fixed', 'roller'], param_index=3, nickname="Support_type")  # type: ignore # noqa: F821
+except Exception:
+    pass
+
 nodes = []
 report = []
 

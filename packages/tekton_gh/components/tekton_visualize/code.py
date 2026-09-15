@@ -88,6 +88,17 @@ mesh: bool  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
+# Drop-down on 'quantity' the moment the component lands on the canvas. Needs
+# the repo path for the import; without it the menu simply does not appear
+# and TektonInfo says what is missing.
+try:
+    _setup()
+    from tekton_gh.rhino_io import attach_value_list
+
+    attach_value_list(ghenv, ['displacement', 'N', 'Vy', 'Vz', 'Mt', 'My', 'Mz'], param_index=2, nickname="Quantity")  # type: ignore # noqa: F821
+except Exception:
+    pass
+
 geometry = []
 deformed = []
 meshes = []

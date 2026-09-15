@@ -120,48 +120,34 @@ def error(ghenv, message):
     )
 
 
-def value_list_items(ghenv, names, param_index=0):
-    """Report the allowed values for an input.
+#: Delegates handed to ScheduleSolution, kept alive until they have run.
+#: Grasshopper holds its own reference, so this is belt and braces - but the
+#: cost is nothing and the failure mode (a collected delegate) is a crash.
+_PENDING_DELEGATES = {}
+
+
+def attach_value_list(ghenv, names, param_index=0, nickname="Options"):
+    """Hang a drop-down on one of the component's inputs, if nothing is wired.
+
+    The pattern people know from Karamba: place the component, the menu is
+    there. Runs once per component instance, deferred out of the solve via
+    ``ScheduleSolution``.
+
+    Why this crashed twice before (2026-09-10/11) and why it does not now:
+    the canvas must not be touched during a solve, so the work goes into a
+    scheduled callback. The old callback assumed the component was still
+    there when it ran - but when a component gets *replaced* (rebuilt
+    userobject, upgrade tool), the old instance leaves the document while its
+    callback is still queued, and touching its ``Attributes`` is a native
+    crash with no exception. And any Python exception escaping the delegate
+    ends the process just as silently. Hence three guards: schedule only once
+    per instance, verify the component is still in the document before doing
+    anything, and let nothing escape the callback.
 
     Returns
     -------
-    list of str
-        Lines to print: the input's name and what it accepts. Empty when
-        something is already wired, because then the hint is just noise.
-    """
-    component = ghenv.Component
-    try:
-        param = component.Params.Input[param_index]
-    except (IndexError, AttributeError):
-        return []
-    if param.SourceCount:
-        return []
-    return [
-        "{}: {}".format(param.NickName, " | ".join(names)),
-        "  (set 'menu' to True once to get a drop-down)",
-    ]
-
-
-def build_value_list(ghenv, names, param_index=0, nickname="Options"):
-    """Create a drop-down for an input - on an explicit button press only.
-
-    A component must never build this by itself. Adding objects during a solve
-    crashes Rhino, and deferring through ``ScheduleSolution`` does not save it
-    either: the callback is a Python closure that has to survive across the
-    .NET delegate boundary, and if it is collected before Grasshopper calls it,
-    the process dies with no error at all. Two crashes on 2026-09-10 and
-    2026-09-11 came from exactly that.
-
-    Behind a button the situation is different. The user presses it, the
-    document is between solves, and the object is created straight away
-    instead of from a callback that has to survive anything. Same convenience,
-    without the mechanism that did the damage.
-
-    Returns
-    -------
-    tuple
-        ``(created, message)`` - `created` is False when nothing was done
-        (already wired, or no document), and `message` says why.
+    bool
+        True if a menu was scheduled now.
     """
     import Grasshopper
     import System
@@ -170,33 +156,64 @@ def build_value_list(ghenv, names, param_index=0, nickname="Options"):
     try:
         param = component.Params.Input[param_index]
     except (IndexError, AttributeError):
-        return False, "input {} does not exist".format(param_index)
-
+        return False
     if param.SourceCount:
-        return False, "'{}' already has a source - leaving it alone".format(param.NickName)
+        return False
 
     document = component.OnPingDocument()
     if document is None:
-        return False, "no active document"
+        return False
 
-    value_list = Grasshopper.Kernel.Special.GH_ValueList()
-    value_list.CreateAttributes()
-    value_list.Name = nickname
-    value_list.NickName = nickname
-    value_list.ListItems.Clear()
-    for name in names:
-        value_list.ListItems.Add(
-            Grasshopper.Kernel.Special.GH_ValueListItem(name, '"{}"'.format(name))
-        )
-    value_list.SelectItem(0)
+    key = (str(component.InstanceGuid), param_index)
+    if key in _PENDING_DELEGATES:
+        return False  # already queued - a second solve must not queue a second menu
 
-    pivot = component.Attributes.Pivot
-    bounds = value_list.Attributes.Bounds
-    value_list.Attributes.Pivot = System.Drawing.PointF(
-        float(pivot.X - bounds.Width - 90),
-        float(pivot.Y - 10 + param_index * 20),
-    )
+    def build(_document):
+        try:
+            _PENDING_DELEGATES.pop(key, None)
+            # The component may have left the document since scheduling
+            # (replaced, deleted, undo). Touching it then is a crash, not an
+            # error - so this check is the whole point.
+            if component.OnPingDocument() is None or not _document.Objects.Contains(component):
+                return
+            if component.Attributes is None or param.SourceCount:
+                return
+            value_list = Grasshopper.Kernel.Special.GH_ValueList()
+            value_list.CreateAttributes()
+            value_list.Name = nickname
+            value_list.NickName = nickname
+            value_list.ListItems.Clear()
+            for name in names:
+                value_list.ListItems.Add(Grasshopper.Kernel.Special.GH_ValueListItem(name, '"{}"'.format(name)))
+            value_list.SelectItem(0)
 
-    document.AddObject(value_list, False)
-    param.AddSource(value_list)
-    return True, "drop-down created with {} entries - set 'menu' back to False".format(len(names))
+            pivot = component.Attributes.Pivot
+            bounds = value_list.Attributes.Bounds
+            value_list.Attributes.Pivot = System.Drawing.PointF(
+                float(pivot.X - bounds.Width - 90),
+                float(pivot.Y - 10 + param_index * 20),
+            )
+            _document.AddObject(value_list, False)
+            param.AddSource(value_list)
+            component.ExpireSolution(False)
+        except Exception:
+            # Never let anything cross the delegate boundary. A menu that
+            # fails to appear is a nuisance; an exception here kills Rhino.
+            pass
+
+    delegate = Grasshopper.Kernel.GH_Document.GH_ScheduleDelegate(build)
+    _PENDING_DELEGATES[key] = delegate
+    document.ScheduleSolution(10, delegate)
+    return True
+
+
+def value_list_items(ghenv, names, param_index=0):
+    """Hint lines naming the allowed values of an input - empty when it is wired."""
+    component = ghenv.Component
+    try:
+        param = component.Params.Input[param_index]
+    except (IndexError, AttributeError):
+        return []
+    if param.SourceCount:
+        return []
+    return ["{}: {}".format(param.NickName, " | ".join(names))]
