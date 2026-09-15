@@ -7,6 +7,7 @@ catalogue of its own.
 
 from google.protobuf import symbol_database
 
+from compas_dlubal.dlubal.conventions import force_to_dlubal
 from compas_dlubal.dlubal.conventions import vector_to_dlubal
 
 
@@ -94,12 +95,12 @@ class LoadMapper:
             nodes=[point_load.node_id],
             load_case=point_load.load_case_id,
             load_type=load_type,
-            components_force_x=float(force.x),
-            components_force_y=float(force.y),
-            components_force_z=float(force.z),
-            components_moment_x=float(moment.x),
-            components_moment_y=float(moment.y),
-            components_moment_z=float(moment.z),
+            components_force_x=force_to_dlubal(force.x),
+            components_force_y=force_to_dlubal(force.y),
+            components_force_z=force_to_dlubal(force.z),
+            components_moment_x=force_to_dlubal(moment.x),
+            components_moment_y=force_to_dlubal(moment.y),
+            components_moment_z=force_to_dlubal(moment.z),
         )
         return load
 
@@ -135,7 +136,7 @@ class LoadMapper:
                     load_type=load_type,
                     load_distribution=distribution,
                     load_direction=self._enum(self.Loads.MemberLoad, "load_direction", direction_name),
-                    magnitude=float(magnitude),
+                    magnitude=force_to_dlubal(magnitude),
                 )
             )
         return loads

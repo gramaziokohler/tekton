@@ -1,8 +1,15 @@
 """Tekton Backend - bundle backend and connection data.
 
 The API key does NOT belong in the GH file: that file gets mailed around,
-lands in git, gets passed on. Leave it empty and set the environment variable
-TEKTON_API_KEY instead - the worker reads it itself.
+lands in git, gets passed on. Three ways to hand it over, in order of
+preference:
+
+1. Leave 'api_key' empty. The worker reads TEKTON_API_KEY or DLUBAL_API_KEY
+   from the environment, or from the '.env' in the repo root.
+2. Give 'api_key' the *path* to a file holding the key - a '.env' with
+   'DLUBAL_API_KEY=...' or a text file containing nothing but the key. Only
+   the path ends up in the GH file.
+3. Paste the key itself. Works, but warns: it is now in the definition.
 
 'repo' is the path to the monorepo; the venv with the backend packages
 (Python >= 3.10) lives there.
@@ -55,8 +62,36 @@ else:
     if not os.path.isfile(venv):
         _warn("No .venv in the repo. Run 'uv sync --extra dev'.")
 
+def _key_from_file(path):
+    """Read the key from a '.env'-style file (KEY=VALUE) or a bare-key file.
+
+    Returns None when the file has no usable line - the caller then treats the
+    input as the key itself.
+    """
+    with open(path) as handle:
+        lines = [line.strip() for line in handle if line.strip() and not line.strip().startswith("#")]
+    for line in lines:
+        if "=" in line:
+            name, value = line.split("=", 1)
+            if name.strip() in ("TEKTON_API_KEY", "DLUBAL_API_KEY"):
+                return value.strip().strip("'\"") or None
+    if len(lines) == 1 and "=" not in lines[0]:
+        return lines[0]
+    return None
+
+
+key_source = "from environment (TEKTON_API_KEY / DLUBAL_API_KEY / repo .env)"
 if api_key:
-    _warn("API key on the canvas. Do not pass this GH file on - better to set TEKTON_API_KEY.")
+    candidate = os.path.expanduser(api_key.strip())
+    if os.path.isfile(candidate):
+        api_key = _key_from_file(candidate)
+        if api_key:
+            key_source = "from file {}".format(candidate)
+        else:
+            _warn("No key found in {} - expected DLUBAL_API_KEY=... or a single line.".format(candidate))
+    else:
+        key_source = "from canvas"
+        _warn("API key on the canvas. Do not pass this GH file on - better a file path or TEKTON_API_KEY.")
 
 class BackendConfig(object):
     """Backend settings as a single value.
@@ -81,6 +116,6 @@ backend = BackendConfig(kind, root, api_key or None, filepath or None)
 
 print("Backend: {}".format(kind))
 print("Repo: {}".format(root or "NOT FOUND"))
-print("API key: {}".format("from canvas" if api_key else "from environment (TEKTON_API_KEY)"))
+print("API key: {}".format(key_source))
 if kind == "saf" and not filepath:
     _warn("Backend 'saf' needs a filepath.")

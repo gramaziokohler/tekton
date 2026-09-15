@@ -100,11 +100,23 @@ class MemberMapper:
                     kwargs["member_hinge_end"] = hinge_end
                 return self.Core.Member(**kwargs)
 
-            # Dlubal Type 24 is COUPLING (hinged-hinged rigid link):
-            # the hinge is already part of the member type.
+            # Dlubal's coupling types are rigid links with the hinges built
+            # into the type, one per end: 21 rigid-rigid, 22 rigid-hinge,
+            # 23 hinge-rigid, 24 hinge-hinge. Which ends are hinged follows
+            # from the releases the translator put there. 24 is a pendulum
+            # bar (axial force only) - the translator never produces it, but
+            # a hand-built model may.
+            hinged_start = self._is_hinged(member.release_start)
+            hinged_end = self._is_hinged(member.release_end)
+            coupling_type = {
+                (False, False): 21,  # TYPE_COUPLING_RIGID_RIGID
+                (False, True): 22,   # TYPE_COUPLING_RIGID_HINGE
+                (True, False): 23,   # TYPE_COUPLING_HINGE_RIGID
+                (True, True): 24,    # TYPE_COUPLING_HINGE_HINGE
+            }[(hinged_start, hinged_end)]
             return self.Core.Member(
                 no=member.id,
-                type=24, # TYPE_COUPLING_HINGE_HINGE
+                type=coupling_type,
                 node_start=member.node_start,
                 node_end=member.node_end
             )
@@ -144,6 +156,11 @@ class MemberMapper:
         return self.Core.Member(**kwargs)
 
     @staticmethod
+    def _is_hinged(release):
+        """True if the end releases any rotation (None or fully rigid is not a hinge)."""
+        return release is not None and not release.is_rigid()
+
+    @staticmethod
     def _has_spring(member):
         """True if any end condition is a finite spring rather than rigid/free."""
         for end in ("start", "end"):
@@ -159,7 +176,7 @@ class MemberMapper:
     def _needs_explicit_hinge(self, member):
         """Whether this member must reference a MemberHinge object.
 
-        A COUPLING member is already a hinge-hinge link by type, so it only
+        A COUPLING member carries its hinges in the type (21-24), so it only
         needs an explicit hinge when a spring stiffness has to be expressed.
         """
         if member.member_type == "RIGID":

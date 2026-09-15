@@ -1,7 +1,20 @@
-"""Tekton Visualize - colour by result value.
+"""Tekton Visualize - deformed shape and colour by result value.
+
+Three things come out, all from the same result set:
+
+- `deformed`: the system lines as polylines through the deformed stations
+  RFEM reported (11 per member), exaggerated by `exaggeration`.
+- `meshes`: the rectangular sections swept along those polylines, with a
+  vertex colour per station - the beams as they bend, coloured by `quantity`.
+- `colours`: one colour per member (its maximum), for the flat view.
 
 Values above the upper bound go hard red instead of interpolating further: an
-exceedance should catch the eye, not fade out gently.
+exceedance should catch the eye, not fade out gently. Without `high` the
+scale runs to the model's maximum, so the picture is readable on first
+connect; a fixed bound is for comparing runs.
+
+The geometry arithmetic lives in `tekton_gh.visualize` (pure, tested); this
+script only converts to Rhino types.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -47,60 +60,129 @@ def _warn(message):
         Grasshopper.Kernel.GH_RuntimeMessageLevel.Warning, message
     )
 
+
+def _rhino_mesh(vertices, faces, colours):
+    import Rhino.Geometry as rg
+    from System.Drawing import Color
+
+    mesh = rg.Mesh()
+    for x, y, z in vertices:
+        mesh.Vertices.Add(x, y, z)
+    for face in faces:
+        mesh.Faces.AddFace(face[0], face[1], face[2], face[3])
+    for r, g, b in colours:
+        mesh.VertexColors.Add(Color.FromArgb(r, g, b))
+    mesh.Normals.ComputeNormals()
+    mesh.Compact()
+    return mesh
+
+
 # --------------------- INPUTS ---------------------
 structural = structural  # type: ignore # noqa: F821
 load_case: int  # type: ignore
 quantity: str  # type: ignore
+exaggeration: float  # type: ignore
 low: float  # type: ignore
 high: float  # type: ignore
+mesh: bool  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
 geometry = []
+deformed = []
+meshes = []
 colours = []
+values = []
 legend = []
 
 if structural is None:
     _warn("No StructuralModel connected.")
 else:
     _setup()
-    from tekton_gh.rhino_io import colour_ramp, document_units, member_lines
+    import Rhino.Geometry as rg
+
+    from tekton_gh.rhino_io import colour_ramp, member_lines
+
+    # Rhino keeps modules for the life of the process; reload so an edit to
+    # visualize.py shows on the next solve instead of after a restart.
+    import importlib
+    import tekton_gh.visualize
+    importlib.reload(tekton_gh.visualize)
+    from tekton_gh.visualize import QUANTITIES, deformed_polyline, member_stations, section_mesh
 
     units = getattr(structural, "source_units", "m")
     scale = {"mm": 1000.0, "cm": 100.0, "dm": 10.0, "m": 1.0}.get(units, 1.0)
     geometry = member_lines(structural, scale=scale)
 
-    results = getattr(structural, "results", {}) or {}
-    lo = 0.0 if low is None else float(low)
-    hi = 1.0 if high is None else float(high)
+    quantity = quantity or "displacement"
+    if quantity not in QUANTITIES:
+        _warn("Unknown quantity '{}'. Allowed: {}.".format(quantity, ", ".join(sorted(QUANTITIES))))
+        quantity = "displacement"
+    factor = 1.0 if exaggeration is None else float(exaggeration)
+    build_mesh = True if mesh is None else bool(mesh)
 
-    if not results:
-        _warn("No results - everything is coloured neutrally.")
-        colours = [colour_ramp(0.0, lo, hi) for _ in geometry]
-        legend = ["no results"]
-    else:
+    results = getattr(structural, "results", {}) or {}
+    result_set = None
+    case_id = None
+    if results:
         case_id = int(load_case) if load_case else sorted(results)[0]
         result_set = results.get(case_id)
-        attribute = {"displacement": "displacement", "N": "axial", "My": "moment_y",
-                     "Vz": "shear_z"}.get(quantity or "displacement", "displacement")
+        if result_set is None:
+            _warn("No results for load case {}. Available: {}.".format(case_id, sorted(results)))
+    else:
+        _warn("No results - undeformed, coloured neutrally.")
 
-        values = []
-        for member in structural.members:
-            rows = (result_set.member_results or {}).get(member.id) if result_set else None
-            if rows:
-                values.append(max(abs(getattr(row, attribute, 0.0) or 0.0) for row in rows))
-            else:
-                values.append(0.0)
+    sections = {section.id: section for section in getattr(structural, "sections", [])}
 
-        colours = [colour_ramp(value, lo, hi) for value in values]
-        legend = [
-            "Quantity: {}".format(quantity or "displacement"),
-            "Load case: {}".format(case_id),
-            "Scale: {:.3g} .. {:.3g}".format(lo, hi),
-            "Maximum in the model: {:.4g}".format(max(values) if values else 0.0),
-        ]
-        if values and max(values) > hi:
-            _warn("Maximum value {:.4g} is above the scale upper bound {:.4g}.".format(max(values), hi))
+    # Stations first, so the scale can default to the model maximum.
+    per_member = []
+    for member in structural.members:
+        stations = member_stations(structural, result_set, member, quantity)
+        per_member.append((member, stations))
+        values.append(max((s.value for s in stations), default=0.0))
+
+    lo = 0.0 if low is None else float(low)
+    if high is not None:
+        hi = float(high)
+    elif quantity == "utilization":
+        hi = 1.0
+    else:
+        hi = max(values) if values and max(values) > 0.0 else 1.0
+
+    for member, stations in per_member:
+        points = deformed_polyline(stations, exaggeration=factor, scale=scale)
+        deformed.append(rg.PolylineCurve([rg.Point3d(p.x, p.y, p.z) for p in points]))
+
+        section = sections.get(member.section_id)
+        # Couplings and rigid links have no section; they are lines only.
+        if build_mesh and section is not None and section.width > 0 and section.height > 0:
+            vertices, faces, vertex_colours = section_mesh(
+                points,
+                section.width * scale,
+                section.height * scale,
+                member.orientation_vector,
+                values=[s.value for s in stations],
+                low=lo,
+                high=hi,
+            )
+            meshes.append(_rhino_mesh(vertices, faces, vertex_colours))
+
+    colours = [colour_ramp(value, lo, hi) for value in values]
+
+    unit_of = {"displacement": "m", "utilization": "-"}
+    legend = [
+        "Quantity: {} [{}]".format(quantity, unit_of.get(quantity, "kN / kNm")),
+        "Load case: {}".format(case_id if case_id is not None else "-"),
+        "Scale: {:.3g} .. {:.3g}{}".format(lo, hi, "" if high is not None else " (auto: model maximum)"),
+        "Maximum in the model: {:.4g}".format(max(values) if values else 0.0),
+        "Deformation x {:g}".format(factor),
+    ]
+    if values and high is not None and max(values) > hi:
+        _warn("Maximum value {:.4g} is above the scale upper bound {:.4g}.".format(max(values), hi))
+    if result_set is not None and not any(
+        row.displacement is not None for rows in (result_set.member_results or {}).values() for row in rows
+    ):
+        _warn("Results carry no member deformations - the deformed shape is interpolated between nodes only. Re-run with the current reader.")
 
 for line in legend:
     print(line)

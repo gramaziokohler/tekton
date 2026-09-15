@@ -81,6 +81,12 @@ else:
     if os.path.isdir(gh_src) and gh_src not in sys.path:
         sys.path.insert(0, gh_src)
 
+    # Rhino keeps imported modules for the life of the process. Reload on
+    # every run, so an edit to tekton_gh/worker.py in the repo takes effect
+    # without restarting Rhino. Cheap: this only runs behind the button.
+    import importlib
+    import tekton_gh.worker
+    importlib.reload(tekton_gh.worker)
     from tekton_gh.worker import WorkerError, model_fingerprint, run_backend
 
     fingerprint = model_fingerprint(structural)

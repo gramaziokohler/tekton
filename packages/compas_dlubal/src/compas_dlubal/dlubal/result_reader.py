@@ -1,5 +1,6 @@
 from compas_dlubal.dlubal.client import DlubalClient
 from compas_dlubal.dlubal.result_parsing import member_lengths_from_model
+from compas_dlubal.dlubal.result_parsing import parse_member_deformations
 from compas_dlubal.dlubal.result_parsing import parse_member_internal_forces
 from compas_dlubal.dlubal.result_parsing import parse_node_deformations
 from compas_dlubal.dlubal.result_parsing import parse_support_forces
@@ -27,7 +28,7 @@ class DlubalResultReader:
         AttributeError if no known calculation method is available.
         """
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
-            return self._calculate(conn.application, skip_warnings=skip_warnings)
+            return self._calculate(conn, [1], skip_warnings=skip_warnings)
 
     def inspect(self):
         """Return available Dlubal API/application attributes relevant for results."""
@@ -48,7 +49,7 @@ class DlubalResultReader:
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
             calculation_method = None
             if calculate:
-                calculation_method = self._calculate(conn.application)
+                calculation_method = self._calculate(conn, load_cases)
 
             result_sets = {}
             for load_case_id in load_cases:
@@ -62,11 +63,27 @@ class DlubalResultReader:
         application = conn.application
         loading = api.ObjectId(no=load_case_id, object_type=api.OBJECT_TYPE_LOAD_CASE)
 
+        # A failed calculation does not raise - RFEM records it in the
+        # errors-and-warnings table and the result queries come back empty.
+        # Read that table first, so the message is the solver's, not ours.
+        problems = self._solver_problems(conn, load_case_id)
+        if problems:
+            raise RuntimeError(
+                "RFEM calculation failed for load case {}:\n  {}".format(
+                    load_case_id, "\n  ".join(problems)))
+
+        # get_results is the raw database query. get_result_table is the
+        # pre-processed table "as displayed in the desktop application" and
+        # came back empty for members and nodes on the first live run
+        # (2026-09-15), while get_results delivered every row.
+        results_type = api.results.ResultsType
         tables = {
-            "member_forces": api.results.STATIC_ANALYSIS_MEMBERS_INTERNAL_FORCES,
-            "node_deformations": api.results.STATIC_ANALYSIS_NODES_GLOBAL_DEFORMATIONS,
-            "support_forces": api.results.STATIC_ANALYSIS_NODES_SUPPORT_FORCES,
+            "member_forces": results_type.STATIC_ANALYSIS_MEMBERS_INTERNAL_FORCES,
+            "member_deformations": results_type.STATIC_ANALYSIS_MEMBERS_GLOBAL_DEFORMATIONS,
+            "node_deformations": results_type.STATIC_ANALYSIS_NODES_GLOBAL_DEFORMATIONS,
+            "support_forces": results_type.STATIC_ANALYSIS_NODES_SUPPORT_FORCES,
         }
+        loading_label = "LC{}".format(load_case_id)
 
         frames = {}
         metadata = {
@@ -78,7 +95,7 @@ class DlubalResultReader:
         }
         for name, table in tables.items():
             try:
-                result = application.get_result_table(table=table, loading=loading)
+                result = application.get_results(table, loading=loading_label)
                 frames[name] = result.data
                 metadata["columns"][name] = [str(c) for c in result.data.columns]
                 if getattr(result, "warning", ""):
@@ -89,6 +106,8 @@ class DlubalResultReader:
         member_results = {}
         if "member_forces" in frames:
             member_results = parse_member_internal_forces(frames["member_forces"], load_case_id, member_lengths)
+        if "member_deformations" in frames:
+            member_results = parse_member_deformations(frames["member_deformations"], load_case_id, member_lengths, member_results)
 
         node_results = {}
         if "node_deformations" in frames:
@@ -104,7 +123,32 @@ class DlubalResultReader:
             metadata=metadata,
         )
 
-    def _calculate(self, application, skip_warnings=True):
+    def _solver_problems(self, conn, load_case_id):
+        """RFEM's errors-and-warnings entries for a load case, formatted; [] when there are none."""
+        try:
+            api = conn.api
+            loading = api.ObjectId(no=load_case_id, object_type=api.OBJECT_TYPE_LOAD_CASE)
+            errors = conn.application.get_result_table(
+                table=api.results.ERRORS_AND_WARNINGS_TABLE, loading=loading)
+        except Exception:  # no table at all is fine - nothing went wrong
+            return []
+        return self._format_problems(errors.data)
+
+    @staticmethod
+    def _format_problems(frame):
+        """One line per distinct RFEM error/warning: number, object, description."""
+        seen = []
+        for _, row in frame.iterrows():
+            line = "[{}] {}: {}".format(
+                row.get("error_or_warning_number", "?"),
+                row.get("object", "?"),
+                row.get("description", ""))
+            if line not in seen:
+                seen.append(line)
+        return seen
+
+    def _calculate(self, conn, load_cases, skip_warnings=True):
+        application = conn.application
         method = getattr(application, "calculate_all", None)
         if not callable(method):
             available = self._public_names(application)
@@ -112,7 +156,24 @@ class DlubalResultReader:
 
         # dlubal.api requires skip_warnings as a keyword-only argument; without it
         # the call raises TypeError before reaching the server.
-        method(skip_warnings=skip_warnings)
+        outcome = method(skip_warnings=skip_warnings)
+
+        # A failed calculation does not raise. RFEM answers with a message
+        # and, for solver errors, an entry in the errors-and-warnings table -
+        # but model errors (a section with no area, say) leave that table
+        # empty. has_results() is the one signal that covers both.
+        has_results = getattr(application, "has_results", None)
+        if callable(has_results):
+            available = has_results()
+            available = getattr(available, "value", available)
+            if not available:
+                message = getattr(outcome, "message", "") or "no results after calculation"
+                details = []
+                for load_case_id in load_cases:
+                    details += self._solver_problems(conn, load_case_id)
+                if details:
+                    message = "\n  ".join([message] + details)
+                raise RuntimeError(f"RFEM produced no results: {message}")
         return "calculate_all"
 
     def _inspect(self, conn):

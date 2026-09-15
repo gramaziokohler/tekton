@@ -48,16 +48,16 @@ def test_action_category_reaches_the_load_case(mapper):
 
 
 def test_point_load_carries_the_full_vector(mapper):
-    """Vectors rotate into Dlubal's Z-down space: down (-z) becomes +z there."""
+    """Vectors rotate into Dlubal's Z-down space: down (-z) becomes +z there - and kN become N."""
     load = StructuralPointLoad(id=1, node_id=7, load_case_id=2, force=Vector(1.0, 0.0, -5.0), moment=Vector(0.0, 2.0, 0.0))
 
     proto = mapper.map_point_load(load)
 
     assert list(proto.nodes) == [7]
     assert proto.load_case == 2
-    assert proto.components_force_x == 1.0
-    assert proto.components_force_z == 5.0
-    assert proto.components_moment_y == -2.0
+    assert proto.components_force_x == 1000.0
+    assert proto.components_force_z == 5000.0
+    assert proto.components_moment_y == -2000.0
 
 
 def test_member_load_emits_one_object_per_direction(mapper):
@@ -68,8 +68,8 @@ def test_member_load_emits_one_object_per_direction(mapper):
 
     assert len(protos) == 1
     assert list(protos[0].members) == [3]
-    # Down in the neutral Z-up world is +z in Dlubal's Z-down world.
-    assert protos[0].magnitude == 2.5
+    # Down in the neutral Z-up world is +z in Dlubal's Z-down world; kN/m -> N/m.
+    assert protos[0].magnitude == 2500.0
     assert protos[0].load_case == 1
 
 
@@ -79,7 +79,7 @@ def test_member_load_with_two_components_emits_two_objects(mapper):
     protos = mapper.map_member_load(load)
 
     assert len(protos) == 2
-    assert {p.magnitude for p in protos} == {1.0, 2.5}
+    assert {p.magnitude for p in protos} == {1000.0, 2500.0}
     # Different global directions, so the enum values must differ.
     assert protos[0].load_direction != protos[1].load_direction
 
