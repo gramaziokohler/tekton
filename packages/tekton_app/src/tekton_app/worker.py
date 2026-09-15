@@ -19,13 +19,41 @@ Der Aufrufer erwartet:
   Fehlertext angezeigt).
 - Bei allem ausser ``--backend saf`` muss unter ``--out`` ein Modell liegen.
 
-Der API-Key kommt aus ``TEKTON_API_KEY`` und wird nie geloggt.
+Der API-Key kommt aus ``TEKTON_API_KEY``, sonst aus ``DLUBAL_API_KEY`` -
+auch aus der ``.env`` im Arbeitsverzeichnis (dem Repo-Root, so ruft die
+GH-Komponente den Worker auf). Er wird nie geloggt.
 """
 
 import argparse
 import os
 import sys
 import time
+
+
+def load_dotenv(path=".env"):
+    """Liest KEY=VALUE-Zeilen aus ``path`` in os.environ, ohne gesetzte zu ueberschreiben.
+
+    Bewusst ohne python-dotenv: die Datei hat drei Zeilen, und der Worker soll
+    keine Abhaengigkeit fuer etwas ziehen, das ein Split erledigt.
+    """
+    if not os.path.isfile(path):
+        return
+    with open(path) as handle:
+        for line in handle:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip("'\"")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+def read_api_key():
+    """TEKTON_API_KEY vor DLUBAL_API_KEY; beide auch aus der .env."""
+    load_dotenv()
+    return os.environ.get("TEKTON_API_KEY") or os.environ.get("DLUBAL_API_KEY") or None
 
 
 def log(message):
@@ -151,9 +179,10 @@ def main(argv=None):
         len(model.supports), len(model.load_cases)))
 
     # Der Key wird bewusst nie geloggt.
-    api_key = os.environ.get("TEKTON_API_KEY") or None
+    api_key = read_api_key()
     if args.backend in ("rfem", "rstab"):
-        log("API-Key: {}".format("gesetzt" if api_key else "nicht gesetzt (TEKTON_API_KEY)"))
+        log("API-Key: {}".format(
+            "gesetzt" if api_key else "nicht gesetzt (TEKTON_API_KEY, DLUBAL_API_KEY oder .env im Repo)"))
 
     if args.backend == "saf":
         result_model = run_saf(model, args.out, args.model_name)

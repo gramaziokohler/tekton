@@ -1,6 +1,6 @@
 # Tekton — Kurzübersicht
 
-*Stand: 2026-08-28*
+*Stand: 2026-09-15*
 
 ## Was es ist
 
@@ -45,9 +45,10 @@ TimberModel  →  StructuralModel (neutral)  →  Backend-Adapter  →  RFEM / S
 | Paket | Rolle |
 |---|---|
 | `compas_timber_fea` | **Neutrale Schicht.** Übersetzt Timber → `StructuralModel` (Knoten, Stäbe, Flächen, Gelenke, Lager, Lasten). Enthält Joint-Policy, Einheiten-Vertrag, Serialisierung. |
-| `compas_dlubal` | Dlubal-Adapter: gRPC-Client, ein Mapper pro Objekttyp, Ergebnis-Reader (noch Scaffold). |
+| `compas_dlubal` | Dlubal-Adapter: gRPC-Client, ein Mapper pro Objekttyp, Ergebnis-Reader (live gegen RFEM 6 verifiziert). |
 | `compas_saf` | SAF-Export (xlsx) — Handoff ohne Live-Verbindung. |
-| `tekton_app` | GUI (PySide6) + CLI für Nutzer ohne Python. |
+| `tekton_app` | GUI (PySide6) + CLI für Nutzer ohne Python; `tekton_app.worker` ist der Subprozess, den Grasshopper aufruft. |
+| `tekton_gh` | Grasshopper-Komponenten (Rhino 8, CPython 3.9): Authoring, Translate, Preflight, Run, Results, Visualize. Spricht mit dem Worker über JSON-Dateien, weil `dlubal-api` Python ≥ 3.10 braucht. |
 
 Die Idealisierungs-**Geometrie** (Teilung an Anschlüssen, Knoten-Merging,
 Platten-Mittelebenen) liegt bewusst in `compas_timber` selbst
@@ -58,11 +59,39 @@ eine feste Revision. Installation: `uv sync --extra dev`.
 
 ## Wo es steht
 
-**Funktioniert:** Balken- und Plattenpfad übersetzen; Export nach RFEM (Knoten,
-Stäbe, Querschnitte, Materialien, Lager, Flächen) und nach SAF; 54 automatisierte
-Tests laufen offline ohne RFEM; CI installiert und testet.
+**Funktioniert:** Der **Roundtrip aus Grasshopper** — Timber-Modell →
+Translate → Preflight → Run (Worker-Subprozess) → RFEM 6 rechnet →
+Schnittkräfte, Stab- und Knotenverformungen, Auflagerkräfte zurück → verformt
+und eingefärbt auf dem Canvas. Am 2026-09-15 auf Windows gegen ein laufendes
+RFEM verifiziert (Smoke-Test: 84 Balken, 404 Stäbe, 754 Objekte, ~25 s
+Rechenzeit). Daneben: Balken- und Plattenpfad übersetzen; SAF-Export; ~130
+automatisierte Tests offline ohne RFEM; CI installiert und testet.
 
-**Kürzlich gemacht** (Details: `docs/review_2026-08-27.md`):
+**Kürzlich gemacht** (2026-09-15, Details: `packages/tekton_gh/README.md`
+und `roundtrip.md`):
+
+- **Erster Live-Roundtrip.** Vier Befunde, die offline unsichtbar waren:
+  RFEM meldet gescheiterte Berechnungen nicht als Exception (jetzt:
+  `has_results()` + Fehlertabelle → Klartext im Log); `get_result_table` war
+  für Stäbe leer, `get_results` liefert alles; die Dlubal-API rechnet in
+  **N/Nm**, der neutrale Vertrag in kN/kNm — Lasten gingen 1000× zu klein
+  rein, Ergebnisse 1000× zu gross raus (ein Faktor in `conventions.py`,
+  beide Richtungen); der API-Key ist auch lokal Pflicht (kommt jetzt aus
+  der `.env`).
+- **Kopplungen.** Der Verbinder zwischen zwei sich nicht treffenden Achsen
+  ging als RFEM-Typ 24 (beidseitig gelenkig) raus — ein Pendelstab, der nur
+  Normalkraft trägt; ein Balken an vier parallelen Pendelstäben ist ein
+  Mechanismus. Jetzt: Gelenk nur an *einem* Ende (dem, an dem ein Balken
+  endet), der Mapper leitet 21–24 aus den Releases ab. Die Joint-Policy
+  entscheidet weiterhin starr/gelenkig.
+- **Visualize**: verformte Systemlinien durch die 11 RFEM-Stationen pro Stab,
+  Querschnitte entlang gesweept als Meshes mit Vertex-Farbe pro Station.
+- **Attach Results** ruft jetzt `compas_timber_fea.results` statt einer
+  eigenen Kopie: Stationswerte (inkl. Verformung) landen am Balkenparameter
+  über alle Segmente in `beam.attributes["analysis"]`, mit Hüllwerten und
+  Provenienz. Live: 84/84 Balken.
+
+**Davor** (2026-08-27, Details: `docs/review_2026-08-27.md`):
 
 - Repo wieder installierbar (Lock war kaputt, Abhängigkeiten widersprüchlich)
 - Plattenexport nach Dlubal erstmals funktionsfähig (Feldnamen aus der alten
@@ -79,31 +108,30 @@ Tests laufen offline ohne RFEM; CI installiert und testet.
 
 Nach Priorität:
 
-1. **Lasten** — der Importer ignoriert die Lastfälle des neutralen Modells und
-   nutzt einen hartkodierten Katalog. Dasselbe Modell erzeugt so in
-   verschiedenen Backends verschiedene Belastung. Lastkombinationen fehlen.
-2. **Roundtrip (Ergebnisse)** — aktuell ein ehrliches Gerüst: rechnen wird
-   ausgelöst, aber nichts gelesen. Nötig: Ergebnistabellen abrufen und über die
-   Bauteil-GUIDs zurückmappen, pro physischem Balken aggregieren. *Das ist das
-   eigentliche Versprechen an Entwerfende.*
-3. **Platten** — Verbindungslinien zwischen Flächen werden nicht exportiert;
-   Orthotropie-Richtung fehlt im Datenmodell (bei Holz nicht optional);
-   die Subdivision-Logik liegt als nicht lauffähiges Grasshopper-Skript unter
-   `tests/plate-tests/` statt im Paket.
-4. **Preflight-Prüfungen** — kein Testmodell hat Auflager, und niemand warnt:
-   ein lagerloses Modell geht kommentarlos in die Berechnung. Dazu:
-   unverbundene Teile, fehlende Materialien.
-5. **Chiralität prüfen** — die Z-Umrechnung nach RFEM ist eine Spiegelung.
-   Ein Live-Test mit einem asymmetrischen Rahmen klärt, ob asymmetrische
-   Strukturen seitenverkehrt ankommen. *Kleiner Aufwand, potenziell grosse
-   Wirkung.*
-6. **Stabile IDs / ID-Map** — Knoten-IDs stammen aus flüchtigen Graph-Indizes
-   und wandern bei jeder Modelländerung. Für inkrementelle Updates und
-   sitzungsübergreifende Ergebniszuordnung nötig.
+1. **Ausnutzung** — *die* Entwerfer-Zahl, kommt aus dem RFEM-Bemessungs-Add-on.
+   Der Input existiert (`quantity="utilization"`), liefert aber 0. Nötig:
+   Add-on aktivieren, dessen Ergebnistabelle über `get_results` lesen — gleiches
+   Muster wie die Schnittkräfte.
+2. **Joint-Policy aus Verbindungsmitteln** — heute entscheidet der Fügungstyp
+   (oder eine Instanz-Regel) über starr/gelenkig. Die Regel "je nach Anzahl und
+   Richtung der Schrauben biegesteif, sonst gelenkig" ist noch nicht geschrieben;
+   der Haken dafür (`by_type`, `by_instance`) ist da.
+3. **Platten-Ergebnisse** — Flächen werden exportiert, keine Flächentabelle
+   wird gelesen. Dazu die bekannten Plattenlücken: Wand-Decke-Kopplung
+   (Frame-Bug upstream), Orthotropie-Richtung, Subdivision-Logik im Paket.
+4. **Stabile IDs / BackendMap** — jeder Run leert RFEM und baut neu. Was ein
+   Statiker in RFEM ändert, überlebt den nächsten Run nicht. GUIDs gehen
+   bereits in `id_for_export_import`; die Map fehlt.
+5. **Lasten** — Lastfälle, Punkt- und Streckenlasten werden exportiert;
+   Kombinationen und ein Lastkatalog (Nutzlast nach Kategorie, Schnee nach
+   Zone) fehlen im Authoring.
 
 **Bekannte Altlasten:** GUI blockiert während Export (kein Threading);
-API-Key im Klartext gespeichert; Docs grösstenteils Platzhalter; keine
-PyInstaller-Spec trotz README-Erwähnung.
+API-Key im Klartext gespeichert (GUI); Sphinx-Docs grösstenteils Platzhalter;
+keine PyInstaller-Spec trotz README-Erwähnung; die Plate-Tests unter
+`tests/unit/test_plate_translation.py` sind rot, weil die im `.venv`
+gepinnte compas_timber-Revision `PlateStructuralElementSolver` nicht kennt —
+Pin und Branch sind auseinandergelaufen.
 
 ## Offene Richtungsfrage
 

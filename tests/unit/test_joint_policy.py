@@ -116,8 +116,9 @@ def test_policy_changes_translated_connectors(sticks):
     assert rigid_connectors and hinged_connectors
     assert all(m.member_type == "RIGID" for m in rigid_connectors)
     assert all(m.member_type == "COUPLING" for m in hinged_connectors)
-    assert all(m.release_start is not None for m in hinged_connectors)
-    assert all(m.release_start is None for m in rigid_connectors)
+    # A hinge sits on exactly one end: both hinged would be a pendulum bar.
+    assert all((m.release_start is None) != (m.release_end is None) for m in hinged_connectors)
+    assert all(m.release_start is None and m.release_end is None for m in rigid_connectors)
 
 
 def test_translated_connectors_carry_their_source_joint(sticks):
@@ -147,6 +148,7 @@ def test_released_connector_survives_serialization(sticks, tmp_path):
     loaded = StructuralModel.from_json(path)
     connector = next(m for m in loaded.members if m.source_element_type == "connector")
 
-    assert isinstance(connector.release_start, MemberRelease)
-    assert connector.release_start.released_dofs() == ("ry", "rz")
-    assert connector.release_start.ux == math.inf
+    release = connector.release_start or connector.release_end
+    assert isinstance(release, MemberRelease)
+    assert release.released_dofs() == ("ry", "rz")
+    assert release.ux == math.inf

@@ -87,8 +87,8 @@ def member_lines(structural_model, scale=1.0):
 def colour_ramp(value, low=0.0, high=1.0):
     """Value -> colour (green -> yellow -> red), for utilisation/deflection.
 
-    Beyond ``high`` the ramp does not keep interpolating but goes hard red: an
-    exceedance should catch the eye, not fade out gently.
+    The ramp itself lives in :mod:`tekton_gh.visualize` (pure, tested); this
+    is the System.Drawing wrapper for the canvas.
 
     Returns
     -------
@@ -96,27 +96,10 @@ def colour_ramp(value, low=0.0, high=1.0):
     """
     from System.Drawing import Color
 
-    if high <= low:
-        t = 0.0
-    else:
-        t = (float(value) - low) / (high - low)
+    from tekton_gh.visualize import colour_rgb
 
-    if t <= 0.0:
-        return Color.FromArgb(40, 160, 60)
-    if t >= 1.0:
-        return Color.FromArgb(200, 30, 30)
+    return Color.FromArgb(*colour_rgb(value, low, high))
 
-    if t < 0.5:
-        k = t / 0.5
-        r = int(40 + (240 - 40) * k)
-        g = int(160 + (200 - 160) * k)
-        b = int(60 + (40 - 60) * k)
-    else:
-        k = (t - 0.5) / 0.5
-        r = int(240 + (200 - 240) * k)
-        g = int(200 + (30 - 200) * k)
-        b = int(40 + (30 - 40) * k)
-    return Color.FromArgb(r, g, b)
 
 
 def warn(ghenv, message):

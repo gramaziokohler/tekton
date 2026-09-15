@@ -3,7 +3,7 @@
     "nickname": "TBackend",
     "category": "Tekton",
     "subcategory": "3 | Run",
-    "description": "Bundles the backend and its connection data. The API key does NOT belong in the GH file - that file gets emailed around. Leave it empty and set the environment variable TEKTON_API_KEY instead.",
+    "description": "Bundles the backend and its connection data. The API key does NOT belong in the GH file - that file gets emailed around. Leave it empty (the worker reads TEKTON_API_KEY / DLUBAL_API_KEY or the repo's .env) or pass the path to a file holding the key.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000012",
     "ghpython": {
@@ -27,7 +27,7 @@
             {
                 "name": "api_key",
                 "nickname": "api_key",
-                "description": "For testing only. Better: TEKTON_API_KEY.",
+                "description": "Empty: environment or repo .env. A file path: key is read from it. Anything else: the key itself (warns).",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,

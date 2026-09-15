@@ -121,19 +121,18 @@ def _beam_samples(members, result_set, points, start, length):
 
             sample_point = _lerp(p_start, p_end, position)
             t = _param_from_start(sample_point, start, length)
-            samples.append(
-                (
-                    round(t, 6),
-                    {
-                        "N": result.axial,
-                        "Vy": result.shear_y,
-                        "Vz": result.shear_z,
-                        "Mt": result.torsion,
-                        "My": result.moment_y,
-                        "Mz": result.moment_z,
-                    },
-                )
-            )
+            values = {
+                "N": result.axial,
+                "Vy": result.shear_y,
+                "Vz": result.shear_z,
+                "Mt": result.torsion,
+                "My": result.moment_y,
+                "Mz": result.moment_z,
+            }
+            # A plain tuple, not a Vector: beam.attributes must stay JSON-plain.
+            if result.displacement is not None:
+                values["displacement"] = tuple(float(c) for c in result.displacement)
+            samples.append((round(t, 6), values))
     samples.sort(key=lambda item: item[0])
     return samples
 
@@ -153,11 +152,21 @@ def _param_from_start(point, start, length):
 
 
 def _envelope(samples):
-    """Per-quantity maxima (by absolute value, sign kept) over all samples."""
+    """Per-quantity maxima (by absolute value, sign kept) over all samples.
+
+    The displacement envelope is the largest magnitude, stored as the vector
+    that has it - so direction survives alongside the number.
+    """
     envelope = {}
     for _t, values in samples:
         for key, value in values.items():
             current = envelope.get(key)
-            if current is None or abs(value) > abs(current):
+            if current is None or _magnitude(value) > _magnitude(current):
                 envelope[key] = value
     return envelope
+
+
+def _magnitude(value):
+    if isinstance(value, (tuple, list)):
+        return sum(c * c for c in value) ** 0.5
+    return abs(value)

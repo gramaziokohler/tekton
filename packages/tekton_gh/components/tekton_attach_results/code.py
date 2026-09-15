@@ -1,7 +1,10 @@
 """Tekton Attach Results - results back onto the timber model.
 
-Writes `beam.attributes['analysis']` with envelope values, sample points and
-provenance.
+Writes `beam.attributes['analysis']` with, per load case, sample points (t
+along the physical beam axis, N/Vy/Vz/Mt/My/Mz and displacement) and an
+envelope, plus provenance. The work is done by
+`compas_timber_fea.results.attach_results_to_timber`, offline-tested; this
+script only picks the load case and reports.
 
 Provenance is mandatory, not decoration: a number without 'which model state,
 which combination, when' is a liability question. The worst failure mode is
@@ -64,58 +67,34 @@ if model is None or structural is None:
     _warn("model and structural are both needed.")
 else:
     _setup()
-    import time
+    from compas_timber_fea.results import ANALYSIS_KEY, attach_results_to_timber
 
     results = getattr(structural, "results", {}) or {}
     if not results:
         _warn("No results in the model - run TektonRun first.")
     else:
-        case_id = int(load_case) if load_case else sorted(results)[0]
-        result_set = results.get(case_id)
+        # None: every load case the results carry. A number: just that one.
+        selected = results
+        if load_case:
+            case_id = int(load_case)
+            if case_id in results:
+                selected = {case_id: results[case_id]}
+            else:
+                _warn("Load case {} does not exist. Available: {}.".format(case_id, sorted(results)))
+                selected = {}
 
-        if result_set is None:
-            _warn("Load case {} does not exist.".format(case_id))
-        else:
-            member_source = {m.id: str(m.source_element_id) for m in structural.members}
-            per_beam = {}
-            for member_id, rows in (result_set.member_results or {}).items():
-                source = member_source.get(member_id)
-                if source is None:
-                    continue
-                per_beam.setdefault(source, []).extend(rows)
+        written = attach_results_to_timber(structural, model, result_sets=selected) if selected else {}
+        attached = len(written)
 
-            provenance = {
-                "load_case": case_id,
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "source": (getattr(result_set, "metadata", {}) or {}).get("source", "unknown"),
-            }
-
-            for beam in model.beams:
-                rows = per_beam.get(str(beam.guid))
-                if not rows:
-                    continue
-                beam.attributes["analysis"] = {
-                    "provenance": provenance,
-                    "samples": [
-                        (row.position, {
-                            "N": row.axial, "Vy": row.shear_y, "Vz": row.shear_z,
-                            "Mt": row.torsion, "My": row.moment_y, "Mz": row.moment_z,
-                            "displacement": row.displacement,
-                        })
-                        for row in rows
-                    ],
-                    "envelope": {
-                        "max_displacement": max((abs(r.displacement or 0.0) for r in rows), default=0.0),
-                        "max_moment_y": max((abs(r.moment_y or 0.0) for r in rows), default=0.0),
-                        # TODO(scaffold): max_utilization, once the design
-                        # add-on is wired up.
-                    },
-                }
-                attached += 1
-
-            print("Results attached to {} of {} elements.".format(attached, len(list(model.beams))))
-            if attached == 0:
-                _warn(
-                    "No element matched. Usually the element GUIDs no longer "
-                    "line up - the timber model was changed after calculating."
-                )
+        beams = list(model.beams)
+        print("Results attached to {} of {} elements (load cases {}).".format(attached, len(beams), sorted(selected)))
+        if written:
+            sample = next(iter(written.values()))
+            case = next(iter(sample["load_cases"].values()))
+            print("Per beam: {} samples, envelope keys {}.".format(len(case["samples"]), sorted(case["envelope"])))
+            print("Stored under beam.attributes['{}'].".format(ANALYSIS_KEY))
+        if attached == 0 and selected:
+            _warn(
+                "No element matched. Usually the element GUIDs no longer "
+                "line up - the timber model was changed after calculating."
+            )

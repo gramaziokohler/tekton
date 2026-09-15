@@ -367,12 +367,13 @@ COMPONENTS = [
         sub=SUB_RUN,
         description=(
             "Bundles the backend and its connection data. The API key does NOT belong in the "
-            "GH file - that file gets emailed around. Leave it empty and set the environment "
-            "variable TEKTON_API_KEY instead."
+            "GH file - that file gets emailed around. Leave it empty (the worker reads "
+            "TEKTON_API_KEY / DLUBAL_API_KEY or the repo's .env) or pass the path to a file "
+            "holding the key."
         ),
         inputs=[
             p("backend", "str", desc="'rfem' | 'rstab' | 'saf'."),
-            p("api_key", "str", desc="For testing only. Better: TEKTON_API_KEY."),
+            p("api_key", "str", desc="Empty: environment or repo .env. A file path: key is read from it. Anything else: the key itself (warns)."),
             p("repo", "str", desc="Path to the monorepo (that is where the worker venv lives)."),
             p("filepath", "str", desc="Only for 'saf': target path of the xlsx file."),
         ],
@@ -443,7 +444,7 @@ COMPONENTS = [
         inputs=[
             p("model", desc="TimberModel.", optional=False),
             p("structural", desc="StructuralModel with results.", optional=False),
-            p("load_case", "int", desc="Load case."),
+            p("load_case", "int", desc="Load case. Empty: every load case with results."),
         ],
         outputs=[o("model", "TimberModel with analysis attributes"), o("attached", "Number of elements written to")],
     ),
@@ -454,20 +455,27 @@ COMPONENTS = [
         nickname="TViz",
         sub=SUB_RESULTS,
         description=(
-            "Colours the elements by a result value and returns a legend. Values above the "
-            "upper bound turn hard red - an exceedance should stand out, not fade away."
+            "Deformed shape and colour by result value: system lines through the deformed "
+            "stations, the sections swept along them as meshes with a colour per station, "
+            "and one colour per member. Values above the upper bound turn hard red - an "
+            "exceedance should stand out, not fade away."
         ),
         inputs=[
             p("structural", desc="StructuralModel with results.", optional=False),
-            p("load_case", "int", desc="Load case."),
-            p("quantity", "str", desc="'utilization' | 'displacement' | 'N' | 'My' | 'Vz'."),
+            p("load_case", "int", desc="Load case. Default: the first one with results."),
+            p("quantity", "str", desc="'displacement' | 'N' | 'Vy' | 'Vz' | 'Mt' | 'My' | 'Mz' | 'utilization'. Forces by absolute value."),
+            p("exaggeration", "float", desc="Factor on the deformation. Default 1 (true scale); 100 makes a stiff frame visible."),
             p("low", "float", desc="Lower bound of the scale. Default 0."),
-            p("high", "float", desc="Upper bound. Default 1.0 (= fully utilised)."),
+            p("high", "float", desc="Upper bound. Default: the model's maximum (utilization: 1.0). Fix it to compare runs."),
+            p("mesh", "bool", desc="Build the section meshes. Default True; False for lines only on large models."),
         ],
         outputs=[
-            o("geometry", "System lines/surfaces"),
-            o("colours", "Colour per element"),
+            o("geometry", "Undeformed system lines"),
+            o("colours", "Colour per member (its maximum)"),
             o("legend", "Labels of the scale"),
+            o("deformed", "Deformed system lines, one polyline per member"),
+            o("meshes", "Sections swept along the deformed lines, vertex-coloured by quantity"),
+            o("values", "Maximum of the quantity per member, same order as the members"),
         ],
     ),
     dict(

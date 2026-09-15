@@ -133,6 +133,18 @@ def test_hinged_coupling_needs_no_separate_hinge(member_mapper):
     assert proto.type == 24
 
 
+def test_coupling_type_follows_which_end_is_hinged(member_mapper):
+    """21-24 encode the hinged ends; the translator's one-sided hinge must land on the right side."""
+    def coupling(start, end):
+        return StructuralMember(id=1, node_start=1, node_end=2, section_id=1, member_type="COUPLING", release_start=start, release_end=end)
+
+    pinned = MemberRelease.pinned()
+    assert member_mapper.map_member(coupling(None, None)).type == 21
+    assert member_mapper.map_member(coupling(None, pinned)).type == 22
+    assert member_mapper.map_member(coupling(pinned, None)).type == 23
+    assert member_mapper.map_member(coupling(MemberRelease.rigid(), pinned)).type == 22
+
+
 def test_springy_coupling_becomes_a_rigid_member_with_hinges(member_mapper):
     """A spring cannot be expressed by the coupling type, so it needs real hinges."""
     springy = MemberRelease(ry=1500.0, rz=1500.0, name="Kser")

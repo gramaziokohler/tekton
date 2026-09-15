@@ -16,6 +16,7 @@ import math
 from compas_timber_fea.core.model import StructuralMemberResult
 from compas_timber_fea.core.model import StructuralNodeResult
 
+from compas_dlubal.dlubal.conventions import force_from_dlubal
 from compas_dlubal.dlubal.conventions import vector_from_dlubal
 
 #: Candidate column names per quantity, tried in order, case-insensitive.
@@ -28,6 +29,14 @@ MEMBER_FORCE_COLUMNS = {
     "torsion": ("torsional_moment_m_x", "torsional_moment_m_t", "internal_force_mt", "m_x", "mt"),
     "moment_y": ("bending_moment_m_y", "internal_force_my", "m_y", "my"),
     "moment_z": ("bending_moment_m_z", "internal_force_mz", "m_z", "mz"),
+}
+
+MEMBER_DEFORMATION_COLUMNS = {
+    "member": ("member_no", "member", "no"),
+    "location": ("location_x", "location", "x"),
+    "ux": ("displacement_u_x", "u_x", "ux"),
+    "uy": ("displacement_u_y", "u_y", "uy"),
+    "uz": ("displacement_u_z", "u_z", "uz"),
 }
 
 NODE_DEFORMATION_COLUMNS = {
@@ -108,20 +117,65 @@ def parse_member_internal_forces(dataframe, load_case_id, member_lengths=None):
             column = columns.get(key)
             return _float(row[column]) if column else 0.0
 
+        # RFEM reports N and Nm; the neutral containers hold kN and kNm.
         results.setdefault(member_id, []).append(
             StructuralMemberResult(
                 member_id=member_id,
                 load_case_id=load_case_id,
                 position=position,
-                axial=value("axial"),
-                shear_y=value("shear_y"),
-                shear_z=value("shear_z"),
-                torsion=value("torsion"),
-                moment_y=value("moment_y"),
-                moment_z=value("moment_z"),
+                axial=force_from_dlubal(value("axial")),
+                shear_y=force_from_dlubal(value("shear_y")),
+                shear_z=force_from_dlubal(value("shear_z")),
+                torsion=force_from_dlubal(value("torsion")),
+                moment_y=force_from_dlubal(value("moment_y")),
+                moment_z=force_from_dlubal(value("moment_z")),
                 metadata={"position_normalized": bool(length)},
             )
         )
+    return results
+
+
+def parse_member_deformations(dataframe, load_case_id, member_lengths=None, member_results=None):
+    """DataFrame of the members-global-deformations table, merged into member results.
+
+    RFEM reports deformations on the same station grid as the internal
+    forces, so each row is matched to the existing StructuralMemberResult at
+    that position (within a small tolerance on the 0..1 parameter). Stations
+    without a force row get a result of their own, so a deformed shape can be
+    drawn even when forces were not read. Global vectors come back into the
+    neutral Z-up convention.
+    """
+    columns = {key: _resolve(dataframe, names, key, required=key in ("member", "location")) for key, names in MEMBER_DEFORMATION_COLUMNS.items()}
+    member_lengths = member_lengths or {}
+    results = dict(member_results or {})
+
+    for _, row in dataframe.iterrows():
+        member_id = _int(row[columns["member"]])
+        if member_id is None:
+            continue
+
+        position = _float(row[columns["location"]])
+        length = member_lengths.get(member_id)
+        if length:
+            position = min(max(position / length, 0.0), 1.0)
+
+        def value(key, row=row):
+            column = columns.get(key)
+            return _float(row[column]) if column else 0.0
+
+        displacement = vector_from_dlubal(value("ux"), value("uy"), value("uz"))
+        rows = results.setdefault(member_id, [])
+        match = next((r for r in rows if abs(r.position - position) < 1e-4), None)
+        if match is None:
+            match = StructuralMemberResult(
+                member_id=member_id,
+                load_case_id=load_case_id,
+                position=position,
+                metadata={"position_normalized": bool(length)},
+            )
+            rows.append(match)
+            rows.sort(key=lambda r: r.position)
+        match.displacement = displacement
     return results
 
 
@@ -171,8 +225,8 @@ def parse_support_forces(dataframe, load_case_id, node_results=None):
             return _float(row[column]) if column else 0.0
 
         entry = results.get(node_id) or StructuralNodeResult(node_id=node_id, load_case_id=load_case_id)
-        entry.reaction_force = vector_from_dlubal(value("px"), value("py"), value("pz"))
-        entry.reaction_moment = vector_from_dlubal(value("mx"), value("my"), value("mz"))
+        entry.reaction_force = vector_from_dlubal(*(force_from_dlubal(value(k)) for k in ("px", "py", "pz")))
+        entry.reaction_moment = vector_from_dlubal(*(force_from_dlubal(value(k)) for k in ("mx", "my", "mz")))
         results[node_id] = entry
     return results
 
@@ -192,6 +246,7 @@ def member_lengths_from_model(structural_model):
 __all__ = [
     "ResultColumnError",
     "parse_member_internal_forces",
+    "parse_member_deformations",
     "parse_node_deformations",
     "parse_support_forces",
     "member_lengths_from_model",

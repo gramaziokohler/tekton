@@ -19,6 +19,22 @@ import math
 
 from compas.geometry import Vector
 
+#: The neutral model speaks kN and kNm (its contract, see core/model.py); the
+#: Dlubal API speaks SI base units, N and Nm. Verified on 2026-09-15: the
+#: self-weight reactions of the sticks model came back as 5682, which is
+#: 5.7 kN - right in N, absurd in kN. One factor, both directions.
+KN_TO_N = 1000.0
+
+
+def force_to_dlubal(value_kn):
+    """kN (or kNm, kN/m) -> N (Nm, N/m)."""
+    return float(value_kn) * KN_TO_N
+
+
+def force_from_dlubal(value_n):
+    """N (or Nm) -> kN (kNm)."""
+    return float(value_n) / KN_TO_N
+
 
 def point_to_dlubal(point):
     """Neutral (Z-up) point -> Dlubal (Z-down) coordinates, as a tuple."""

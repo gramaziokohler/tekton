@@ -3,7 +3,7 @@
     "nickname": "TViz",
     "category": "Tekton",
     "subcategory": "4 | Results",
-    "description": "Colours the elements by a result value and returns a legend. Values above the upper bound turn hard red - an exceedance should stand out, not fade away.",
+    "description": "Deformed shape and colour by result value: system lines through the deformed stations, the sections swept along them as meshes with a colour per station, and one colour per member. Values above the upper bound turn hard red - an exceedance should stand out, not fade away.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000016",
     "ghpython": {
@@ -27,7 +27,7 @@
             {
                 "name": "load_case",
                 "nickname": "load_case",
-                "description": "Load case.",
+                "description": "Load case. Default: the first one with results.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "quantity",
                 "nickname": "quantity",
-                "description": "'utilization' | 'displacement' | 'N' | 'My' | 'Vz'.",
+                "description": "'displacement' | 'N' | 'Vy' | 'Vz' | 'Mt' | 'My' | 'Mz' | 'utilization'. Forces by absolute value.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -49,6 +49,20 @@
                 "wireDisplay": "default",
                 "sourceCount": 0,
                 "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "exaggeration",
+                "nickname": "exaggeration",
+                "description": "Factor on the deformation. Default 1 (true scale); 100 makes a stiff frame visible.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
                 "reverse": false,
                 "simplify": false
             },
@@ -69,7 +83,7 @@
             {
                 "name": "high",
                 "nickname": "high",
-                "description": "Upper bound. Default 1.0 (= fully utilised).",
+                "description": "Upper bound. Default: the model's maximum (utilization: 1.0). Fix it to compare runs.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -79,13 +93,27 @@
                 "typeHintID": "float",
                 "reverse": false,
                 "simplify": false
+            },
+            {
+                "name": "mesh",
+                "nickname": "mesh",
+                "description": "Build the section meshes. Default True; False for lines only on large models.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
             }
         ],
         "outputParameters": [
             {
                 "name": "geometry",
                 "nickname": "geometry",
-                "description": "System lines/surfaces",
+                "description": "Undeformed system lines",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -93,7 +121,7 @@
             {
                 "name": "colours",
                 "nickname": "colours",
-                "description": "Colour per element",
+                "description": "Colour per member (its maximum)",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -102,6 +130,30 @@
                 "name": "legend",
                 "nickname": "legend",
                 "description": "Labels of the scale",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "deformed",
+                "nickname": "deformed",
+                "description": "Deformed system lines, one polyline per member",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "meshes",
+                "nickname": "meshes",
+                "description": "Sections swept along the deformed lines, vertex-coloured by quantity",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "values",
+                "nickname": "values",
+                "description": "Maximum of the quantity per member, same order as the members",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

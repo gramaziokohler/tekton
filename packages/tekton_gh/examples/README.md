@@ -2,8 +2,10 @@
 
 ## `tekton_smoke_test.ghx`
 
-The smoke test: shows the whole chain on an example model, from loading it to
-the exported file. Built and run through on 2026-09-10 in Rhino 8.
+The smoke test: shows the whole chain on an example model, from loading it
+to the results on the canvas. Built 2026-09-10 (SAF export); on 2026-09-15 it
+ran the full RFEM roundtrip on Windows against a live RFEM 6 — see the
+numbers in [../README.md](../README.md#smoke-test).
 
 ```text
 Panel(model path) ─→ [Load Timber] ─┬─→ [Find Supports] ─┐
@@ -22,10 +24,21 @@ What the definition demonstrates:
   assumptions report.
 - **Support** sets 4 support points; **Preflight** then reports
   "no findings" (before that: "no supports — mechanism").
-- **Run** starts the worker subprocess and writes a SAF file
-  (404 members, 4 supports) — the path Rhino → backend works.
+- **Run** starts the worker subprocess. With backend `rfem` it pushes 754
+  objects, calculates (~25 s) and brings back forces, deformations and
+  reactions; with `saf` it writes an xlsx (404 members, 4 supports).
+- **Visualize** (wired to Run's `structural`) draws the deformed system lines
+  and the sections swept along them, coloured by `quantity`. Set
+  `exaggeration` to ~100 and `quantity` to `My` to see the self-weight
+  bending; the scale runs to the model maximum unless `high` is given.
 
 ### Before opening it for the first time
+
+**Pick the backend.** The panel on `Tekton Backend` reads `rfem`; `saf` only
+needs the `filepath` panel (the xlsx target). For `rfem`, RFEM 6 must be
+running and the API key must be reachable — leave `api_key` empty and keep it
+in the repo's `.env` (`DLUBAL_API_KEY=...`). Every run empties the open RFEM
+model and rebuilds it, so have a scratch model open.
 
 **Adjust the two path panels.** They contain absolute paths from this machine
 (repo root and test model) — on another computer they point nowhere. That is

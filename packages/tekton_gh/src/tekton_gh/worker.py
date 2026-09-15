@@ -114,6 +114,11 @@ def run_backend(
         command += ["--load-cases", ",".join(str(int(lc)) for lc in load_cases)]
     if not calculate:
         command.append("--no-calculate")
+    # Every run rebuilds the backend model from scratch - that is the contract
+    # the Run component documents. Without this, the second push into the same
+    # RFEM model fails on "Material No. 1 already exists".
+    if backend in ("rfem", "rstab"):
+        command.append("--delete-all")
 
     env = dict(os.environ)
     if api_key:

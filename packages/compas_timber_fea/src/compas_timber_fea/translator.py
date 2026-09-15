@@ -305,6 +305,7 @@ class TimberToStructural:
         """
         rigid_section = self.sections_library.create_section("Rigid", 0, 0, "rectangular", material_id=1)
         decisions = {}
+        beam_ends = self._beam_end_nodes(structural_graph)
 
         for n1, n2 in structural_graph.connector_edges:
             joint = structural_graph.joint(n1, n2)
@@ -313,7 +314,16 @@ class TimberToStructural:
             description = self.joint_policy.describe_for(joint)
             decisions[description] = decisions.get(description, 0) + 1
 
+            # A hinge sits on ONE end only. The connector spans from one
+            # system line to the other; the real joint face is at the beam
+            # that terminates there (butt joints), while the lever arm to the
+            # continuous beam's axis is solid timber. Hinges at both ends would
+            # make the connector a pendulum bar that carries axial force only,
+            # and a beam hanging on parallel pendulum bars is a mechanism.
+            # When both or neither beam ends here (corner, crossing lap), the
+            # side is arbitrary and the second node takes the hinge.
             is_rigid = release.is_rigid()
+            hinge_at_start = n1 in beam_ends and n2 not in beam_ends
             model.members.append(
                 StructuralMember(
                     id=self._member_id_counter,
@@ -322,8 +332,8 @@ class TimberToStructural:
                     section_id=rigid_section.id,
                     is_rigid=is_rigid,
                     member_type="RIGID" if is_rigid else "COUPLING",
-                    release_start=None if is_rigid else release,
-                    release_end=None if is_rigid else release,
+                    release_start=release if not is_rigid and hinge_at_start else None,
+                    release_end=release if not is_rigid and not hinge_at_start else None,
                     source_element_type="connector",
                     source_segment_id=f"{source_id(n1)}-{source_id(n2)}",
                     source_joint_start=source_id(joint) if joint is not None else None,
@@ -334,6 +344,23 @@ class TimberToStructural:
 
         for description, count in sorted(decisions.items()):
             self.report.append(f"{count}x {description}")
+
+    @staticmethod
+    def _beam_end_nodes(structural_graph):
+        """Graph nodes at which some beam's system line terminates.
+
+        A beam contributes one segment edge to each of its interior nodes'
+        neighbours on both sides, so a node touched by exactly one segment of a
+        beam is that beam's end. Nodes shared by two beams meeting end-to-end
+        (mitres, butts on the axis) count as ends of both.
+        """
+        count = {}
+        for u, v in structural_graph.beam_edges:
+            beam = structural_graph.beam(u, v)
+            key = source_id(beam)
+            for node in (u, v):
+                count[(node, key)] = count.get((node, key), 0) + 1
+        return {node for (node, _key), n in count.items() if n == 1}
 
     def _add_nodes(self, model, structural_graph):
         for node in structural_graph.nodes():
