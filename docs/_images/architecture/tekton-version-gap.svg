@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 230" role="img" aria-label="Rhino 8 runs CPython 3.9.10 while the Dlubal API requires 3.10 or newer and pulls in grpcio, pandas and vtk. The version ranges do not overlap, so the RFEM client cannot run inside Rhino." fill="#221f19">
-<rect x="0" y="0" width="900" height="230" fill="#f5f2ea"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 230" role="img" aria-label="Rhino 8 runs CPython 3.9.10 while the Dlubal API requires 3.10 or newer and pulls in grpcio, pandas and vtk. The version ranges do not overlap, so the RFEM client cannot run inside Rhino." fill="#1f2328">
+<rect x="0" y="0" width="900" height="230" fill="#f6f8fa"/>
           <!-- version axis -->
-          <line stroke="#c3baa4" stroke-width="1"></line>
-          <g font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" fill="#9a927e">
-            <line stroke="#c3baa4"></line>
+          <line stroke="#c4ccd4" stroke-width="1"></line>
+          <g font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" fill="#8b949e">
+            <line stroke="#c4ccd4"></line>
             <text x="200" y="172" text-anchor="middle">3.9</text>
-            <line stroke="#c3baa4"></line>
+            <line stroke="#c4ccd4"></line>
             <text x="380" y="172" text-anchor="middle">3.10</text>
-            <line stroke="#c3baa4"></line>
+            <line stroke="#c4ccd4"></line>
             <text x="560" y="172" text-anchor="middle">3.11</text>
-            <line stroke="#c3baa4"></line>
+            <line stroke="#c4ccd4"></line>
             <text x="740" y="172" text-anchor="middle">3.12</text>
           </g>
-          <text font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing="1.7" fill="#9a927e" x="60" y="196">CPYTHON VERSION</text>
+          <text font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing="1.7" fill="#8b949e" x="60" y="196">CPYTHON VERSION</text>
 
           <!-- rhino band -->
           <rect x="140" y="52" width="122" height="34" rx="17" fill="#a2622a14" stroke="#a2622a" stroke-width="1.3"></rect>
@@ -31,9 +31,9 @@
             <line></line>
             <line></line>
           </g>
-          <rect x="228" y="102" width="124" height="19" rx="9.5" fill="#f5f2ea" stroke="#9e3b2b" stroke-width="1"></rect>
+          <rect x="228" y="102" width="124" height="19" rx="9.5" fill="#f6f8fa" stroke="#9e3b2b" stroke-width="1"></rect>
           <text font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" x="290" y="115" text-anchor="middle" fill="#9e3b2b">NO OVERLAP</text>
 
-          <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#6a6354" x="60" y="222">The neutral layer was kept free of 3.10 syntax on purpose, so it runs on both sides of this line.</text>
-          <text font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" x="840" y="222" text-anchor="end" fill="#9a927e">84 beams → 344 nodes → 404 members, in Rhino</text>
+          <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#59636e" x="60" y="222">The neutral layer was kept free of 3.10 syntax on purpose, so it runs on both sides of this line.</text>
+          <text font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" x="840" y="222" text-anchor="end" fill="#8b949e">84 beams → 344 nodes → 404 members, in Rhino</text>
         </svg>
