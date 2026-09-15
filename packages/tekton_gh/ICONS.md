@@ -1,7 +1,8 @@
 # Icon briefing — Tekton components
 
-Template for designing the icons of the 20 Grasshopper components. All of them
-currently run with single-colour placeholders (one flat fill per group).
+Template for designing the icons of the 24 Grasshopper components. All 24 are
+drawn and installed; the motifs below are the brief they were made against,
+and the reference when one is reworked.
 
 ## House style (from `lorin-gh-tools/gh-icons`)
 
@@ -63,7 +64,7 @@ audience reads them without explanation.
 
 ---
 
-# The 20 components
+# The 24 components
 
 ## 0 | Setup — grey `#a5a9ae`
 
@@ -75,25 +76,6 @@ idea — something that says "check the state", not "display information".
 
 ---
 
-## Still to be designed
-
-Two components were added after the set was drawn. They carry a magenta
-question mark so they stand out in the ribbon; drafts are in `icons/_todo/`.
-
-### Tekton Material Library (`TMatLib`)
-*Group 1 | Author, accent `#50a9d3`.* Pick a grade from the library. Hangs a
-drop-down on itself when placed, so nobody has to type "GL24h" correctly.
-*Motif idea:* stacked material cards, the selected one in accent - a shelf you
-reach into. Should read as a sibling of Tekton Material, not a duplicate: that
-one is about overriding single values, this one about choosing.
-
-### Tekton Support Nodes (`TSupN`)
-*Group 2 | Translate, accent `#50d3c6`.* Supports placed straight onto nodes of
-the analysis model - needed for plates, which carry no support attribute.
-*Motif idea:* the support triangle from Tekton Support, but attached to a node
-dot on a system line rather than to a beam. The pair should be readable as
-"same idea, other end of the pipeline".
-
 ## 1 | Author — light blue `#50a9d3`
 
 What the designer gives the model in the way of engineering knowledge. The
@@ -103,6 +85,15 @@ common bracket: **something is attached to an element.**
 Pick a material (C24, GL24h …). Today a name that RFEM resolves against its
 own library.
 *Motif:* beam cross-section with wood grain/growth rings; accent on the grain.
+
+### Tekton Material Library (`TMatLib`)
+Pick a grade from the library. Hangs a drop-down on itself when placed, so
+nobody has to type "GL24h" correctly; without a selection it lists what is
+available, with the property values.
+*Motif:* stacked material cards, the front one carrying the grain in the
+accent — a shelf you reach into. Reads as a sibling of Tekton Material, not a
+duplicate: that one is about overriding single values, this one about
+choosing.
 
 ### Tekton Support (`TSup`)
 Mark support points on beams.
@@ -168,6 +159,17 @@ Applies the authored loads to the translated model (point → node, element GUID
 *Motif:* a system line with nodes, load arrows snapping onto it; accent on the
 arrows. The difference from Point/Member Load: there the load is *defined*,
 here it is *assigned*.
+
+### Tekton Support Nodes (`TSupN`)
+Supports placed straight onto nodes of the analysis model, selected by a plane
+or by proximity to points. Needed for plates: the translator reads
+`support_points` off beams only, so a plate model would reach analysis
+unsupported — a mechanism. Runs after Translate, because the nodes exist only
+from then on.
+*Motif:* the support triangle from Tekton Support, but hanging off an
+emphasised node on a system line rather than sitting under a beam. The pair
+reads as "same idea, other end of the pipeline" — Support authors on the
+element, this one lands on the model.
 
 ### Tekton Preflight (`TCheck`)
 Checks before calculating: supports present? model connected? references
@@ -257,8 +259,10 @@ be recognisable as a pair.
 - **24px is the real size.** Everything has to stay readable there: at most
   two or three visual elements, no thin details, no text.
 - **Make the pairs visible:** Save/Load, Point Load/Member Load, Joint
-  Policy/Plate Policy, Results/Inspect. Same base figure, one element mirrored
-  or swapped.
+  Policy/Plate Policy, Results/Inspect, Translate/To Timber (the arrow turns
+  round), Material/Material Library (override vs. choose), Support/Support
+  Nodes (on the element vs. on the node). Same base figure, one element
+  mirrored or swapped.
 - **The accent carries the message.** In the reference SVG exactly the new
   thing is coloured, the context stays dark. That keeps the meaning readable
   in greyscale too.
@@ -274,13 +278,17 @@ Finished icons go here, then rebuild:
 components/<bundle>/icon.png     # 24px, replaces the placeholder
 ```
 
-Bundle names: `tekton_info`, `tekton_material`, `tekton_support`,
-`tekton_load_case`, `tekton_point_load`, `tekton_member_load`,
-`tekton_combination`, `tekton_joint_policy`, `tekton_plate_policy`,
-`tekton_translate`, `tekton_apply_loads`, `tekton_preflight`,
-`tekton_backend`, `tekton_run`, `tekton_results`, `tekton_attach_results`,
-`tekton_visualize`, `tekton_inspect`, `tekton_save_model`,
+Bundle names: `tekton_info`, `tekton_material`, `tekton_material_library`,
+`tekton_support`, `tekton_load_case`, `tekton_point_load`,
+`tekton_member_load`, `tekton_combination`, `tekton_joint_policy`,
+`tekton_plate_policy`, `tekton_translate`, `tekton_support_nodes`,
+`tekton_apply_loads`, `tekton_preflight`, `tekton_backend`, `tekton_run`,
+`tekton_results`, `tekton_attach_results`, `tekton_visualize`,
+`tekton_inspect`, `tekton_display`, `tekton_save_model`, `tekton_to_timber`,
 `tekton_load_model`.
+
+All 24 carry real icons. `icons/_todo/` keeps only the magenta placeholder
+itself, for the next component that arrives without one.
 
 Then:
 
