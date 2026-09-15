@@ -60,6 +60,15 @@ Then run `uv sync` again. Revert the override before committing.
 
 Tekton is a monorepo containing several decoupled packages for structural analysis and BIM synchronization within the COMPAS ecosystem. It facilitates the transfer of structural data from COMPAS-based models to Dlubal RFEM/RSTAB and neutral formats like SAF.
 
+### System map
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/_images/architecture/tekton-system-map-dark.svg">
+  <img alt="Tekton system map. COMPAS Timber authors the TimberModel and builds the StructuralGraph that idealises the geometry. Tekton reads that graph from Grasshopper, the desktop app or a script, always through the same translator, and hands the neutral StructuralModel to a backend adapter. Results hop back across the top until they land on the beams. Only Grasshopper's Run button takes the detour through a JSON file and a worker subprocess." src="docs/_images/architecture/tekton-system-map.svg">
+</picture>
+
+Read it left to right; the round trip runs right to left along the top. Click the image to open it at full size. The remaining diagrams and the notes behind them are in [`docs/architecture.html`](docs/architecture.html).
+
 ### Monorepo Packages
 
 - **[compas_timber_fea](packages/compas_timber_fea)**: Agnostic bridge that translates [compas_timber](https://github.com/gramaziokohler/compas_timber) models into a neutral `StructuralModel`.

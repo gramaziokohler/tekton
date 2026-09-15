@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 250" role="img" aria-label="The identity chain. An RFEM member number maps one to one onto a neutral member id, which carries a source element id, which is the GUID of the original beam. Because one beam becomes several members, results attach at a parameter along the physical beam axis." fill="#221f19">
-          <defs>
-            <marker id="m3" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7" markerHeight="6.5" orient="auto">
-              <path d="M0,0 L10,4.5 L0,9 Z" fill="#a2622a"></path>
-            </marker>
-          </defs>
 <rect x="0" y="0" width="900" height="250" fill="#f5f2ea"/>
+          
 
           <g>
             <rect x="24" y="40" width="182" height="52" rx="9" fill="#fdfbf7" stroke="#35637e" stroke-width="1.2"></rect>
@@ -25,11 +21,11 @@
             <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#6a6354" x="795" y="81" text-anchor="middle">what the designer drew</text>
           </g>
 
-          <g stroke="#a2622a" stroke-width="1.4" fill="none" marker-end="url(#m3)">
-            <path d="M210 66 L248 66"></path>
-            <path d="M440 66 L478 66"></path>
-            <path d="M670 66 L708 66"></path>
-          </g>
+          <g stroke="#a2622a" stroke-width="1.4" fill="none">
+            <path d="M210.0 66.0 L238.6 66.0"></path>
+            <path d="M440.0 66.0 L468.6 66.0"></path>
+            <path d="M670.0 66.0 L698.5 66.0"></path>
+          </g><polygon points="248.0,66.0 237.5,70.8 237.5,61.2" fill="#a2622a" stroke="none"/><polygon points="478.0,66.0 467.5,70.8 467.5,61.2" fill="#a2622a" stroke="none"/><polygon points="708.0,66.0 697.5,70.8 697.5,61.2" fill="#a2622a" stroke="none"/>
           <g font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" fill="#9a927e">
             <text x="229" y="56" text-anchor="middle">1:1</text>
             <text x="459" y="56" text-anchor="middle">lookup</text>

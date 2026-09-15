@@ -1,14 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 330" role="img" aria-label="Translation pipeline. A timber model and four authored policy inputs enter the translator, which emits the neutral model and an assumptions report. Loads are applied afterwards, then preflight runs before anything is pushed." fill="#221f19">
-          <defs>
-            <marker id="m2" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7" markerHeight="6.5" orient="auto">
-              <path d="M0,0 L10,4.5 L0,9 Z" fill="#221f19"></path>
-            </marker>
-            <marker id="m2s" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7" markerHeight="6.5" orient="auto">
-              <path d="M0,0 L10,4.5 L0,9 Z" fill="#5c7152"></path>
-            </marker>
-          </defs>
 <rect x="0" y="0" width="900" height="330" fill="#f5f2ea"/>
+          
 
           <text font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing="1.7" fill="#9a927e" x="20" y="28">AUTHORED ON THE CANVAS</text>
           <g>
@@ -23,13 +16,13 @@
             <rect x="20" y="176" width="148" height="26" rx="13" fill="#ece6d9" stroke="#c3baa4" stroke-width="1"></rect>
             <text font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" x="94" y="193" text-anchor="middle">source units</text>
           </g>
-          <g stroke="#221f19" stroke-width="1" fill="none" marker-end="url(#m2)" opacity=".75">
-            <path d="M172 53 L196 53 L196 118 L214 118"></path>
-            <path d="M172 87 L196 87 L196 118"></path>
-            <path d="M172 121 L206 121 L206 124 L214 124"></path>
-            <path d="M172 155 L196 155 L196 130 L214 130"></path>
-            <path d="M172 189 L196 189 L196 130"></path>
-          </g>
+          <g stroke="#221f19" stroke-width="1" fill="none" opacity=".75">
+            <path d="M172.0 53.0 L196.0 53.0 L196.0 118.0 L207.2 118.0"></path>
+            <path d="M172.0 87.0 L196.0 87.0 L196.0 111.2"></path>
+            <path d="M172.0 121.0 L206.0 121.0 L206.0 124.0 L207.2 124.0"></path>
+            <path d="M172.0 155.0 L196.0 155.0 L196.0 130.0 L207.2 130.0"></path>
+            <path d="M172.0 189.0 L196.0 189.0 L196.0 136.8"></path>
+          </g><polygon points="214.0,118.0 206.5,121.4 206.5,114.6" fill="#221f19" stroke="none"/><polygon points="196.0,118.0 192.6,110.5 199.4,110.5" fill="#221f19" stroke="none"/><polygon points="214.0,124.0 206.5,127.4 206.5,120.6" fill="#221f19" stroke="none"/><polygon points="214.0,130.0 206.5,133.4 206.5,126.6" fill="#221f19" stroke="none"/><polygon points="196.0,130.0 199.4,137.5 192.6,137.5" fill="#221f19" stroke="none"/>
 
           <!-- translator -->
           <rect x="218" y="40" width="196" height="162" rx="9" fill="#fdfbf7" stroke="#5c7152" stroke-width="1.4"></rect>
@@ -44,10 +37,10 @@
             <text x="238" y="186">plates → surfaces + thicknesses</text>
           </g>
 
-          <g stroke="#5c7152" stroke-width="1.3" fill="none" marker-end="url(#m2s)">
-            <path d="M418 90 L446 90"></path>
-            <path d="M418 160 L446 160"></path>
-          </g>
+          <g stroke="#5c7152" stroke-width="1.3" fill="none">
+            <path d="M418.0 90.0 L437.2 90.0"></path>
+            <path d="M418.0 160.0 L437.2 160.0"></path>
+          </g><polygon points="446.0,90.0 436.2,94.4 436.2,85.6" fill="#5c7152" stroke="none"/><polygon points="446.0,160.0 436.2,164.4 436.2,155.6" fill="#5c7152" stroke="none"/>
 
           <rect x="450" y="66" width="182" height="48" rx="9" fill="#fdfbf7" stroke="#5c7152" stroke-width="1.3"></rect>
           <text font-family="Public Sans, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" x="541" y="88" text-anchor="middle" fill="#5c7152">structural model</text>
@@ -57,10 +50,10 @@
           <text font-family="Public Sans, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" x="541" y="158" text-anchor="middle">assumptions report</text>
           <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#6a6354" x="541" y="175" text-anchor="middle">its own output, on the canvas</text>
 
-          <g stroke="#221f19" stroke-width="1.2" fill="none" marker-end="url(#m2)">
-            <path d="M636 90 L664 90"></path>
-            <path d="M760 118 L760 140"></path>
-          </g>
+          <g stroke="#221f19" stroke-width="1.2" fill="none">
+            <path d="M636.0 90.0 L655.9 90.0"></path>
+            <path d="M760.0 118.0 L760.0 131.9"></path>
+          </g><polygon points="664.0,90.0 655.0,94.1 655.0,85.9" fill="#221f19" stroke="none"/><polygon points="760.0,140.0 755.9,131.0 764.1,131.0" fill="#221f19" stroke="none"/>
 
           <rect x="668" y="66" width="184" height="48" rx="9" fill="#fdfbf7" stroke="#c3baa4" stroke-width="1"></rect>
           <text font-family="Public Sans, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" x="760" y="88" text-anchor="middle">apply loads</text>
