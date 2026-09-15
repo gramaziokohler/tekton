@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 250" role="img" aria-label="The identity chain. An RFEM member number maps one to one onto a neutral member id, which carries a source element id, which is the GUID of the original beam. Because one beam becomes several members, results attach at a parameter along the physical beam axis." fill="#f2eddf">
+          <defs>
+            <marker id="m3" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7" markerHeight="6.5" orient="auto">
+              <path d="M0,0 L10,4.5 L0,9 Z" fill="#dd9954"></path>
+            </marker>
+          </defs>
+<rect x="0" y="0" width="900" height="250" fill="#15140e"/>
+
+          <g>
+            <rect x="24" y="40" width="182" height="52" rx="9" fill="#1f1d16" stroke="#74abca" stroke-width="1.2"></rect>
+            <text font-family="Public Sans, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" x="115" y="64" text-anchor="middle" fill="#74abca">RFEM member no</text>
+            <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#ada48d" x="115" y="81" text-anchor="middle">a row in the result table</text>
+
+            <rect x="254" y="40" width="182" height="52" rx="9" fill="#1f1d16" stroke="#9dba8d" stroke-width="1.2"></rect>
+            <text font-family="Public Sans, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" x="345" y="64" text-anchor="middle" fill="#9dba8d">neutral member id</text>
+            <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#ada48d" x="345" y="81" text-anchor="middle">shifts when the model is edited</text>
+
+            <rect x="484" y="40" width="182" height="52" rx="9" fill="#1f1d16" stroke="#9dba8d" stroke-width="1.2"></rect>
+            <text font-family="Public Sans, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" x="575" y="64" text-anchor="middle" fill="#9dba8d">source_element_id</text>
+            <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#ada48d" x="575" y="81" text-anchor="middle">carried on every member</text>
+
+            <rect x="714" y="40" width="162" height="52" rx="9" fill="#1f1d16" stroke="#dd9954" stroke-width="1.3"></rect>
+            <text font-family="Public Sans, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" x="795" y="64" text-anchor="middle" fill="#dd9954">the Beam</text>
+            <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#ada48d" x="795" y="81" text-anchor="middle">what the designer drew</text>
+          </g>
+
+          <g stroke="#dd9954" stroke-width="1.4" fill="none" marker-end="url(#m3)">
+            <path d="M210 66 L248 66"></path>
+            <path d="M440 66 L478 66"></path>
+            <path d="M670 66 L708 66"></path>
+          </g>
+          <g font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" fill="#7d7561">
+            <text x="229" y="56" text-anchor="middle">1:1</text>
+            <text x="459" y="56" text-anchor="middle">lookup</text>
+            <text x="689" y="56" text-anchor="middle">GUID</text>
+          </g>
+
+          <!-- segmentation illustration -->
+          <line stroke="#3d3929"></line>
+          <text font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing="1.7" fill="#7d7561" x="24" y="146">ONE BEAM BECOMES SEVERAL MEMBERS</text>
+
+          <g>
+            <line stroke="#dd9954" stroke-width="3.5" stroke-linecap="round"></line>
+            <text font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" x="60" y="186" text-anchor="end" fill="#dd9954">the beam</text>
+            <g fill="#9dba8d" stroke="#1f1d16" stroke-width="1.5">
+              <circle cx="130" cy="182" r="5"></circle>
+              <circle cx="250" cy="182" r="5"></circle>
+              <circle cx="370" cy="182" r="5"></circle>
+              <circle cx="490" cy="182" r="5"></circle>
+              <circle cx="610" cy="182" r="5"></circle>
+            </g>
+            <g font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" fill="#9dba8d">
+              <text x="190" y="169" text-anchor="middle">member</text>
+              <text x="310" y="169" text-anchor="middle">member</text>
+              <text x="430" y="169" text-anchor="middle">member</text>
+              <text x="550" y="169" text-anchor="middle">member</text>
+            </g>
+            <g font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" fill="#7d7561">
+              <text x="130" y="204" text-anchor="middle">t = 0</text>
+              <text x="610" y="204" text-anchor="middle">t = 1</text>
+            </g>
+          </g>
+
+          <g>
+            <rect x="656" y="152" width="220" height="60" rx="9" fill="#282619" stroke="#4b4634" stroke-width="1"></rect>
+            <text font-family="IBM Plex Mono, Menlo, monospace" font-size="9.5" letter-spacing=".04" x="674" y="172" fill="#dd9954">ENVELOPE — what the designer sees</text>
+            <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#ada48d" x="674" y="189">max utilization, max deflection</text>
+            <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#ada48d" x="674" y="204">samples underneath, for diagrams</text>
+          </g>
+
+          <text font-family="IBM Plex Mono, Menlo, monospace" font-size="10" fill="#ada48d" x="24" y="238">Results attach at a parameter on the physical axis. The analysis mesh is never handed back — the designer asked about their beam, not our discretization.</text>
+        </svg>
