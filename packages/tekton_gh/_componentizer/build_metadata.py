@@ -413,21 +413,26 @@ COMPONENTS = [
         nickname="TRes",
         sub=SUB_RESULTS,
         description=(
-            "Read results per physical beam: envelope values (max. utilisation, max. "
-            "deflection) and sample points along the axis. The assignment goes through the "
-            "element GUID, not through member numbers. Warns when the results belong to an "
-            "older state of the model."
+            "Results per physical beam, straight off the StructuralModel: one envelope value "
+            "per beam, the samples along each beam as a tree (t on the beam axis, not on the "
+            "member), the full record as JSON - and a staleness check against the connected "
+            "model. Wire the TimberModel into 'model' to get the Beam objects in the same order."
         ),
         inputs=[
             p("structural", desc="StructuralModel with results (from TektonRun).", optional=False),
+            p("model", desc="TimberModel (optional). If given, 'beams' carries the Beam objects."),
             p("load_case", "int", desc="Load case. Empty = first available."),
-            p("quantity", "str", desc="'utilization' | 'displacement' | 'N' | 'My' | 'Vz'."),
+            p("quantity", "str", desc="'N' | 'Vy' | 'Vz' | 'Mt' | 'My' | 'Mz' | 'displacement'. Forces signed (kN, kNm), displacement as magnitude (m)."),
         ],
         outputs=[
-            o("beam_ids", "Element GUIDs"),
+            o("beam_ids", "Element GUIDs, the order of every other output"),
+            o("beams", "Beam objects in that order (only with 'model'; None where a GUID is missing)"),
             o("envelope", "Envelope value per beam"),
-            o("samples", "Sample points per beam (t, value)"),
-            o("stale", "True when the results do not match the model"),
+            o("samples", "Tree: per beam the quantity at each station along the beam"),
+            o("params", "Tree: per beam the parameter t (0..1 on the beam axis) of each station"),
+            o("analysis", "Full record per beam as JSON (samples + envelope)"),
+            o("stale", "True when the results do not match the connected model"),
+            o("info", "Quantity, load case, coverage, freshness"),
         ],
     ),
     dict(
@@ -538,6 +543,30 @@ COMPONENTS = [
         outputs=[
             o("structural", "StructuralModel"),
             o("info", "Short overview: nodes, members, load cases, results"),
+        ],
+    ),
+    dict(
+        folder="tekton_to_timber",
+        uid=23,
+        name="Tekton To Timber",
+        nickname="TToTimber",
+        sub=SUB_IO,
+        description=(
+            "Rebuilds the TimberModel from a StructuralModel: beams from their segments, "
+            "sections and orientation, with the original GUIDs, results attached as "
+            "beam.attributes['analysis']. Joints are not rebuilt (their types are not in the "
+            "neutral model). Use it when only the analysis model is at hand - a JSON from the "
+            "engineer, an earlier run - or to get the calculated model as timber elements."
+        ),
+        inputs=[
+            p("structural", desc="StructuralModel, with or without results.", optional=False),
+            p("attach", "bool", desc="Attach results to the beams. Default True."),
+            p("repo", "str", desc="Path to the monorepo."),
+        ],
+        outputs=[
+            o("model", "TimberModel"),
+            o("report", "What was rebuilt, what was skipped"),
+            o("connections", "Beam pairs that were connected, by GUID prefix"),
         ],
     ),
 ]

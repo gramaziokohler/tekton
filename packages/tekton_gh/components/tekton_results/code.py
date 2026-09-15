@@ -1,18 +1,25 @@
-"""Tekton Results - results per physical beam.
+"""Tekton Results - results per physical beam, as numbers and trees.
 
-Delivers envelope values (what the designer sees first) and sample points along
-the axis (for diagrams). The mapping goes through the element GUID: RFEM member
-number -> neutral member ID -> source_element_id -> beam. The analysed member is
-not the physical beam - a beam is split into several members, whose results are
-brought back together here.
+The analysed member is not the physical beam: a beam is split into several
+members at joints and supports. This component brings them back together -
+the mapping goes RFEM member number -> neutral member id -> source_element_id
+-> beam, and every sample lands at the parameter t on the *beam* axis, so a
+beam split in three does not show 0..1 three times over.
+
+Two things it does that nothing else does: it checks the results against the
+connected model (`stale` - Grasshopper holds on to old outputs, and a number
+from an older model state looks just as right as a fresh one), and it works
+straight off the StructuralModel, no timber model needed. Wire the
+TimberModel into `model` anyway and the Beam objects come out in the same
+order, ready for geometry and colouring.
 
 Utilisation is the one quantity still missing: it comes from RFEM's design
-add-on and is not wired up. Internal forces, deflections and support reactions
-are read.
+add-on and is not wired up.
 """
 # venv: tekton-test
 # r: compas, compas_timber
 
+import json
 import os
 import sys
 
@@ -54,32 +61,51 @@ def _warn(message):
         Grasshopper.Kernel.GH_RuntimeMessageLevel.Warning, message
     )
 
+QUANTITIES = ("N", "Vy", "Vz", "Mt", "My", "Mz", "displacement", "utilization")
+
+
+def _magnitude(value):
+    if isinstance(value, (list, tuple)):
+        return sum(c * c for c in value) ** 0.5
+    return value
+
+
 # --------------------- INPUTS ---------------------
 structural = structural  # type: ignore # noqa: F821
+model = model  # type: ignore # noqa: F821
 load_case: int  # type: ignore
 quantity: str  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
-beam_ids = []
-envelope = []
-samples = []
-stale = False
+import Grasshopper  # noqa: E402
+from Grasshopper.Kernel.Data import GH_Path  # noqa: E402
 
-QUANTITIES = {
-    "utilization": None,  # comes from the design add-on, not yet tested
-    "displacement": "displacement",
-    "N": "axial",
-    "My": "moment_y",
-    "Mz": "moment_z",
-    "Vy": "shear_y",
-    "Vz": "shear_z",
-}
+beam_ids = []
+beams = []
+envelope = []
+samples = Grasshopper.DataTree[object]()
+params = Grasshopper.DataTree[object]()
+analysis = []
+stale = False
+info = []
 
 if structural is None:
     _warn("No StructuralModel connected.")
 else:
     _setup()
+    import importlib
+    import compas_timber_fea.results
+    importlib.reload(compas_timber_fea.results)
+    from compas_timber_fea.results import samples_by_beam
+
+    quantity = quantity or "displacement"
+    if quantity == "utilization":
+        _warn("Utilisation comes from RFEM's design add-on and is not wired up yet. Deflection is shown instead.")
+        quantity = "displacement"
+    elif quantity not in QUANTITIES:
+        _warn("Unknown quantity '{}'. Allowed: {}.".format(quantity, ", ".join(QUANTITIES)))
+        quantity = "displacement"
 
     results = getattr(structural, "results", {}) or {}
     if not results:
@@ -90,39 +116,34 @@ else:
         if result_set is None:
             _warn("Load case {} not in the results. Available: {}.".format(case_id, sorted(results)))
         else:
-            key = quantity or "utilization"
-            attribute = QUANTITIES.get(key, "displacement")
-            if key == "utilization":
-                _warn(
-                    "Utilisation comes from RFEM's design add-on and is not "
-                    "wired up yet. Deflection is shown instead."
-                )
-                attribute = "displacement"
-            elif key not in QUANTITIES:
-                _warn("Unknown quantity '{}'. Allowed: {}.".format(key, ", ".join(sorted(QUANTITIES))))
+            by_guid = {str(b.guid): b for b in model.beams} if model is not None else {}
+            missing = 0
+            for index, (guid, record) in enumerate(samples_by_beam(structural, result_set).items()):
+                beam_ids.append(guid)
+                beam = by_guid.get(guid)
+                beams.append(beam)
+                if model is not None and beam is None:
+                    missing += 1
+                envelope.append(_magnitude(record["envelope"].get(quantity)))
+                analysis.append(json.dumps(record, default=str))
+                path = GH_Path(index)
+                for t, values in record["samples"]:
+                    if quantity in values:
+                        params.Add(t, path)
+                        samples.Add(_magnitude(values[quantity]), path)
 
-            # Group member results by element GUID: several members belong to
-            # the same physical beam.
-            member_source = {m.id: m.source_element_id for m in structural.members}
-            per_beam = {}
-            for member_id, rows in (result_set.member_results or {}).items():
-                source = member_source.get(member_id)
-                if source is None:
-                    continue
-                per_beam.setdefault(str(source), []).extend(rows)
+            info = [
+                "Quantity: {} ({})".format(quantity, "m, magnitude" if quantity == "displacement" else "kN / kNm, signed"),
+                "Load case: {} of {}".format(case_id, sorted(results)),
+                "Beams with results: {}".format(len(beam_ids)),
+            ]
+            if model is not None:
+                info.append("Beam objects matched: {} of {}".format(len(beam_ids) - missing, len(beam_ids)))
+                if missing:
+                    _warn("{} beams with results are not in the connected TimberModel - GUIDs no longer line up.".format(missing))
 
-            for source, rows in sorted(per_beam.items()):
-                values = [abs(getattr(row, attribute, 0.0) or 0.0) for row in rows]
-                beam_ids.append(source)
-                envelope.append(max(values) if values else 0.0)
-                samples.append([(row.position, getattr(row, attribute, 0.0)) for row in rows])
-
-            print("{} elements, load case {}, quantity '{}'".format(len(beam_ids), case_id, key))
-
-            # Check freshness. Results that silently describe an older model
-            # state are the most dangerous failure mode of this workflow:
-            # Grasshopper holds on to old outputs, and after a change a number
-            # looks just as right as it did before.
+            # Freshness. Results that silently describe an older model state
+            # are the most dangerous failure mode of this workflow.
             from tekton_gh.worker import model_fingerprint
 
             metadata = getattr(result_set, "metadata", {}) or {}
@@ -133,11 +154,11 @@ else:
                 current = model_fingerprint(structural)
                 stale = current != stamped
                 if stale:
-                    _warn(
-                        "STALE: the results belong to model state {}, but {} "
-                        "is connected. Recalculate.".format(stamped, current)
-                    )
+                    _warn("STALE: the results belong to model state {}, but {} is connected. Recalculate.".format(stamped, current))
                 else:
-                    print("Model state {} - results current{}.".format(
-                        stamped,
-                        ", calculated {}".format(metadata["calculated_at"]) if metadata.get("calculated_at") else ""))
+                    info.append("Fresh: results match the connected model ({}).".format(current))
+            if metadata.get("calculated_at"):
+                info.append("Calculated: {}".format(metadata["calculated_at"]))
+
+for line in info:
+    print(line)

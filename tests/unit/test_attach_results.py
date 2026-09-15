@@ -16,6 +16,7 @@ from compas_timber_fea.core.model import StructuralModel
 from compas_timber_fea.core.model import StructuralResultSet
 from compas_timber_fea.results import ANALYSIS_KEY
 from compas_timber_fea.results import attach_results_to_timber
+from compas_timber_fea.results import samples_by_beam
 from compas_timber_fea.translator import TimberToStructural
 
 
@@ -138,3 +139,17 @@ def test_results_survive_model_serialization(translated, tmp_path):
     assert result_set.member_results, "member results were lost"
     any_member = next(iter(result_set.member_results.values()))
     assert any_member[1].moment_y == 2.5
+
+
+def test_samples_by_beam_needs_no_timber_model(translated):
+    """Same projection as attach, from the member chain alone - for the canvas read-out."""
+    timber_model, structural_model, beam = translated
+    _fill_results(structural_model, beam.guid)
+
+    by_beam = samples_by_beam(structural_model, structural_model.results[1])
+    attach_results_to_timber(structural_model, timber_model)
+
+    params = [t for t, _v in by_beam[str(beam.guid)]["samples"]]
+    assert 0.25 in params and 0.75 in params
+    assert by_beam[str(beam.guid)]["envelope"]["N"] == -5.0
+    assert by_beam[str(beam.guid)]["samples"] == beam.attributes[ANALYSIS_KEY]["load_cases"][1]["samples"]

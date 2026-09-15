@@ -89,7 +89,12 @@ und `roundtrip.md`):
 - **Attach Results** ruft jetzt `compas_timber_fea.results` statt einer
   eigenen Kopie: Stationswerte (inkl. Verformung) landen am Balkenparameter
   über alle Segmente in `beam.attributes["analysis"]`, mit Hüllwerten und
-  Provenienz. Live: 84/84 Balken.
+  Provenienz. Live: 84/84 Balken. **Results** liest dieselben Zahlen direkt
+  aus dem StructuralModel (Bäume, Vorzeichen, `stale`-Prüfung).
+- **Rückweg Structural → Timber** (`reconstruct.py`, GH `To Timber`): Balken
+  exakt aus Segmenten, Querschnitt und Orientierung, GUIDs wiederhergestellt,
+  Ergebnisse dran. Joints nicht — deren Typ steht nicht im neutralen Modell.
+  Damit ist das JSON allein ein vollständiges Übergabeartefakt für Balken.
 
 **Davor** (2026-08-27, Details: `docs/review_2026-08-27.md`):
 

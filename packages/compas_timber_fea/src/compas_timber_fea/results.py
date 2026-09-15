@@ -81,6 +81,53 @@ def attach_results_to_timber(structural_model, timber_model, result_sets=None):
     return attached
 
 
+def samples_by_beam(structural_model, result_set):
+    """Per-beam (t, values) samples straight from the structural model - no timber model needed.
+
+    The beam axis is taken from the member chain itself (first segment start
+    to last segment end), so t is the parameter on the physical beam even
+    when the beam was split into several members. Same sample shape as
+    :func:`attach_results_to_timber` writes.
+
+    Returns
+    -------
+    dict
+        {beam guid: {"samples": [(t, values)], "envelope": {...}}}, sorted by guid.
+    """
+    points = {node.id: node.point for node in structural_model.nodes}
+    out = {}
+    for guid, members in sorted(_members_by_source(structural_model).items()):
+        start_id, end_id = chain_endpoints(members)
+        p_start, p_end = points.get(start_id), points.get(end_id)
+        if p_start is None or p_end is None:
+            continue
+        start = (p_start.x, p_start.y, p_start.z)
+        length = ((p_end.x - p_start.x) ** 2 + (p_end.y - p_start.y) ** 2 + (p_end.z - p_start.z) ** 2) ** 0.5
+        if not length:
+            continue
+        samples = _beam_samples(members, result_set, points, start, length)
+        if samples:
+            out[guid] = {"samples": samples, "envelope": _envelope(samples)}
+    return out
+
+
+def chain_endpoints(members):
+    """Start and end node of a beam's member chain, in member direction.
+
+    Members share nodes end-to-start; the node that is some member's
+    ``node_start`` and no member's ``node_end`` is the beam start, and vice
+    versa. A malformed chain falls back to the lowest and highest member id.
+    """
+    starts = {m.node_start for m in members}
+    ends = {m.node_end for m in members}
+    head = [n for n in starts if n not in ends]
+    tail = [n for n in ends if n not in starts]
+    if len(head) == 1 and len(tail) == 1:
+        return head[0], tail[0]
+    ordered = sorted(members, key=lambda m: m.id)
+    return ordered[0].node_start, ordered[-1].node_end
+
+
 def _members_by_source(structural_model):
     grouped = {}
     for member in structural_model.members:

@@ -151,7 +151,12 @@ Who is in this loop?
    provenance (`compas_timber_fea.results.attach_results_to_timber`, exposed
    as `Tekton Attach Results`). Samples include the displacement vector as a
    plain tuple so the attribute stays JSON-plain. Live: 84/84 beams, 11
-   samples each. Still per session only — see 3.
+   samples each. Still per session only — see 3. The reverse direction
+   exists too (`compas_timber_fea.reconstruct.structural_to_timber`, GH
+   `Tekton To Timber`): beams come back exactly from segments + section +
+   orientation, GUIDs restored, results attached — joints do not, their
+   types are not in the neutral model. So a StructuralModel JSON on its own
+   is a complete handover artefact for the beam side.
 3. ◐ GUIDs go into `id_for_export_import` on push (done); BackendMap not
    started — every run is `delete_all` + rebuild.
 4. ☐ Utilization via timber design add-on (needs the live test).

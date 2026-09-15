@@ -1,0 +1,83 @@
+{
+    "name": "Tekton To Timber",
+    "nickname": "TToTimber",
+    "category": "Tekton",
+    "subcategory": "5 | IO",
+    "description": "Rebuilds the TimberModel from a StructuralModel: beams from their segments, sections and orientation, with the original GUIDs, results attached as beam.attributes['analysis']. Joints are not rebuilt (their types are not in the neutral model). Use it when only the analysis model is at hand - a JSON from the engineer, an earlier run - or to get the calculated model as timber elements.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000023",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "structural",
+                "nickname": "structural",
+                "description": "StructuralModel, with or without results.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "attach",
+                "nickname": "attach",
+                "description": "Attach results to the beams. Default True.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "repo",
+                "nickname": "repo",
+                "description": "Path to the monorepo.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "model",
+                "nickname": "model",
+                "description": "TimberModel",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "report",
+                "nickname": "report",
+                "description": "What was rebuilt, what was skipped",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "connections",
+                "nickname": "connections",
+                "description": "Beam pairs that were connected, by GUID prefix",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

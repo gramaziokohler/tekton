@@ -3,7 +3,7 @@
     "nickname": "TRes",
     "category": "Tekton",
     "subcategory": "4 | Results",
-    "description": "Read results per physical beam: envelope values (max. utilisation, max. deflection) and sample points along the axis. The assignment goes through the element GUID, not through member numbers. Warns when the results belong to an older state of the model.",
+    "description": "Results per physical beam, straight off the StructuralModel: one envelope value per beam, the samples along each beam as a tree (t on the beam axis, not on the member), the full record as JSON - and a staleness check against the connected model. Wire the TimberModel into 'model' to get the Beam objects in the same order.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000014",
     "ghpython": {
@@ -15,6 +15,20 @@
                 "nickname": "structural",
                 "description": "StructuralModel with results (from TektonRun).",
                 "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "model",
+                "nickname": "model",
+                "description": "TimberModel (optional). If given, 'beams' carries the Beam objects.",
+                "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
                 "scriptParamAccess": "item",
@@ -41,7 +55,7 @@
             {
                 "name": "quantity",
                 "nickname": "quantity",
-                "description": "'utilization' | 'displacement' | 'N' | 'My' | 'Vz'.",
+                "description": "'N' | 'Vy' | 'Vz' | 'Mt' | 'My' | 'Mz' | 'displacement'. Forces signed (kN, kNm), displacement as magnitude (m).",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -57,7 +71,15 @@
             {
                 "name": "beam_ids",
                 "nickname": "beam_ids",
-                "description": "Element GUIDs",
+                "description": "Element GUIDs, the order of every other output",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "beams",
+                "nickname": "beams",
+                "description": "Beam objects in that order (only with 'model'; None where a GUID is missing)",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -73,7 +95,23 @@
             {
                 "name": "samples",
                 "nickname": "samples",
-                "description": "Sample points per beam (t, value)",
+                "description": "Tree: per beam the quantity at each station along the beam",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "params",
+                "nickname": "params",
+                "description": "Tree: per beam the parameter t (0..1 on the beam axis) of each station",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "analysis",
+                "nickname": "analysis",
+                "description": "Full record per beam as JSON (samples + envelope)",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false
@@ -81,7 +119,15 @@
             {
                 "name": "stale",
                 "nickname": "stale",
-                "description": "True when the results do not match the model",
+                "description": "True when the results do not match the connected model",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "info",
+                "nickname": "info",
+                "description": "Quantity, load case, coverage, freshness",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

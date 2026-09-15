@@ -165,16 +165,22 @@ assumptions report), `Apply Loads` (loads onto the translated model),
 **3 | Run** — `Backend` (selection + connection), `Run` (push, calculate,
 results back — **by button only**).
 
-**4 | Results** — `Results` (envelope values per beam), `Attach Results`
-(writes `beam.attributes["analysis"]` via `compas_timber_fea.results`: samples
-at the *beam* parameter across all its segments, envelope, provenance; all
-load cases or one), `Visualize` (deformed shape and colouring: polylines
+**4 | Results** — `Results` (numbers per physical beam straight off the
+StructuralModel: envelope per beam, samples and their parameter t on the
+*beam* axis as trees, JSON record, `stale` check; with the TimberModel wired
+in, the Beam objects in the same order), `Attach Results` (writes
+`beam.attributes["analysis"]` via `compas_timber_fea.results`: the same
+samples and envelope, plus provenance; all load cases or one), `Visualize` (deformed shape and colouring: polylines
 through the deformed RFEM stations, sections swept along them as
 vertex-coloured meshes, one colour per member; `quantity` is
 `displacement | N | Vy | Vz | Mt | My | Mz | utilization`, `exaggeration`
 scales the deformation), `Inspect` (look at the analysis model).
 
-**5 | IO** — `Save Model` / `Load Model` (JSON; also the handover format).
+**5 | IO** — `Save Model` / `Load Model` (JSON; also the handover format),
+`To Timber` (rebuilds the TimberModel from a StructuralModel — beams exact
+with their GUIDs, sections and orientation, results attached; joints are not
+rebuilt because their types are not in the neutral model. For when only the
+analysis model is at hand: the engineer's JSON, an earlier run).
 
 ## Smoke test
 
