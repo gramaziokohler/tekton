@@ -1,10 +1,10 @@
 # tekton_gh — Grasshopper components
 
-*Status: 2026-09-10 — the chain runs end to end: authoring → translate →
-preflight → worker → results back, tested offline. What is still missing is
-listed under "What is not real yet"; what can only be checked against a
-running RFEM is named there. Concept:
-[`docs/concepts/gh-addon.md`](../../docs/concepts/gh-addon.md).*
+*Status: 2026-09-15 — the roundtrip is real: the smoke test goes
+Grasshopper → worker → RFEM 6 → calculate → internal forces, deformations
+and reactions back onto the canvas, deformed and coloured. Verified on Windows
+against a live RFEM. What is still missing is listed under "What is not real
+yet". Concept: [`docs/concepts/gh-addon.md`](../../docs/concepts/gh-addon.md).*
 
 ## Why two processes
 
@@ -51,6 +51,13 @@ export TEKTON_REPO="/path/to/tekton"
 **3. Worker venv.** In the repo, `uv sync --extra dev` — that is the 3.12 env
 `TektonRun` calls.
 
+**3b. API key.** The Dlubal API refuses without one, also for a local RFEM.
+Three ways in, in order of preference: leave `api_key` on `Tekton Backend`
+empty and keep the key in the repo's `.env` (`DLUBAL_API_KEY=...`, see
+`.env.example`) or in the environment (`TEKTON_API_KEY`); give `api_key` the
+*path* to a file holding the key; paste the key itself (warns — it is now in
+the definition).
+
 **4. Check.** Drag the **Tekton Info** component onto the canvas. It is the
 only one that produces something useful even without a working setup, and it
 names exactly what is missing.
@@ -63,7 +70,9 @@ Step 1, plain terminal Python:
 python3 _componentizer/build_metadata.py   # metadata.json + placeholder icons
 ```
 
-Step 2 needs .NET (`clr`), so a Rhino process. Two ways:
+Step 2 needs .NET (`clr`) to drive `GH_IO.dll`.
+
+*macOS:*
 
 ```bash
 bash _componentizer/componetize.bash       # via the RhinoCode CLI
@@ -74,18 +83,39 @@ bash _componentizer/componetize.bash       # via the RhinoCode CLI
 editor and run it. That is the same operation from inside a running Rhino
 instance. On 2026-08-28 the CLI had no effect on this machine — including for
 the unmodified componentizer in `lorin-gh-tools`, so it is not Tekton's fault.
-The route through the running instance built all 20 components without error.
 
-Step 3, installing — `_componentizer/install.sh` does that:
+*Windows:* the RhinoCode CLI refuses without a running Rhino ("Can not
+determine target Rhino"). Plain CPython with `pythonnet` is enough — the
+checked-in `GH_IO.dll` is net48 and loads under .NET Framework:
 
-```bash
-bash _componentizer/install.sh    # -> UserObjects/tekton/, then restart Rhino
+```powershell
+uv venv %TEMP%\ghvenv --python 3.12
+uv pip install --python %TEMP%\ghvenv\Scripts\python.exe pythonnet
+cd _componentizer
+%TEMP%\ghvenv\Scripts\python.exe componentize_cpy.py
 ```
 
-The target folder is
-`~/Library/Application Support/McNeel/Rhinoceros/8.0/Plug-ins/Grasshopper (b45a29b1-…)/UserObjects/tekton/`
+Step 3, installing. macOS: `bash _componentizer/install.sh`. Windows: copy
+`ghuser_build\*.ghuser` to `%APPDATA%\Grasshopper\UserObjects\tekton\`. The
+target folders are
+
+- macOS: `~/Library/Application Support/McNeel/Rhinoceros/8.0/Plug-ins/Grasshopper (b45a29b1-…)/UserObjects/tekton/`
+- Windows: `%APPDATA%\Grasshopper\UserObjects\tekton\`
+
 — the subfolder keeps the Tekton components separate from the rest.
 Grasshopper reads UserObjects only at startup, so a restart is required.
+
+**Instances on the canvas do not update.** A UserObject is a template; a
+component already placed in a definition keeps its embedded script. After a
+rebuild, either drop the components fresh from the ribbon, or — with the
+[LAMCP bridge](https://github.com/gramaziokohler/lamcp) on the canvas — let
+`upgrade_components(only_categories=["Tekton"])` swap every instance in place
+and carry the wires over (2026-09-15: 10 components, no wire lost).
+
+**Editing the shared runtime** (`src/tekton_gh/*.py`) needs no rebuild: the
+components put the repo path on `sys.path` and `Tekton Run` / `Tekton
+Visualize` reload their module on every solve. Only `code.py` changes need the
+componentizer.
 
 The componentizer comes from `lorin-gh-tools` and is deliberately copied here
 rather than referenced — the repo should stay buildable on its own. The only
@@ -136,18 +166,23 @@ assumptions report), `Apply Loads` (loads onto the translated model),
 results back — **by button only**).
 
 **4 | Results** — `Results` (envelope values per beam), `Attach Results` (back
-onto the timber model), `Visualize` (colouring), `Inspect` (look at the
-analysis model).
+onto the timber model), `Visualize` (deformed shape and colouring: polylines
+through the deformed RFEM stations, sections swept along them as
+vertex-coloured meshes, one colour per member; `quantity` is
+`displacement | N | Vy | Vz | Mt | My | Mz | utilization`, `exaggeration`
+scales the deformation), `Inspect` (look at the analysis model).
 
 **5 | IO** — `Save Model` / `Load Model` (JSON; also the handover format).
 
 ## Smoke test
 
-`examples/tekton_smoke_test.ghx` shows the whole chain on an example model and
-ran through in Rhino 8 on 2026-09-10: 84 beams → 344 nodes / 404 members,
-4 supports set, preflight with no findings, the worker subprocess writes a SAF
-file with 404 members. Adjust the two path panels before opening — details in
-[examples/README.md](examples/README.md).
+`examples/tekton_smoke_test.ghx` shows the whole chain on an example model.
+Against a live RFEM 6 on 2026-09-15 (Windows): 84 beams → 344 nodes / 404
+members (304 beams, 100 couplings), 4 pinned supports, 754 objects pushed in
+~4 s, calculation ~25 s, back come 404 members × 11 stations with internal
+forces and deformations, 344 nodal deformations, 4 reactions (Σ 5.2 kN
+self-weight, C24), max deflection 17 mm, max |My| 0.19 kNm. Adjust the path
+panels before opening — details in [examples/README.md](examples/README.md).
 
 ## Typical flow
 
@@ -161,21 +196,22 @@ TimberModel ─→ Support ─→ Translate ─→ Preflight ─→ Run ─→ R
 
 ## What is not real yet
 
-The scaffold has the right shape, but these spots are placeholders — each one
-marked `TODO(scaffold)` in the code:
-
-| What | Why | Blocked by |
+| What | State | Blocked by / next step |
 |---|---|---|
-| **Utilisation** | comes from RFEM's design add-on, which is not wired up | live test against RFEM |
-| **Material overrides** | material is only a name string today | material dataclass (`discussion/materials.md`) |
-| **Support types** | the translator always creates pinned supports | neutral model |
+| **Utilisation** | `quantity="utilization"` exists on Visualize and returns 0 | RFEM timber design add-on: add-on activation + its result table via `get_results` |
+| **Joint policy from fasteners** | policy decides rigid/pinned per joint type or instance; nothing derives it from screw count/direction | a rule on the joint's fastener data — the hook (`by_type`, `by_instance`) is there |
+| **Hinge side on couplings** | the hinge goes to the end where a beam terminates; for crossings (X-lap) the side is arbitrary — the 4 cm lever arm lands on one beam | split the connector at the joint face if that asymmetry ever matters |
+| **Material overrides** | material is a name string, one grade for the whole model | material dataclass (`discussion/materials.md`) |
+| **Support types** | supports are pinned unless authored via `Tekton Support Nodes` | neutral model |
+| **Plate results** | surfaces are pushed; no surface result table is read | `STATIC_ANALYSIS_SURFACES_*` via `get_results`, same pattern as members |
+| **Engineer's edits in RFEM** | every run does `delete_all` and rebuilds | BackendMap / incremental update (`discussion/roundtrip.md`) |
+| **Attach Results** | envelopes reach the beams; the per-station samples do not yet | extend `tekton_attach_results` with the station rows |
 
-Done since the first scaffold: the **worker CLI** (`tekton_app.worker`) exists
-and is tested, the **result reader** now reads real tables (member internal
-forces, nodal deflections, support reactions), the **span direction** is
-written onto the surfaces instead of only being logged, and the **icons** are
-drawn. The path Rhino → backend → Rhino is therefore complete; it is only
-untested against a running RFEM.
+Done: worker CLI, result reader against live tables (forces, member and
+nodal deformations, reactions), calculation-failure detection, unit contract
+kN ↔ N enforced at the Dlubal boundary, one-sided coupling hinges, deformed
+and coloured visualisation, API key from `.env`, span direction on surfaces,
+icons.
 
 ## Pitfalls
 
@@ -218,3 +254,22 @@ should know why. A wrong value silently produces a 200-metre element.
 **compas_timber version.** The most common setup error. If `Tekton Info` says
 `compas_timber.structural` is missing, the wrong `compas_timber` is on the
 path — usually the one from the official plugin.
+
+**Rhino caches modules.** An edit to `src/tekton_gh/*.py` is invisible to a
+running Rhino unless the component reloads it (Run and Visualize do). A
+symptom seen on 2026-09-15: the worker was called without `--delete-all`
+although the source said so — the old module was still loaded. When in
+doubt, restart Rhino.
+
+**A failed RFEM calculation does not raise.** `calculate_all` returns a
+message, the result queries come back empty, and a naive reader reports
+"0 members" with a straight face. The reader checks `has_results()` and
+reads the errors-and-warnings table, so the solver's own text ("stiffness
+matrix singular, node 39, direction Y") reaches the `log` output. If you
+see it: it is mechanics, not plumbing — look at the model in RFEM.
+
+**Units at the Dlubal boundary.** The neutral model is kN/kNm, the Dlubal
+API is N/Nm. The factor lives in one place, `compas_dlubal/conventions.py`,
+and applies to loads going out and results coming back. Before 2026-09-15
+both directions were off by 1000 — loads arrived 1000× too small, results
+1000× too large. If a number looks absurd, check the unit before the model.

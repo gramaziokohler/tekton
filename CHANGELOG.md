@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **tekton_gh**: `Tekton Visualize` draws the deformed shape — polylines through the RFEM stations, sections swept along them as vertex-coloured meshes, one colour per member; quantities `displacement | N | Vy | Vz | Mt | My | Mz | utilization`, `exaggeration` input, auto-scaled colour range. Geometry lives in `tekton_gh.visualize` (pure, tested).
+- **compas_dlubal**: the result reader reads member deformations (`STATIC_ANALYSIS_MEMBERS_GLOBAL_DEFORMATIONS`) and merges them into the force stations.
+- **compas_dlubal**: a failed calculation is reported with RFEM's own error text (`has_results()` + errors-and-warnings table) instead of empty results.
+- **tekton_app**: the worker reads the API key from `TEKTON_API_KEY`, `DLUBAL_API_KEY`, or the repo's `.env`.
+- **tekton_gh**: `Tekton Backend` accepts a file path in `api_key`; `Tekton Run` and `Tekton Visualize` reload their runtime module on every solve.
+- Windows build route for the `.ghuser` components (pythonnet, no Rhino needed) documented in `packages/tekton_gh/README.md`.
+
+### Changed
+- **compas_timber_fea**: a pinned connector carries its hinge on one end only (the end where a beam terminates); both ends hinged made the connector a pendulum bar and the model a mechanism.
+- **compas_dlubal**: coupling type (21–24) is derived from the member's releases instead of hard-coded to hinge-hinge.
+- **compas_dlubal**: results are queried with `get_results` (raw) instead of `get_result_table` (display table, empty for members and nodes).
+- **tekton_gh**: the Grasshopper worker call passes `--delete-all` for rfem/rstab, matching the documented "every run rebuilds" contract.
+
+### Fixed
+- **compas_dlubal**: unit factor at the Dlubal boundary — the neutral model is kN/kNm, the API is N/Nm. Loads were sent 1000× too small and results read 1000× too large.
+- **tekton_gh**: first RFEM roundtrip from Grasshopper verified live (2026-09-15).
+
 ## [0.1.0] - 2026-04-14
 
 ### Added

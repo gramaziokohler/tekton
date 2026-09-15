@@ -1,7 +1,10 @@
 # Roundtrip: getting results back onto the timber model
 
-*Status: 2026-08-28 — scaffold exists, the real thing is next. This is the
-design discussion for it.*
+*Status: 2026-09-15 — the loop runs against a live RFEM 6: push, calculate,
+member forces + member/nodal deformations + reactions back, deformed and
+coloured in Grasshopper. Steps 1 and 5 of the order of work are done; what the
+live run taught is under "What the first live run taught". Mapping to beams,
+BackendMap, utilization and plate results are still open.*
 
 ## What "roundtrip" promises
 
@@ -12,14 +15,56 @@ headline feature; everything below serves it.
 
 ## Getting data out of RFEM
 
-Solved in principle: `get_result_table(table, loading)` returns a DataFrame
-(verified the signature against the pinned wheel; the reader scaffold already
-triggers calculation correctly). What's left is choosing tables (member
-internal forces, nodal deformations, support reactions — plus the timber
-design add-on's utilization table, **untested**, and worth testing early
-because utilization is *the* designer number) and writing DataFrame → neutral
-result containers. The containers (`StructuralResultSet` etc.) are already
-shaped for it: per-load-case, per-member lists with positions.
+Solved, and not the way the scaffold assumed. `get_result_table(table,
+loading)` is the *pre-processed* table "as displayed in the desktop
+application" — on the first live run it came back **empty for members and
+nodes** while support forces arrived. `get_results(ResultsType, loading="LC1")`
+is the raw database query and returned every row: 1648 member stations
+(404 members × 11), 344 nodes, 4 supports. The reader uses `get_results` for
+all four tables (`STATIC_ANALYSIS_MEMBERS_INTERNAL_FORCES`,
+`STATIC_ANALYSIS_MEMBERS_GLOBAL_DEFORMATIONS`,
+`STATIC_ANALYSIS_NODES_GLOBAL_DEFORMATIONS`,
+`STATIC_ANALYSIS_NODES_SUPPORT_FORCES`); the column names
+(`member_no, location_x, n, v_y, v_z, m_t, m_y, m_z`, `u_x … phi_z`,
+`p_x … m_z`) matched the parsers' candidate lists on the first try.
+
+The DataFrame → container parsers (`result_parsing.py`) are pure functions,
+tested offline against recorded frames. Positions are normalised to 0..1 per
+member; member deformations are merged into the force rows because RFEM
+samples both on the same station grid.
+
+Still untested: the timber design add-on's utilization table — *the* designer
+number, and the next thing to try live.
+
+## What the first live run taught (2026-09-15)
+
+Four things, none visible offline:
+
+1. **A failed calculation does not raise.** `calculate_all` returns an
+   `OperationResult` with a message, `has_results()` is False, and the result
+   queries come back empty. A solver error (instability) lands in
+   `ERRORS_AND_WARNINGS_TABLE`; a model error (section with no area) leaves
+   even that table empty. The reader checks `has_results()` after
+   calculating and forwards the solver's text — otherwise the symptom is a
+   silent "0 members, 0 nodes".
+2. **Units.** The Dlubal API speaks SI base units, N and Nm; the neutral
+   contract is kN and kNm. Loads went out 1000× too small, results came back
+   1000× too large (194 "kNm" in an 8×10 cm beam under self-weight). One
+   factor now sits in `compas_dlubal/conventions.py`, applied to loads on the
+   way out and forces/moments/reactions on the way back. Sanity anchor: the
+   sticks model's self-weight reactions sum to 5.2 kN (C24) — right in kN,
+   absurd in N.
+3. **Hinge-hinge couplings are pendulum bars.** The connector between two
+   non-meeting centrelines was pushed as RFEM type 24 (hinged both ends),
+   which carries axial force only; a beam hanging on four parallel ones is a
+   mechanism ("stiffness matrix singular, node 39, direction Y"). The
+   translator now puts the hinge on one end only (the end where a beam
+   terminates; for crossings the second node), and the mapper derives
+   21/22/23/24 from the releases. The joint policy still decides rigid vs.
+   pinned; it only ever produced the two-hinge case by accident.
+4. **The API key is mandatory locally too** (`UNAUTHENTICATED` without it),
+   so the worker reads `TEKTON_API_KEY`, then `DLUBAL_API_KEY`, then the
+   repo's `.env`.
 
 ## Mapping results back — the identity chain
 
@@ -100,17 +145,22 @@ Who is in this loop?
 
 ## Order of work
 
-1. Read member forces + deformations + reactions into the containers
-   (offline-testable against recorded DataFrames).
-2. Map to beams via the identity chain, param-based, with envelope +
-   provenance.
-3. Write GUIDs into `id_for_export_import` on push; persist BackendMap.
-4. Utilization via timber design add-on (needs the live test).
-5. Staleness warning (model hash).
-6. Plate results, connection forces — after the chain model.
+1. ✅ Read member forces + deformations + reactions into the containers
+   (offline-testable against recorded DataFrames). Live-verified 2026-09-15.
+2. ◐ Map to beams via the identity chain, param-based, with envelope +
+   provenance. Envelopes reach the beams (`Tekton Attach Results`); the
+   per-station samples do not yet. `Tekton Visualize` draws the stations
+   directly off the neutral model instead.
+3. ◐ GUIDs go into `id_for_export_import` on push (done); BackendMap not
+   started — every run is `delete_all` + rebuild.
+4. ☐ Utilization via timber design add-on (needs the live test).
+5. ✅ Staleness warning: `Tekton Run` stamps the model fingerprint, `Tekton
+   Results` compares and flags `stale`.
+6. ☐ Plate results, connection forces — after the chain model.
 
 ## Sources
 
-- `result_reader.py` scaffold; `tests/test-roundtrip.py` (shape of the loop)
-- get_result_table signature verified against dlubal-api 2.13.8
+- `result_reader.py`, `result_parsing.py`; `tests/test-roundtrip.py` (shape of the loop)
+- `get_results` / `get_result_table` behaviour observed live against RFEM 6 with dlubal-api 2.13.8, 2026-09-15
+- `packages/tekton_gh/README.md` — the Grasshopper side of the loop, smoke-test numbers
 - BackendMap / identity design: `../reviews/plattengraph_design_2026-08-27.md` §2.1

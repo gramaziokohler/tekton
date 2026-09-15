@@ -21,8 +21,8 @@ Three geometric kinds cover what every target software understands:
 
 | Kind | Neutral object | Addresses | Status |
 |---|---|---|---|
-| Point load | `StructuralPointLoad` — force + moment vector (kN, kNm) | node id | ✅ implemented, exports to RFEM |
-| Line load | `StructuralMemberLoad` — force vector per length (kN/m), start/end param | member id | ✅ implemented (uniform), exports to RFEM |
+| Point load | `StructuralPointLoad` — force + moment vector (kN, kNm) | node id | ✅ implemented, exports to RFEM (×1000 → N at the Dlubal boundary, `conventions.py`, since 2026-09-15 — before that, loads arrived 1000× too small) |
+| Line load | `StructuralMemberLoad` — force vector per length (kN/m), start/end param | member id | ✅ implemented (uniform), exports to RFEM (same factor) |
 | Area load | — | surface id | ❌ missing |
 
 Notes:
