@@ -41,7 +41,7 @@
             {
                 "name": "load_case",
                 "nickname": "load_case",
-                "description": "Load case.",
+                "description": "Load case. Empty: every load case with results.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,

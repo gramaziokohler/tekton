@@ -147,10 +147,11 @@ Who is in this loop?
 
 1. ✅ Read member forces + deformations + reactions into the containers
    (offline-testable against recorded DataFrames). Live-verified 2026-09-15.
-2. ◐ Map to beams via the identity chain, param-based, with envelope +
-   provenance. Envelopes reach the beams (`Tekton Attach Results`); the
-   per-station samples do not yet. `Tekton Visualize` draws the stations
-   directly off the neutral model instead.
+2. ✅ Map to beams via the identity chain, param-based, with envelope +
+   provenance (`compas_timber_fea.results.attach_results_to_timber`, exposed
+   as `Tekton Attach Results`). Samples include the displacement vector as a
+   plain tuple so the attribute stays JSON-plain. Live: 84/84 beams, 11
+   samples each. Still per session only — see 3.
 3. ◐ GUIDs go into `id_for_export_import` on push (done); BackendMap not
    started — every run is `delete_all` + rebuild.
 4. ☐ Utilization via timber design add-on (needs the live test).

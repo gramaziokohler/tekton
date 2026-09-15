@@ -165,8 +165,10 @@ assumptions report), `Apply Loads` (loads onto the translated model),
 **3 | Run** — `Backend` (selection + connection), `Run` (push, calculate,
 results back — **by button only**).
 
-**4 | Results** — `Results` (envelope values per beam), `Attach Results` (back
-onto the timber model), `Visualize` (deformed shape and colouring: polylines
+**4 | Results** — `Results` (envelope values per beam), `Attach Results`
+(writes `beam.attributes["analysis"]` via `compas_timber_fea.results`: samples
+at the *beam* parameter across all its segments, envelope, provenance; all
+load cases or one), `Visualize` (deformed shape and colouring: polylines
 through the deformed RFEM stations, sections swept along them as
 vertex-coloured meshes, one colour per member; `quantity` is
 `displacement | N | Vy | Vz | Mt | My | Mz | utilization`, `exaggeration`
@@ -205,12 +207,14 @@ TimberModel ─→ Support ─→ Translate ─→ Preflight ─→ Run ─→ R
 | **Support types** | supports are pinned unless authored via `Tekton Support Nodes` | neutral model |
 | **Plate results** | surfaces are pushed; no surface result table is read | `STATIC_ANALYSIS_SURFACES_*` via `get_results`, same pattern as members |
 | **Engineer's edits in RFEM** | every run does `delete_all` and rebuilds | BackendMap / incremental update (`discussion/roundtrip.md`) |
-| **Attach Results** | envelopes reach the beams; the per-station samples do not yet | extend `tekton_attach_results` with the station rows |
 
 Done: worker CLI, result reader against live tables (forces, member and
 nodal deformations, reactions), calculation-failure detection, unit contract
 kN ↔ N enforced at the Dlubal boundary, one-sided coupling hinges, deformed
-and coloured visualisation, API key from `.env`, span direction on surfaces,
+and coloured visualisation, results back on the beams
+(`beam.attributes["analysis"]`: per load case 11 samples at the beam
+parameter with N/Vy/Vz/Mt/My/Mz + displacement, envelope, provenance — 84/84
+beams on the smoke test), API key from `.env`, span direction on surfaces,
 icons.
 
 ## Pitfalls

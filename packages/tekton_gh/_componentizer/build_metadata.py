@@ -444,7 +444,7 @@ COMPONENTS = [
         inputs=[
             p("model", desc="TimberModel.", optional=False),
             p("structural", desc="StructuralModel with results.", optional=False),
-            p("load_case", "int", desc="Load case."),
+            p("load_case", "int", desc="Load case. Empty: every load case with results."),
         ],
         outputs=[o("model", "TimberModel with analysis attributes"), o("attached", "Number of elements written to")],
     ),

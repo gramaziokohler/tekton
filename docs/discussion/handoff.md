@@ -86,6 +86,10 @@ und `roundtrip.md`):
   entscheidet weiterhin starr/gelenkig.
 - **Visualize**: verformte Systemlinien durch die 11 RFEM-Stationen pro Stab,
   Querschnitte entlang gesweept als Meshes mit Vertex-Farbe pro Station.
+- **Attach Results** ruft jetzt `compas_timber_fea.results` statt einer
+  eigenen Kopie: Stationswerte (inkl. Verformung) landen am Balkenparameter
+  über alle Segmente in `beam.attributes["analysis"]`, mit Hüllwerten und
+  Provenienz. Live: 84/84 Balken.
 
 **Davor** (2026-08-27, Details: `docs/review_2026-08-27.md`):
 
@@ -112,16 +116,13 @@ Nach Priorität:
    (oder eine Instanz-Regel) über starr/gelenkig. Die Regel "je nach Anzahl und
    Richtung der Schrauben biegesteif, sonst gelenkig" ist noch nicht geschrieben;
    der Haken dafür (`by_type`, `by_instance`) ist da.
-3. **Ergebnisse auf die Balken** — Hüllwerte kommen an (`Attach Results`),
-   die Stationswerte noch nicht. Visualize zeichnet sie direkt aus dem
-   neutralen Modell, aber für die Übergabe gehören sie ans Bauteil.
-4. **Platten-Ergebnisse** — Flächen werden exportiert, keine Flächentabelle
+3. **Platten-Ergebnisse** — Flächen werden exportiert, keine Flächentabelle
    wird gelesen. Dazu die bekannten Plattenlücken: Wand-Decke-Kopplung
    (Frame-Bug upstream), Orthotropie-Richtung, Subdivision-Logik im Paket.
-5. **Stabile IDs / BackendMap** — jeder Run leert RFEM und baut neu. Was ein
+4. **Stabile IDs / BackendMap** — jeder Run leert RFEM und baut neu. Was ein
    Statiker in RFEM ändert, überlebt den nächsten Run nicht. GUIDs gehen
    bereits in `id_for_export_import`; die Map fehlt.
-6. **Lasten** — Lastfälle, Punkt- und Streckenlasten werden exportiert;
+5. **Lasten** — Lastfälle, Punkt- und Streckenlasten werden exportiert;
    Kombinationen und ein Lastkatalog (Nutzlast nach Kategorie, Schnee nach
    Zone) fehlen im Authoring.
 

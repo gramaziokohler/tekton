@@ -88,6 +88,25 @@ def test_envelope_keeps_the_signed_extreme(translated):
     assert envelope["My"] == 2.5
 
 
+def test_displacement_travels_as_plain_tuple(translated):
+    """Member deformations reach the beam, JSON-plain, with the largest one in the envelope."""
+    from compas.geometry import Vector
+
+    timber_model, structural_model, beam = translated
+    _fill_results(structural_model, beam.guid)
+    rows = next(iter(structural_model.results[1].member_results.values()))
+    rows[1].displacement = Vector(0.0, 0.0, -0.012)
+    rows[0].displacement = Vector(0.0, 0.0, 0.0)
+
+    attach_results_to_timber(structural_model, timber_model)
+
+    case = beam.attributes[ANALYSIS_KEY]["load_cases"][1]
+    with_displacement = [values["displacement"] for _t, values in case["samples"] if "displacement" in values]
+    assert (0.0, 0.0, -0.012) in with_displacement
+    assert all(isinstance(d, tuple) for d in with_displacement)
+    assert case["envelope"]["displacement"] == (0.0, 0.0, -0.012)
+
+
 def test_beams_without_results_stay_untouched(translated):
     timber_model, structural_model, beam = translated
     post = next(b for b in timber_model.beams if b is not beam)
