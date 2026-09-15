@@ -1,0 +1,657 @@
+<title>Tekton Structure Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Public+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper:    #f5f2ea;
+    --surface:  #fdfbf7;
+    --sunk:     #ece6d9;
+    --ink:      #221f19;
+    --ink-mid:  #6a6354;
+    --ink-soft: #9a927e;
+    --rule:     #d5cdba;
+    --hair:     #c3baa4;
+    --timber:   #a2622a;
+    --steel:    #35637e;
+    --sage:     #5c7152;
+    --amber:    #b0802a;
+    --crit:     #9e3b2b;
+    --tint-timber: #a2622a14;
+    --tint-steel:  #35637e12;
+    --tint-sage:   #5c715210;
+    --tint-amber:  #b0802a14;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:    #15140e;
+      --surface:  #1f1d16;
+      --sunk:     #282619;
+      --ink:      #f2eddf;
+      --ink-mid:  #ada48d;
+      --ink-soft: #7d7561;
+      --rule:     #3d3929;
+      --hair:     #4b4634;
+      --timber:   #dd9954;
+      --steel:    #74abca;
+      --sage:     #9dba8d;
+      --amber:    #e3b458;
+      --crit:     #e28472;
+      --tint-timber: #dd995418;
+      --tint-steel:  #74abca14;
+      --tint-sage:   #9dba8d12;
+      --tint-amber:  #e3b45818;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:    #15140e;
+    --surface:  #1f1d16;
+    --sunk:     #282619;
+    --ink:      #f2eddf;
+    --ink-mid:  #ada48d;
+    --ink-soft: #7d7561;
+    --rule:     #3d3929;
+    --hair:     #4b4634;
+    --timber:   #dd9954;
+    --steel:    #74abca;
+    --sage:     #9dba8d;
+    --amber:    #e3b458;
+    --crit:     #e28472;
+    --tint-timber: #dd995418;
+    --tint-steel:  #74abca14;
+    --tint-sage:   #9dba8d12;
+    --tint-amber:  #e3b45818;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    margin: 0;
+    padding-block: 0 5rem;
+    padding-left: 20px;
+    padding-right: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 82rem; margin: 0 auto; }
+  .bleed { width: min(96vw, 1560px); margin-inline: calc(50% - min(48vw, 780px)); }
+  @media (max-width: 1340px) { .bleed { width: auto; margin-inline: 0; } }
+
+  /* ---------- masthead ---------- */
+  header.masthead {
+    padding-block: 4rem 2.5rem;
+    display: grid;
+    gap: 1.25rem;
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .7rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-optical-sizing: auto;
+    font-weight: 800;
+    font-size: clamp(2.6rem, 7.5vw, 4.4rem);
+    line-height: .95;
+    letter-spacing: -.022em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--timber); }
+  .standfirst {
+    font-size: 1.08rem;
+    color: var(--ink-mid);
+    max-width: 34rem;
+    margin: 0;
+  }
+
+  /* ---------- sections ---------- */
+  section { padding-block: 3.25rem 0; display: grid; gap: 1.1rem; }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: .9rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: .6rem;
+  }
+  h2 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(1.4rem, 3vw, 1.85rem);
+    line-height: 1.1;
+    letter-spacing: -.012em;
+    margin: 0;
+  }
+  .sec-num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .72rem;
+    letter-spacing: .14em;
+    color: var(--timber);
+    text-transform: uppercase;
+  }
+  .sec-note {
+    font-size: .88rem;
+    color: var(--ink-mid);
+    margin-left: auto;
+    font-family: "IBM Plex Mono", monospace;
+    letter-spacing: .02em;
+  }
+
+  /* ---------- figures ---------- */
+  figure { margin: 0; display: grid; gap: .75rem; }
+  .figbox {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 1.4rem 1.2rem;
+    overflow-x: auto;
+  }
+  figure svg { display: block; width: 100%; max-width: 100%; height: auto; }
+  .figbox.w-wide svg { min-width: 1360px; }
+  .figbox.w-mid svg  { min-width: 720px; }
+  figcaption {
+    font-size: .86rem;
+    color: var(--ink-mid);
+    max-width: 46rem;
+    line-height: 1.5;
+  }
+  figcaption b { color: var(--ink); font-weight: 600; }
+
+  svg text { font-family: "IBM Plex Mono", ui-monospace, monospace; fill: currentColor; }
+  .t-node  { font-family: "Public Sans", sans-serif; font-size: 14.5px; font-weight: 700; letter-spacing: -.1px; }
+  .t-sub   { font-size: 10px; fill: var(--ink-mid); }
+  .t-pill  { font-size: 9.5px; letter-spacing: .04em; }
+  .t-zone  { font-size: 9.5px; letter-spacing: .18em; fill: var(--ink-soft); }
+  .t-num   { font-size: 10px; font-weight: 600; fill: var(--ink-soft); }
+  .t-chip  { font-size: 9px; letter-spacing: .03em; }
+  .n-body { fill: var(--surface); stroke: var(--hair); stroke-width: 1; }
+  .n-soft { fill: var(--sunk); stroke: var(--hair); stroke-width: 1; }
+
+  /* ---------- legend ---------- */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1.5rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .74rem;
+    color: var(--ink-mid);
+    padding-top: .15rem;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: .45rem; }
+  .legend i { width: 1.6rem; height: 0; border-top-width: 2px; border-top-style: solid; display: inline-block; }
+
+  /* ---------- layer table ---------- */
+  .layers { display: grid; border-top: 1px solid var(--rule); }
+  .layer {
+    display: grid;
+    grid-template-columns: 12.5rem 1fr 15rem;
+    gap: .6rem 1.5rem;
+    padding-block: .9rem;
+    border-bottom: 1px solid var(--rule);
+    align-items: baseline;
+  }
+  .layer-name {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .84rem;
+    font-weight: 600;
+  }
+  .layer-owns { font-size: .9rem; }
+  .layer-not { font-size: .82rem; color: var(--ink-soft); font-style: italic; }
+  .l-timber  .layer-name { color: var(--timber); }
+  .l-neutral .layer-name { color: var(--sage); }
+  .l-backend .layer-name { color: var(--steel); }
+  .l-app     .layer-name { color: var(--ink-mid); }
+
+  /* ---------- status ---------- */
+  .status { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  .st-col { background: var(--surface); padding: 1.05rem 1.1rem 1.2rem; display: grid; gap: .6rem; align-content: start; }
+  .st-col h3 {
+    margin: 0;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .st-col.ok h3 { color: var(--sage); }
+  .st-col.wip h3 { color: var(--amber); }
+  .st-col.gap h3 { color: var(--crit); }
+  .st-col ul { margin: 0; padding: 0; list-style: none; display: grid; gap: .45rem; }
+  .st-col li { font-size: .88rem; line-height: 1.4; padding-left: .85rem; position: relative; }
+  .st-col li::before { content: ""; position: absolute; left: 0; top: .56em; width: .3rem; height: .3rem; border-radius: 50%; background: currentColor; opacity: .45; }
+
+  footer {
+    padding-block: 2rem 0;
+    margin-top: 3rem;
+    border-top: 1px solid var(--rule);
+    font-size: .86rem;
+    color: var(--ink-mid);
+    max-width: 42rem;
+  }
+
+  @media (max-width: 760px) {
+    .layer { grid-template-columns: 1fr; gap: .25rem; }
+    header.masthead { padding-block: 2.75rem 2rem; }
+    .sec-note { margin-left: 0; flex-basis: 100%; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">gramaziokohler / tekton · system atlas</div>
+    <h1>From a timber model<br>to <em>numbers on the beam</em></h1>
+    <p class="standfirst">Six packages carry a COMPAS Timber design through idealization into RFEM, and bring the results back onto the beams the designer drew.</p>
+  </header>
+
+  <!-- ================= 01 · THE MAP ================= -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2>The whole estate</h2>
+      <span class="sec-note">every part, one canvas</span>
+    </div>
+
+    <figure>
+      <div class="figbox w-wide bleed">
+        <svg viewBox="0 0 2080 1060" role="img" aria-label="Tekton system map showing two distinct models. The TimberModel is the design model authored in Grasshopper or loaded from a file. One translator converts it into the StructuralModel, the neutral analysis model that every backend consumes. From the desktop application or a plain script the StructuralModel object reaches the adapters directly in memory. Only Grasshopper, where Rhino Python 3.9 cannot import the backends, serializes it to JSON so a worker subprocess can rebuild it and call the identical adapters. Results travel back to the StructuralModel and are then attached onto the beams of the TimberModel.">
+          <defs>
+            <marker id="m-ink" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7.5" markerHeight="7" orient="auto"><path d="M0,0 L10,4.5 L0,9 Z" fill="currentColor"></path></marker>
+            <marker id="m-tim" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7.5" markerHeight="7" orient="auto"><path d="M0,0 L10,4.5 L0,9 Z" fill="var(--timber)"></path></marker>
+            <marker id="m-amb" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7.5" markerHeight="7" orient="auto"><path d="M0,0 L10,4.5 L0,9 Z" fill="var(--amber)"></path></marker>
+            <marker id="m-ste" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7.5" markerHeight="7" orient="auto"><path d="M0,0 L10,4.5 L0,9 Z" fill="var(--steel)"></path></marker>
+            <marker id="m-sag" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7.5" markerHeight="7" orient="auto"><path d="M0,0 L10,4.5 L0,9 Z" fill="var(--sage)"></path></marker>
+          </defs>
+          <rect x="1596" y="120" width="344" height="392" rx="16" fill="none" stroke="var(--hair)" stroke-width="1.2" stroke-dasharray="4 5"></rect>
+          <text class="t-zone" x="1620" y="150">EXTERNAL · LICENCED SOFTWARE</text>
+          <rect x="704" y="516" width="760" height="184" rx="16" fill="none" stroke="var(--amber)" stroke-width="1.2" stroke-dasharray="7 6"></rect>
+          <text class="t-zone" x="728" y="546">THE DETOUR · ONLY GRASSHOPPER GOES THIS WAY</text>
+          <rect x="16" y="768" width="660" height="184" rx="16" fill="none" stroke="var(--hair)" stroke-width="1.2" stroke-dasharray="4 5"></rect>
+          <text class="t-zone" x="40" y="798">PEOPLE</text>
+          <g><rect x="448" y="190" width="300" height="220" rx="12" fill="var(--tint-timber)" stroke="var(--timber)" stroke-width="2"></rect><text class="t-pill" x="598" y="174" text-anchor="middle" fill="var(--timber)">1 · THE DESIGN MODEL</text><text class="t-node" x="598" y="236" text-anchor="middle" fill="var(--timber)">TimberModel</text><text class="t-sub" x="598" y="260" text-anchor="middle" fill="var(--timber)">compas_timber</text><text class="t-sub" x="598" y="290" text-anchor="middle">beams · plates · joints</text><text class="t-sub" x="598" y="312" text-anchor="middle">what the designer draws</text><text class="t-sub" x="598" y="334" text-anchor="middle">results land back here</text></g>
+          <g><rect x="908" y="190" width="300" height="220" rx="12" fill="var(--tint-sage)" stroke="var(--sage)" stroke-width="2"></rect><text class="t-pill" x="1058" y="174" text-anchor="middle" fill="var(--sage)">2 · THE ANALYSIS MODEL</text><text class="t-node" x="1058" y="236" text-anchor="middle" fill="var(--sage)">StructuralModel</text><text class="t-sub" x="1058" y="260" text-anchor="middle" fill="var(--sage)">compas_timber_fea</text><text class="t-sub" x="1058" y="290" text-anchor="middle">nodes · members · sections</text><text class="t-sub" x="1058" y="312" text-anchor="middle">supports · loads · results</text><text class="t-sub" x="1058" y="334" text-anchor="middle">every backend meets it here</text></g>
+          <g><rect x="908" y="560" width="300" height="116" rx="12" fill="var(--tint-amber)" stroke="var(--amber)" stroke-width="2" stroke-dasharray="7 5"></rect><text class="t-pill" x="1058" y="544" text-anchor="middle" fill="var(--amber)">THE SAME MODEL, WRITTEN TO DISK</text><text class="t-node" x="1058" y="606" text-anchor="middle" fill="var(--amber)">model.json</text><text class="t-sub" x="1058" y="630" text-anchor="middle" fill="var(--amber)">not required by the architecture</text><text class="t-sub" x="1058" y="660" text-anchor="middle">only because Rhino runs 3.9</text></g>
+          <g><rect x="40" y="168" width="258" height="176" rx="10" class="n-body"></rect><rect x="40" y="168" width="4" height="176" rx="2" fill="var(--timber)"></rect><rect x="65" y="190" width="18" height="18" rx="4" fill="none" stroke="var(--timber)" stroke-width="1.4"></rect><path d="M70 199 L78 199" stroke="var(--timber)" stroke-width="1.4"></path><text class="t-node" x="98" y="205">Grasshopper</text><text class="t-num" x="278" y="194" text-anchor="end">01</text><text class="t-sub" x="64" y="232">tekton_gh — 22 components</text><rect x="64" y="256" width="59" height="20" rx="10" fill="var(--sunk)" stroke="var(--hair)" stroke-width=".9"></rect><text class="t-chip" x="94" y="269.5" text-anchor="middle" fill="currentColor">setup 1</text><rect x="130" y="256" width="65" height="20" rx="10" fill="var(--tint-timber)" stroke="var(--timber)" stroke-width=".9"></rect><text class="t-chip" x="163" y="269.5" text-anchor="middle" fill="var(--timber)">author 9</text><rect x="202" y="256" width="82" height="20" rx="10" fill="var(--tint-sage)" stroke="var(--sage)" stroke-width=".9"></rect><text class="t-chip" x="243" y="269.5" text-anchor="middle" fill="var(--sage)">translate 4</text><rect x="291" y="256" width="48" height="20" rx="10" fill="var(--tint-steel)" stroke="var(--steel)" stroke-width=".9"></rect><text class="t-chip" x="315" y="269.5" text-anchor="middle" fill="var(--steel)">run 2</text><rect x="346" y="256" width="42" height="20" rx="10" fill="var(--sunk)" stroke="var(--hair)" stroke-width=".9"></rect><text class="t-chip" x="367" y="269.5" text-anchor="middle" fill="currentColor">io 2</text><text class="t-sub" x="64" y="290" fill="var(--ink-soft)">Rhino 8 · CPython 3.9.10</text></g>
+          <g><rect x="40" y="384" width="258" height="96" rx="10" class="n-body"></rect><rect x="40" y="384" width="4" height="96" rx="2" fill="var(--ink-soft)"></rect><rect x="65" y="407" width="18" height="15" rx="3" fill="none" stroke="var(--ink-soft)" stroke-width="1.4"></rect><path d="M70 426 L78 426" stroke="var(--ink-soft)" stroke-width="1.4"></path><text class="t-node" x="98" y="421">tekton_app · desktop</text><text class="t-num" x="278" y="410" text-anchor="end">02</text><text class="t-sub" x="64" y="448">for anyone without Rhino</text><text class="t-sub" x="64" y="470" fill="var(--ink-soft)">any CPython ≥ 3.10</text></g>
+          <g><rect x="40" y="512" width="258" height="96" rx="10" class="n-body"></rect><rect x="40" y="512" width="4" height="96" rx="2" fill="var(--ink-soft)"></rect><rect x="65" y="534" width="18" height="18" rx="4" fill="none" stroke="var(--ink-soft)" stroke-width="1.4"></rect><path d="M69 539 L74 543 L69 547" fill="none" stroke="var(--ink-soft)" stroke-width="1.3"></path><text class="t-node" x="98" y="549">your own script</text><text class="t-num" x="278" y="538" text-anchor="end">03</text><text class="t-sub" x="64" y="576">import the translator and go</text><text class="t-sub" x="64" y="598" fill="var(--ink-soft)">any CPython ≥ 3.10</text></g>
+          <g><rect x="1368" y="168" width="300" height="148" rx="10" class="n-body"></rect><rect x="1368" y="168" width="4" height="148" rx="2" fill="var(--steel)"></rect><circle cx="1402" cy="199" r="10" fill="none" stroke="var(--steel)" stroke-width="1.4"></circle><path d="M1396 199 L1408 199 M1402 193 L1402 205" stroke="var(--steel)" stroke-width="1.4"></path><text class="t-node" x="1426" y="205">compas_dlubal</text><text class="t-num" x="1648" y="194" text-anchor="end">07</text><text class="t-sub" x="1392" y="232">RFEM and RSTAB vocabulary only</text><rect x="1392" y="256" width="70" height="20" rx="10" fill="var(--tint-steel)" stroke="var(--steel)" stroke-width=".9"></rect><text class="t-chip" x="1427" y="269.5" text-anchor="middle" fill="var(--steel)">7 mappers</text><rect x="1469" y="256" width="82" height="20" rx="10" fill="var(--tint-steel)" stroke="var(--steel)" stroke-width=".9"></rect><text class="t-chip" x="1510" y="269.5" text-anchor="middle" fill="var(--steel)">gRPC client</text><text class="t-sub" x="1392" y="290">beta angles · Z-down · result tables</text><text class="t-sub" x="1392" y="312" fill="var(--ink-soft)">decides nothing</text></g>
+          <g><rect x="1368" y="352" width="300" height="122" rx="10" class="n-body"></rect><rect x="1368" y="352" width="4" height="122" rx="2" fill="var(--steel)"></rect><rect x="1394" y="373" width="17" height="20" rx="3" fill="none" stroke="var(--steel)" stroke-width="1.4"></rect><path d="M1394 380 L1411 380 M1402.5 380 L1402.5 393" stroke="var(--steel)" stroke-width="1.1"></path><text class="t-node" x="1426" y="389">compas_saf</text><text class="t-num" x="1648" y="378" text-anchor="end">08</text><text class="t-sub" x="1392" y="416">Structural Analysis Format</text><rect x="1392" y="440" width="87" height="20" rx="10" fill="var(--tint-steel)" stroke="var(--steel)" stroke-width=".9"></rect><text class="t-chip" x="1436" y="453.5" text-anchor="middle" fill="var(--steel)">needs pandas</text><text class="t-sub" x="1392" y="474" fill="var(--ink-soft)">export only — nothing returns</text></g>
+          <g><rect x="1760" y="168" width="300" height="148" rx="10" class="n-body"></rect><rect x="1760" y="168" width="4" height="148" rx="2" fill="var(--steel)"></rect><path d="M1784 207 L1794 190 L1804 207 Z" fill="none" stroke="var(--steel)" stroke-width="1.4" stroke-linejoin="round"></path><text class="t-node" x="1818" y="205">RFEM · RSTAB</text><text class="t-num" x="2040" y="194" text-anchor="end">09</text><text class="t-sub" x="1784" y="232">the solver, headless</text><text class="t-sub" x="1784" y="254">a push clears it first</text><text class="t-sub" x="1784" y="276" fill="var(--ink-soft)">verification authority</text></g>
+          <g><rect x="1760" y="352" width="300" height="122" rx="10" class="n-body"></rect><rect x="1760" y="352" width="4" height="122" rx="2" fill="var(--ink-soft)"></rect><rect x="1786" y="373" width="17" height="20" rx="3" fill="none" stroke="var(--ink-soft)" stroke-width="1.4"></rect><path d="M1786 380 L1803 380 M1794.5 380 L1794.5 393" stroke="var(--ink-soft)" stroke-width="1.1"></path><text class="t-node" x="1818" y="389">model.xlsx</text><text class="t-num" x="2040" y="378" text-anchor="end">10</text><text class="t-sub" x="1784" y="416">spec-conformant</text><text class="t-sub" x="1784" y="438">opens in any SAF tool</text></g>
+          <g><rect x="1368" y="560" width="300" height="116" rx="10" class="n-body"></rect><rect x="1368" y="560" width="4" height="116" rx="2" fill="var(--steel)"></rect><rect x="1393" y="582" width="18" height="18" rx="4" fill="none" stroke="var(--steel)" stroke-width="1.4"></rect><path d="M1397 587 L1402 591 L1397 595" fill="none" stroke="var(--steel)" stroke-width="1.3"></path><text class="t-node" x="1426" y="597">tekton_app.worker</text><text class="t-num" x="1648" y="586" text-anchor="end">06</text><text class="t-sub" x="1392" y="624">a subprocess in the repo venv</text><text class="t-sub" x="1392" y="646">it rebuilds the model and calls the same adapters</text></g>
+          <g><rect x="40" y="812" width="282" height="116" rx="10" class="n-body"></rect><rect x="40" y="812" width="4" height="116" rx="2" fill="var(--timber)"></rect><circle cx="74" cy="837" r="7" fill="none" stroke="var(--timber)" stroke-width="1.4"></circle><path d="M62 858 C62 845, 86 845, 86 858" fill="none" stroke="var(--timber)" stroke-width="1.4"></path><text class="t-node" x="98" y="849">Designer</text><text class="t-num" x="302" y="838" text-anchor="end">11</text><text class="t-sub" x="64" y="876">models, marks supports, runs</text><text class="t-sub" x="64" y="898" fill="var(--timber)">never opens RFEM</text></g>
+          <g><rect x="448" y="812" width="300" height="116" rx="10" class="n-body"></rect><rect x="448" y="812" width="4" height="116" rx="2" fill="var(--steel)"></rect><circle cx="482" cy="837" r="7" fill="none" stroke="var(--steel)" stroke-width="1.4"></circle><path d="M470 858 C470 845, 494 845, 494 858" fill="none" stroke="var(--steel)" stroke-width="1.4"></path><text class="t-node" x="506" y="849">Engineer</text><text class="t-num" x="728" y="838" text-anchor="end">12</text><text class="t-sub" x="472" y="876">refines, verifies, signs</text><text class="t-sub" x="472" y="898" fill="var(--steel)">never edits geometry</text></g>
+          <g stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#m-ink)"><path d="M302 256 L442 256"></path></g>
+          <g stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#m-ink)" stroke-dasharray="5 4"><path d="M302 432 L348 432 L348 310 L442 310"></path></g>
+          <g stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#m-ink)" stroke-dasharray="5 4"><path d="M302 560 L326 560 L326 348 L442 348"></path></g>
+          <g stroke="var(--sage)" stroke-width="2" fill="none" marker-end="url(#m-sag)"><path d="M752 284 L902 284"></path></g>
+          <g stroke="var(--timber)" stroke-width="1.9" fill="none" marker-end="url(#m-tim)"><path d="M902 342 L752 342"></path></g>
+          <g stroke="var(--sage)" stroke-width="2" fill="none" marker-end="url(#m-sag)"><path d="M1212 242 L1362 242"></path></g>
+          <g stroke="var(--sage)" stroke-width="2" fill="none" marker-end="url(#m-sag)"><path d="M1212 330 L1287 330 L1287 404 L1362 404"></path></g>
+          <g stroke="var(--steel)" stroke-width="1.5" fill="none" marker-end="url(#m-ste)"><path d="M1672 220 L1754 220"></path></g>
+          <g stroke="var(--steel)" stroke-width="1.5" fill="none" marker-end="url(#m-ste)"><path d="M1672 404 L1754 404"></path></g>
+          <g stroke="var(--timber)" stroke-width="1.9" fill="none" marker-end="url(#m-tim)"><path d="M1910 322 L1910 340 L1518 340 L1518 322"></path></g>
+          <g stroke="var(--timber)" stroke-width="1.9" fill="none" marker-end="url(#m-tim)"><path d="M1362 290 L1330 290 L1330 146 L1058 146 L1058 184"></path></g>
+          <g stroke="var(--amber)" stroke-width="1.7" fill="none" marker-end="url(#m-amb)" stroke-dasharray="7 5"><path d="M1058 416 L1058 554"></path></g>
+          <g stroke="var(--amber)" stroke-width="1.7" fill="none" marker-end="url(#m-amb)" stroke-dasharray="7 5"><path d="M1212 596 L1362 596"></path></g>
+          <g stroke="var(--sage)" stroke-width="2" fill="none" marker-end="url(#m-sag)" stroke-dasharray="5 4"><path d="M1518 554 L1518 516 L1714 516 L1714 480 L1668 480"></path></g>
+          <g stroke="var(--timber)" stroke-width="1.9" fill="none" marker-end="url(#m-tim)"><path d="M181 806 L181 742 L20 742 L20 240 L34 240"></path></g>
+          <g stroke="var(--steel)" stroke-width="1.5" fill="none" marker-end="url(#m-ste)" stroke-dasharray="6 5"><path d="M902 618 L830 618 L830 724 L598 724 L598 806"></path></g>
+          <g stroke="var(--steel)" stroke-width="1.5" fill="none" marker-end="url(#m-ste)" stroke-dasharray="6 5"><path d="M752 870 L2068 870 L2068 250 L2064 250"></path></g>
+          <g><rect x="331" y="246" width="81" height="20" rx="10" fill="var(--surface)" stroke="var(--hair)" stroke-width=".9"></rect><text class="t-pill" x="372" y="260" text-anchor="middle" fill="currentColor">builds it</text></g>
+          <g><rect x="299" y="460" width="99" height="20" rx="10" fill="var(--surface)" stroke="var(--hair)" stroke-width=".9"></rect><text class="t-pill" x="348" y="474" text-anchor="middle" fill="currentColor">loads a file</text></g>
+          <g><rect x="781" y="246" width="93" height="20" rx="10" fill="var(--tint-sage)" stroke="var(--sage)" stroke-width=".9"></rect><text class="t-pill" x="827" y="260" text-anchor="middle" fill="var(--sage)">translate()</text></g>
+          <g><rect x="766" y="362" width="122" height="20" rx="10" fill="var(--tint-timber)" stroke="var(--timber)" stroke-width=".9"></rect><text class="t-pill" x="827" y="376" text-anchor="middle" fill="var(--timber)">attach_results()</text></g>
+          <g><rect x="1244" y="206" width="87" height="20" rx="10" fill="var(--tint-sage)" stroke="var(--sage)" stroke-width=".9"></rect><text class="t-pill" x="1287" y="220" text-anchor="middle" fill="var(--sage)">the object</text></g>
+          <g><rect x="1244" y="460" width="87" height="20" rx="10" fill="var(--tint-sage)" stroke="var(--sage)" stroke-width=".9"></rect><text class="t-pill" x="1287" y="474" text-anchor="middle" fill="var(--sage)">the object</text></g>
+          <g><rect x="1678" y="186" width="70" height="20" rx="10" fill="var(--tint-steel)" stroke="var(--steel)" stroke-width=".9"></rect><text class="t-pill" x="1713" y="200" text-anchor="middle" fill="var(--steel)">push</text></g>
+          <g><rect x="1678" y="370" width="70" height="20" rx="10" fill="var(--tint-steel)" stroke="var(--steel)" stroke-width=".9"></rect><text class="t-pill" x="1713" y="384" text-anchor="middle" fill="var(--steel)">write</text></g>
+          <g><rect x="1656" y="330" width="116" height="20" rx="10" fill="var(--tint-timber)" stroke="var(--timber)" stroke-width=".9"></rect><text class="t-pill" x="1714" y="344" text-anchor="middle" fill="var(--timber)">3 result tables</text></g>
+          <g><rect x="1023" y="476" width="70" height="20" rx="10" fill="var(--tint-amber)" stroke="var(--amber)" stroke-width=".9"></rect><text class="t-pill" x="1058" y="490" text-anchor="middle" fill="var(--amber)">to_json</text></g>
+          <g><rect x="1244" y="562" width="87" height="20" rx="10" fill="var(--tint-amber)" stroke="var(--amber)" stroke-width=".9"></rect><text class="t-pill" x="1287" y="576" text-anchor="middle" fill="var(--amber)">subprocess</text></g>
+          <g><rect x="1620" y="530" width="187" height="20" rx="10" fill="var(--tint-sage)" stroke="var(--sage)" stroke-width=".9"></rect><text class="t-pill" x="1714" y="544" text-anchor="middle" fill="var(--sage)">from_json → the same object</text></g>
+          <g><rect x="102" y="754" width="158" height="20" rx="10" fill="var(--tint-timber)" stroke="var(--timber)" stroke-width=".9"></rect><text class="t-pill" x="181" y="768" text-anchor="middle" fill="var(--timber)">authors, then iterates</text></g>
+          <g><rect x="629" y="690" width="170" height="20" rx="10" fill="var(--tint-steel)" stroke="var(--steel)" stroke-width=".9"></rect><text class="t-pill" x="714" y="704" text-anchor="middle" fill="var(--steel)">handoff · model + report</text></g>
+          <g><rect x="1086" y="838" width="187" height="20" rx="10" fill="var(--tint-steel)" stroke="var(--steel)" stroke-width=".9"></rect><text class="t-pill" x="1180" y="852" text-anchor="middle" fill="var(--steel)">opens it, refines, verifies</text></g>
+          </svg>
+      </div>
+      <div class="legend">
+        <span><i style="border-color: var(--ink-mid)"></i> the model travelling out</span>
+        <span><i style="border-color: var(--timber)"></i> results coming back</span>
+        <span><i style="border-color: var(--amber)"></i> the process boundary</span>
+        <span><i style="border-color: var(--steel); border-top-style: dashed"></i> the engineer's path</span>
+        <span><i style="border-color: var(--crit); border-top-style: dashed"></i> deliberately not allowed</span>
+      </div>
+      <figcaption><b>Everything left of the amber file runs inside Rhino; everything right of it runs in a separate interpreter.</b> The desktop application reaches the same boundary from the other side, which is why it needs no Rhino at all.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= 02 · THE SPLIT ================= -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2>Why two processes</h2>
+      <span class="sec-note">a version gap, measured 2026-08-28</span>
+    </div>
+
+    <figure>
+      <div class="figbox w-mid">
+        <svg viewBox="0 0 900 230" role="img" aria-label="Rhino 8 runs CPython 3.9.10 while the Dlubal API requires 3.10 or newer and pulls in grpcio, pandas and vtk. The version ranges do not overlap, so the RFEM client cannot run inside Rhino.">
+          <!-- version axis -->
+          <line x1="60" y1="150" x2="840" y2="150" stroke="var(--hair)" stroke-width="1"></line>
+          <g class="t-pill" fill="var(--ink-soft)">
+            <line x1="200" y1="145" x2="200" y2="155" stroke="var(--hair)"></line>
+            <text x="200" y="172" text-anchor="middle">3.9</text>
+            <line x1="380" y1="145" x2="380" y2="155" stroke="var(--hair)"></line>
+            <text x="380" y="172" text-anchor="middle">3.10</text>
+            <line x1="560" y1="145" x2="560" y2="155" stroke="var(--hair)"></line>
+            <text x="560" y="172" text-anchor="middle">3.11</text>
+            <line x1="740" y1="145" x2="740" y2="155" stroke="var(--hair)"></line>
+            <text x="740" y="172" text-anchor="middle">3.12</text>
+          </g>
+          <text class="t-zone" x="60" y="196">CPYTHON VERSION</text>
+
+          <!-- rhino band -->
+          <rect x="140" y="52" width="122" height="34" rx="17" fill="var(--tint-timber)" stroke="var(--timber)" stroke-width="1.3"></rect>
+          <text class="t-pill" x="201" y="73" text-anchor="middle" fill="var(--timber)">RHINO 8 SHIPS 3.9.10</text>
+          <line x1="201" y1="88" x2="201" y2="146" stroke="var(--timber)" stroke-width="1.1" stroke-dasharray="3 3"></line>
+
+          <!-- dlubal band -->
+          <rect x="380" y="52" width="440" height="34" rx="17" fill="var(--tint-steel)" stroke="var(--steel)" stroke-width="1.3"></rect>
+          <text class="t-pill" x="600" y="73" text-anchor="middle" fill="var(--steel)">DLUBAL-API 2.13.8 NEEDS 3.10+ · grpcio · pandas · vtk</text>
+          <line x1="380" y1="88" x2="380" y2="146" stroke="var(--steel)" stroke-width="1.1" stroke-dasharray="3 3"></line>
+
+          <!-- the gap -->
+          <g stroke="var(--crit)" stroke-width="1.3">
+            <path d="M212 112 L368 112" fill="none"></path>
+            <line x1="212" y1="106" x2="212" y2="118"></line>
+            <line x1="368" y1="106" x2="368" y2="118"></line>
+          </g>
+          <rect x="228" y="102" width="124" height="19" rx="9.5" fill="var(--paper)" stroke="var(--crit)" stroke-width="1"></rect>
+          <text class="t-pill" x="290" y="115" text-anchor="middle" fill="var(--crit)">NO OVERLAP</text>
+
+          <text class="t-sub" x="60" y="222">The neutral layer was kept free of 3.10 syntax on purpose, so it runs on both sides of this line.</text>
+          <text class="t-pill" x="840" y="222" text-anchor="end" fill="var(--ink-soft)">84 beams → 344 nodes → 404 members, in Rhino</text>
+        </svg>
+      </div>
+      <figcaption><b>The gap is the architecture.</b> No amount of care in Tekton's own code closes it, so the backend client moved out of process and the serialized model became the seam.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= 03 · TRANSLATION ================= -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2>Inside the translation</h2>
+      <span class="sec-note">where judgment gets recorded</span>
+    </div>
+
+    <figure>
+      <div class="figbox w-mid">
+        <svg viewBox="0 0 900 330" role="img" aria-label="Translation pipeline. A timber model and four authored policy inputs enter the translator, which emits the neutral model and an assumptions report. Loads are applied afterwards, then preflight runs before anything is pushed.">
+          <defs>
+            <marker id="m2" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7" markerHeight="6.5" orient="auto">
+              <path d="M0,0 L10,4.5 L0,9 Z" fill="currentColor"></path>
+            </marker>
+            <marker id="m2s" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7" markerHeight="6.5" orient="auto">
+              <path d="M0,0 L10,4.5 L0,9 Z" fill="var(--sage)"></path>
+            </marker>
+          </defs>
+
+          <text class="t-zone" x="20" y="28">AUTHORED ON THE CANVAS</text>
+          <g>
+            <rect x="20" y="40" width="148" height="26" rx="13" class="n-soft"></rect>
+            <text class="t-pill" x="94" y="57" text-anchor="middle">timber model</text>
+            <rect x="20" y="74" width="148" height="26" rx="13" class="n-soft"></rect>
+            <text class="t-pill" x="94" y="91" text-anchor="middle">joint policy</text>
+            <rect x="20" y="108" width="148" height="26" rx="13" class="n-soft"></rect>
+            <text class="t-pill" x="94" y="125" text-anchor="middle">plate policy</text>
+            <rect x="20" y="142" width="148" height="26" rx="13" class="n-soft"></rect>
+            <text class="t-pill" x="94" y="159" text-anchor="middle">material grade</text>
+            <rect x="20" y="176" width="148" height="26" rx="13" class="n-soft"></rect>
+            <text class="t-pill" x="94" y="193" text-anchor="middle">source units</text>
+          </g>
+          <g stroke="currentColor" stroke-width="1" fill="none" marker-end="url(#m2)" opacity=".75">
+            <path d="M172 53 L196 53 L196 118 L214 118"></path>
+            <path d="M172 87 L196 87 L196 118"></path>
+            <path d="M172 121 L206 121 L206 124 L214 124"></path>
+            <path d="M172 155 L196 155 L196 130 L214 130"></path>
+            <path d="M172 189 L196 189 L196 130"></path>
+          </g>
+
+          <!-- translator -->
+          <rect x="218" y="40" width="196" height="162" rx="9" class="n-body" stroke="var(--sage)" stroke-width="1.4"></rect>
+          <text class="t-node" x="316" y="64" text-anchor="middle" fill="var(--sage)">TimberToStructural</text>
+          <line x1="236" y1="76" x2="396" y2="76" stroke="var(--rule)"></line>
+          <g class="t-sub" fill="var(--ink-mid)">
+            <text x="238" y="96">geometry scaled to metres</text>
+            <text x="238" y="114">graph nodes → structural nodes</text>
+            <text x="238" y="132">segments → members</text>
+            <text x="238" y="150">joints → releases, per policy</text>
+            <text x="238" y="168">dimensions → shared sections</text>
+            <text x="238" y="186">plates → surfaces + thicknesses</text>
+          </g>
+
+          <g stroke="var(--sage)" stroke-width="1.3" fill="none" marker-end="url(#m2s)">
+            <path d="M418 90 L446 90"></path>
+            <path d="M418 160 L446 160"></path>
+          </g>
+
+          <rect x="450" y="66" width="182" height="48" rx="9" class="n-body" stroke="var(--sage)" stroke-width="1.3"></rect>
+          <text class="t-node" x="541" y="88" text-anchor="middle" fill="var(--sage)">structural model</text>
+          <text class="t-sub" x="541" y="105" text-anchor="middle">nodes · members · sections</text>
+
+          <rect x="450" y="136" width="182" height="48" rx="9" class="n-soft"></rect>
+          <text class="t-node" x="541" y="158" text-anchor="middle">assumptions report</text>
+          <text class="t-sub" x="541" y="175" text-anchor="middle">its own output, on the canvas</text>
+
+          <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#m2)">
+            <path d="M636 90 L664 90"></path>
+            <path d="M760 118 L760 140"></path>
+          </g>
+
+          <rect x="668" y="66" width="184" height="48" rx="9" class="n-body"></rect>
+          <text class="t-node" x="760" y="88" text-anchor="middle">apply loads</text>
+          <text class="t-sub" x="760" y="105" text-anchor="middle">point → node · beam → its members</text>
+
+          <rect x="668" y="144" width="184" height="48" rx="9" class="n-body" stroke="var(--amber)" stroke-width="1.4"></rect>
+          <text class="t-node" x="760" y="166" text-anchor="middle" fill="var(--amber)">preflight</text>
+          <text class="t-sub" x="760" y="183" text-anchor="middle">supports · connectivity · sections</text>
+
+          <line x1="20" y1="236" x2="880" y2="236" stroke="var(--rule)"></line>
+          <g class="t-sub" fill="var(--ink-mid)">
+            <text x="20" y="260">Loads arrive after translation because a point load needs a node and a line load needs the members a beam was split into.</text>
+            <text x="20" y="278">Neither exists until the idealization has run, so the authoring components describe loads geometrically and this step resolves them.</text>
+            <text x="20" y="304" fill="var(--amber)">The same preflight runs again on push — canvas, desktop and command line report identically.</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption><b>Order is not a convenience here.</b> The translator records every assumption it had to make, and that report travels with the model as a separate output.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= 04 · IDENTITY ================= -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2>How a number finds its beam</h2>
+      <span class="sec-note">the identity chain</span>
+    </div>
+
+    <figure>
+      <div class="figbox w-mid">
+        <svg viewBox="0 0 900 250" role="img" aria-label="The identity chain. An RFEM member number maps one to one onto a neutral member id, which carries a source element id, which is the GUID of the original beam. Because one beam becomes several members, results attach at a parameter along the physical beam axis.">
+          <defs>
+            <marker id="m3" viewBox="0 0 10 9" refX="9" refY="4.5" markerWidth="7" markerHeight="6.5" orient="auto">
+              <path d="M0,0 L10,4.5 L0,9 Z" fill="var(--timber)"></path>
+            </marker>
+          </defs>
+
+          <g>
+            <rect x="24" y="40" width="182" height="52" rx="9" class="n-body" stroke="var(--steel)" stroke-width="1.2"></rect>
+            <text class="t-node" x="115" y="64" text-anchor="middle" fill="var(--steel)">RFEM member no</text>
+            <text class="t-sub" x="115" y="81" text-anchor="middle">a row in the result table</text>
+
+            <rect x="254" y="40" width="182" height="52" rx="9" class="n-body" stroke="var(--sage)" stroke-width="1.2"></rect>
+            <text class="t-node" x="345" y="64" text-anchor="middle" fill="var(--sage)">neutral member id</text>
+            <text class="t-sub" x="345" y="81" text-anchor="middle">shifts when the model is edited</text>
+
+            <rect x="484" y="40" width="182" height="52" rx="9" class="n-body" stroke="var(--sage)" stroke-width="1.2"></rect>
+            <text class="t-node" x="575" y="64" text-anchor="middle" fill="var(--sage)">source_element_id</text>
+            <text class="t-sub" x="575" y="81" text-anchor="middle">carried on every member</text>
+
+            <rect x="714" y="40" width="162" height="52" rx="9" class="n-body" stroke="var(--timber)" stroke-width="1.3"></rect>
+            <text class="t-node" x="795" y="64" text-anchor="middle" fill="var(--timber)">the Beam</text>
+            <text class="t-sub" x="795" y="81" text-anchor="middle">what the designer drew</text>
+          </g>
+
+          <g stroke="var(--timber)" stroke-width="1.4" fill="none" marker-end="url(#m3)">
+            <path d="M210 66 L248 66"></path>
+            <path d="M440 66 L478 66"></path>
+            <path d="M670 66 L708 66"></path>
+          </g>
+          <g class="t-pill" fill="var(--ink-soft)">
+            <text x="229" y="56" text-anchor="middle">1:1</text>
+            <text x="459" y="56" text-anchor="middle">lookup</text>
+            <text x="689" y="56" text-anchor="middle">GUID</text>
+          </g>
+
+          <!-- segmentation illustration -->
+          <line x1="24" y1="122" x2="876" y2="122" stroke="var(--rule)"></line>
+          <text class="t-zone" x="24" y="146">ONE BEAM BECOMES SEVERAL MEMBERS</text>
+
+          <g>
+            <line x1="130" y1="182" x2="610" y2="182" stroke="var(--timber)" stroke-width="3.5" stroke-linecap="round"></line>
+            <text class="t-pill" x="60" y="186" text-anchor="end" fill="var(--timber)">the beam</text>
+            <g fill="var(--sage)" stroke="var(--surface)" stroke-width="1.5">
+              <circle cx="130" cy="182" r="5"></circle>
+              <circle cx="250" cy="182" r="5"></circle>
+              <circle cx="370" cy="182" r="5"></circle>
+              <circle cx="490" cy="182" r="5"></circle>
+              <circle cx="610" cy="182" r="5"></circle>
+            </g>
+            <g class="t-pill" fill="var(--sage)">
+              <text x="190" y="169" text-anchor="middle">member</text>
+              <text x="310" y="169" text-anchor="middle">member</text>
+              <text x="430" y="169" text-anchor="middle">member</text>
+              <text x="550" y="169" text-anchor="middle">member</text>
+            </g>
+            <g class="t-pill" fill="var(--ink-soft)">
+              <text x="130" y="204" text-anchor="middle">t = 0</text>
+              <text x="610" y="204" text-anchor="middle">t = 1</text>
+            </g>
+          </g>
+
+          <g>
+            <rect x="656" y="152" width="220" height="60" rx="9" class="n-soft"></rect>
+            <text class="t-pill" x="674" y="172" fill="var(--timber)">ENVELOPE — what the designer sees</text>
+            <text class="t-sub" x="674" y="189">max utilization, max deflection</text>
+            <text class="t-sub" x="674" y="204">samples underneath, for diagrams</text>
+          </g>
+
+          <text class="t-sub" x="24" y="238" fill="var(--ink-mid)">Results attach at a parameter on the physical axis. The analysis mesh is never handed back — the designer asked about their beam, not our discretization.</text>
+        </svg>
+      </div>
+      <figcaption><b>The chain holds inside one session.</b> Across sessions the neutral ids shift, which is what a persistent identifier map would fix, and what currently blocks incremental updates.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= 05 · LAYERS ================= -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <h2>Who owns what</h2>
+      <span class="sec-note">judgment in the middle, vocabulary at the edges</span>
+    </div>
+
+    <div class="layers">
+      <div class="layer l-timber">
+        <div class="layer-name">compas_timber</div>
+        <div class="layer-owns">Idealization geometry: segment splitting, node merging, mid-planes, connector segments, the structural graph.</div>
+        <div class="layer-not">not mechanics, units or backends</div>
+      </div>
+      <div class="layer l-neutral">
+        <div class="layer-name">compas_timber_fea</div>
+        <div class="layer-owns">The structural model. Joint and plate policies, the unit contract, serialization, the assumptions report, preflight.</div>
+        <div class="layer-not">not one backend convention — no axis flips, no beta angles, no RFEM name strings</div>
+      </div>
+      <div class="layer l-backend">
+        <div class="layer-name">compas_dlubal</div>
+        <div class="layer-owns">RFEM and RSTAB vocabulary: protobuf objects, beta conversion, Z-down, library names, result tables.</div>
+        <div class="layer-not">decides nothing, translates decisions</div>
+      </div>
+      <div class="layer l-backend">
+        <div class="layer-name">compas_saf</div>
+        <div class="layer-owns">Structural Analysis Format sheets and spec conformance.</div>
+        <div class="layer-not">decides nothing either</div>
+      </div>
+      <div class="layer l-app">
+        <div class="layer-name">tekton_app</div>
+        <div class="layer-owns">The desktop window, and the worker command line Grasshopper shells out to.</div>
+        <div class="layer-not">no logic — it calls the libraries</div>
+      </div>
+      <div class="layer l-app">
+        <div class="layer-name">tekton_gh</div>
+        <div class="layer-owns">The authoring layer: twenty-two components across setup, authoring, translation, running, results and exchange.</div>
+        <div class="layer-not">not model building — that stays with COMPAS Timber's own components</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 06 · STATUS ================= -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">06</span>
+      <h2>Where it stands</h2>
+      <span class="sec-note">2026-09-15</span>
+    </div>
+
+    <div class="status">
+      <div class="st-col ok">
+        <h3>Runs</h3>
+        <ul>
+          <li>The whole chain end to end, offline, under test</li>
+          <li>Member forces, nodal deformations, support reactions read back as real tables</li>
+          <li>A missing table no longer sinks the others</li>
+          <li>Staleness detection: every result set carries a model fingerprint</li>
+          <li>Push covers nodes, members, sections, hinges, surfaces, supports, cases, loads, combinations</li>
+        </ul>
+      </div>
+      <div class="st-col wip">
+        <h3>Untested against a live solver</h3>
+        <ul>
+          <li>The entire RFEM path beyond the gRPC call</li>
+          <li>Utilization, which needs the timber design add-on and is the number designers most want</li>
+          <li>Whether a long calculation outlives the worker timeout</li>
+        </ul>
+      </div>
+      <div class="st-col gap">
+        <h3>Missing</h3>
+        <ul>
+          <li>Persistent identifiers, so results survive across sessions</li>
+          <li>Material overrides — one global grade today</li>
+          <li>Support types and springs — always pinned today</li>
+          <li>Orthotropy</li>
+          <li>Plate results and connection forces, the screw-design quantity</li>
+          <li>Real icons for two components</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    The most valuable single move, from every angle: merging the upstream branch that carries the structural graph. Until it lands, the canvas needs a dedicated Rhino environment holding a pinned revision, and it collides with the officially shipped plugin whenever both are loaded.
+  </footer>
+
+</div>
