@@ -53,7 +53,6 @@ def _warn(message):
 
 # --------------------- INPUTS ---------------------
 preset: str  # type: ignore
-menu: bool  # type: ignore
 joint_types = joint_types  # type: ignore # noqa: F821
 releases = releases  # type: ignore # noqa: F821
 
@@ -63,7 +62,7 @@ _setup()
 from compas_timber_fea.core.joint_policy import JointPolicy
 from compas_timber_fea.core.releases import MemberRelease
 
-from tekton_gh.rhino_io import build_value_list, value_list_items
+from tekton_gh.rhino_io import attach_value_list, value_list_items
 
 PRESETS = {
     "conservative": JointPolicy.conservative,
@@ -82,12 +81,7 @@ if key not in PRESETS:
     key = "conservative"
 
 policy = PRESETS[key]()
-# The drop-down is built on an explicit button press, never by the component
-# itself: touching the canvas during a solve is what crashed Rhino twice.
-if menu:  # noqa: F821
-    _created, _message = build_value_list(
-        ghenv, sorted(PRESETS), param_index=0, nickname="Preset")  # type: ignore # noqa: F821
-    print(_message)
+attach_value_list(ghenv, sorted(PRESETS), param_index=0, nickname="Preset")  # type: ignore # noqa: F821
 
 info = list(value_list_items(ghenv, sorted(PRESETS)))  # type: ignore # noqa: F821
 info.append("Preset: {} (default: {})".format(key, policy.default.name))

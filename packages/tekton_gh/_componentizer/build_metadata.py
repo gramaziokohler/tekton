@@ -115,13 +115,12 @@ COMPONENTS = [
         nickname="TMatLib",
         sub=SUB_AUTHOR,
         description=(
-            "Pick a material from the library. On placement it attaches its own value list "
+            "Pick a material from the library. On placement it attaches its own drop-down "
             "with all grades - no typing, no typos. Without a selection it lists what is "
             "available, along with the property values."
         ),
         inputs=[
             p("grade", "str", desc="Grade. Empty = only list what is available."),
-            p("menu", "bool", desc="Set True once to create a drop-down for 'grade', then back to False."),
         ],
         outputs=[
             o("material", "Material for TektonTranslate"),
@@ -240,7 +239,6 @@ COMPONENTS = [
         ),
         inputs=[
             p("preset", "str", desc="'conservative' (everything pinned) | 'rigid' | 'catalogue'."),
-            p("menu", "bool", desc="Set True once to create a drop-down for 'preset', then back to False."),
             p("joint_types", "str", access="list", desc="Joint types that should deviate."),
             p("releases", "str", access="list", desc="Matching: 'rigid'|'pinned'|'spherical', parallel to joint_types."),
         ],
@@ -258,7 +256,6 @@ COMPONENTS = [
         ),
         inputs=[
             p("preset", "str", desc="'hinged' (default) | 'continuous'."),
-            p("menu", "bool", desc="Set True once to create a drop-down for 'preset', then back to False."),
             p("span_direction", "vector", desc="Span direction. Not optional for timber - orthotropy."),
         ],
         outputs=[o("policy", "PlateConnectionPolicy for TektonTranslate")],

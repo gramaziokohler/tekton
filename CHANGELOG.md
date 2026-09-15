@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Windows build route for the `.ghuser` components (pythonnet, no Rhino needed) documented in `packages/tekton_gh/README.md`.
 
 ### Changed
+- **tekton_gh**: drop-downs attach themselves on placement again (Material Library, Joint Policy, Plate Policy, Backend, Support, Support Nodes, Load Case, Results, Visualize); the `menu` inputs are gone. `attach_value_list` guards against the replace-while-queued crash: once per instance, component-still-in-document check, nothing escapes the delegate.
 - **compas_timber_fea**: a pinned connector carries its hinge on one end only (the end where a beam terminates); both ends hinged made the connector a pendulum bar and the model a mechanism.
 - **compas_dlubal**: coupling type (21–24) is derived from the member's releases instead of hard-coded to hinge-hinge.
 - **compas_dlubal**: results are queried with `get_results` (raw) instead of `get_result_table` (display table, empty for members and nodes).

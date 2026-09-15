@@ -60,6 +60,17 @@ id: int  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
+# Drop-down on 'category' the moment the component lands on the canvas. Needs
+# the repo path for the import; without it the menu simply does not appear
+# and TektonInfo says what is missing.
+try:
+    _setup()
+    from tekton_gh.rhino_io import attach_value_list
+
+    attach_value_list(ghenv, ['PERMANENT', 'VARIABLE', 'SNOW', 'WIND'], param_index=1, nickname="Category")  # type: ignore # noqa: F821
+except Exception:
+    pass
+
 _setup()
 from compas_timber_fea.core.model import StructuralLoadCase
 
