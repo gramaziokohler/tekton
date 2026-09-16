@@ -152,6 +152,19 @@ class TimberToStructural:
         if list(timber_model.plates):
             from compas_timber.structural import PlateStructuralElementSolver
             print("Generiere strukturelle Flächen...")
+            # The model *appends* structural surfaces and surface lines on
+            # every generation. Translating the same TimberModel twice (a
+            # re-solve in Grasshopper) would therefore double every plate in
+            # RFEM. Start from a clean slate.
+            # (Not model.remove_plate_structural_surfaces: it passes None as
+            # the value, which compas' node_attribute reads as "get" - the
+            # surfaces stay. An empty list is a real assignment.)
+            graph = timber_model._graph
+            for plate in timber_model.plates:
+                graph.node_attribute(plate.graphnode, "structural_surfaces", [])
+            for edge in list(graph.edges()):
+                if graph.edge_attribute(edge, "structural_surface_lines"):
+                    graph.edge_attribute(edge, "structural_surface_lines", [])
             plate_solver = PlateStructuralElementSolver()
             plate_solver.add_structural_surfaces(timber_model)
             # Process all joints for plate-plate connections

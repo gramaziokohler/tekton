@@ -88,6 +88,26 @@ COMPONENTS = [
         ],
         outputs=[o("report", "Diagnostic lines"), o("ok", "True when everything needed is there")],
     ),
+    dict(
+        folder="tekton_upgrade",
+        uid=26,
+        name="Tekton Upgrade",
+        nickname="TUpgrade",
+        sub=SUB_SETUP,
+        description=(
+            "Brings every Tekton component in this definition up to date with one button "
+            "press. A component you placed keeps the script it was placed with, even when "
+            "Tekton is updated; this swaps each one for the current version, in place, with "
+            "its wires and nickname. Press it after a Tekton update. The report tells you what "
+            "was replaced and names any wire it could not carry over (a renamed or removed "
+            "input) - reconnect those by hand. Nothing else on the canvas is touched."
+        ),
+        inputs=[
+            p("upgrade", "bool", desc="Connect a Button. One press replaces every Tekton component in this definition."),
+            p("repo", "str", desc="Path to the Tekton repo. Empty = the one TektonInfo/TektonBackend already set for this session."),
+        ],
+        outputs=[o("report", "One line per replaced component: how many wires came along, and which were dropped - reconnect those by hand.")],
+    ),
     # ---------------- Author ----------------
     dict(
         folder="tekton_material",
@@ -369,7 +389,7 @@ COMPONENTS = [
             "holding the key."
         ),
         inputs=[
-            p("backend", "str", desc="'rfem' | 'rstab' | 'saf'."),
+            p("backend", "str", desc="'rfem' | 'rstab' | 'saf' | 'opensees' (beams only, no licence)."),
             p("api_key", "str", desc="Empty: environment or repo .env. A file path: key is read from it. Anything else: the key itself (warns)."),
             p("repo", "str", desc="Path to the monorepo (that is where the worker venv lives)."),
             p("filepath", "str", desc="Only for 'saf': target path of the xlsx file."),

@@ -75,6 +75,12 @@ idea — something that says "check the state", not "display information".
 
 ---
 
+### Tekton Upgrade (`TUpgrade`)
+One button: every Tekton component on the canvas is replaced by its
+installed template, wires carried over.
+*Motif:* two component boxes swapping places, arrows between them, in the
+Setup grey.
+
 ## Still to be designed
 
 Two components were added after the set was drawn. They carry a magenta

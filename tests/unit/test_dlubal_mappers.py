@@ -120,10 +120,11 @@ def test_rigid_members_get_no_hinge(member_mapper):
 
 
 def test_hinged_coupling_needs_no_separate_hinge(member_mapper):
-    """RFEM's coupling type is already a hinge-hinge link."""
+    """RFEM's coupling type is already a hinge-hinge link - for full hinges (all rotations free)."""
+    full = MemberRelease(rx=0.0, ry=0.0, rz=0.0, name="full hinge")
     coupling = StructuralMember(
         id=1, node_start=1, node_end=2, section_id=1,
-        member_type="COUPLING", release_start=MemberRelease.pinned(), release_end=MemberRelease.pinned(),
+        member_type="COUPLING", release_start=full, release_end=full,
     )
 
     hinges = member_mapper.map_hinges_for_members([coupling])
@@ -138,11 +139,11 @@ def test_coupling_type_follows_which_end_is_hinged(member_mapper):
     def coupling(start, end):
         return StructuralMember(id=1, node_start=1, node_end=2, section_id=1, member_type="COUPLING", release_start=start, release_end=end)
 
-    pinned = MemberRelease.pinned()
+    full = MemberRelease(rx=0.0, ry=0.0, rz=0.0, name="full hinge")
     assert member_mapper.map_member(coupling(None, None)).type == 21
-    assert member_mapper.map_member(coupling(None, pinned)).type == 22
-    assert member_mapper.map_member(coupling(pinned, None)).type == 23
-    assert member_mapper.map_member(coupling(MemberRelease.rigid(), pinned)).type == 22
+    assert member_mapper.map_member(coupling(None, full)).type == 22
+    assert member_mapper.map_member(coupling(full, None)).type == 23
+    assert member_mapper.map_member(coupling(MemberRelease.rigid(), full)).type == 22
 
 
 def test_springy_coupling_becomes_a_rigid_member_with_hinges(member_mapper):
@@ -194,3 +195,24 @@ def test_thickness_can_point_at_the_surface_material(core):
     proto = ThicknessMapper(core).map(StructuralThickness(id=1, name="t", material_id=1, thickness=0.1), material_id=1001)
 
     assert proto.material == 1001
+
+
+def test_partial_release_on_coupling_becomes_explicit_hinge(member_mapper):
+    """The neutral 'pinned' keeps torsion; coupling type 22 would free it. So: rigid member + explicit hinge."""
+    coupling = StructuralMember(id=1, node_start=1, node_end=2, section_id=1, member_type="COUPLING", release_end=MemberRelease.pinned())
+
+    hinges = member_mapper.map_hinges_for_members([coupling])
+    proto = member_mapper.map_member(coupling)
+
+    assert len(hinges) == 1
+    assert hinges[0].moment_release_mt == float("inf")  # torsion held
+    assert proto.type == 2  # TYPE_RIGID with the hinge, not a coupling type
+    assert proto.member_hinge_end == hinges[0].no
+
+
+def test_full_hinge_on_coupling_keeps_the_coupling_type(member_mapper):
+    full = MemberRelease(rx=0.0, ry=0.0, rz=0.0, name="full hinge")
+    coupling = StructuralMember(id=1, node_start=1, node_end=2, section_id=1, member_type="COUPLING", release_end=full)
+
+    assert member_mapper.map_hinges_for_members([coupling]) == []
+    assert member_mapper.map_member(coupling).type == 22

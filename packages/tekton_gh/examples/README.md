@@ -66,10 +66,11 @@ blocks Grasshopper and rebuilds the backend model from scratch. It is pressed
 on purpose, not triggered in passing.
 
 
-## `tekton_test_plates.ghx`
+## `tekton_plates.ghx` (and `tekton_beams.ghx`)
 
-Beams **and** plates in one definition: the beams pipeline on top (as in the
-smoke test), the plate example below it, both sharing one `Tekton Backend`.
+The plate example; the beams pipeline lives in `tekton_beams.ghx` (the
+combined `tekton_test_plates.ghx` was the intermediate step). Both carry a
+`Tekton Upgrade` so a rebuilt set of components is one button press away.
 Ran the full RFEM roundtrip on 2026-09-15: 3 surfaces, 8 nodes, 4 pinned
 supports at level 0, ~27 s, surface results back (per mesh node: deformation
 and basic internal forces), the one-way slab visibly bending at ×100.

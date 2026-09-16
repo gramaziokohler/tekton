@@ -111,7 +111,8 @@ und `roundtrip.md`):
 
 ## Woran noch zu arbeiten ist
 
-Nach Priorität:
+Ausformuliert als Arbeitspakete mit Umfang, Abhängigkeiten und Abnahme in
+[work-packages.md](work-packages.md). Kurz, nach Priorität:
 
 1. **Ausnutzung** — *die* Entwerfer-Zahl, kommt aus dem RFEM-Bemessungs-Add-on.
    Der Input existiert (`quantity="utilization"`), liefert aber 0. Nötig:

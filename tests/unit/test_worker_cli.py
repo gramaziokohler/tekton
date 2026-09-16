@@ -167,3 +167,24 @@ def test_the_exchanged_file_carries_a_format_version(model, tmp_path):
 
     assert data["format_version"] == 1
     assert data["model"]["value"]["nodes"]
+
+
+def test_worker_runs_opensees_end_to_end(tmp_path):
+    """The whole chain in one process call, no licence: JSON in, JSON with results out."""
+    import os
+    import subprocess
+    import sys
+
+    pytest.importorskip("openseespy")
+    fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
+    out = tmp_path / "result.json"
+    completed = subprocess.run(
+        [sys.executable, "-m", "tekton_app.worker", os.path.join(fixtures, "sticks_structural.json"), "--backend", "opensees", "--out", str(out)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "404 Staebe, 344 Knoten" in completed.stdout
+    from compas_timber_fea.core.model import StructuralModel
+
+    model = StructuralModel.from_json(str(out))
+    assert model.results[1].metadata["source"] == "opensees"

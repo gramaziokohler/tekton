@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **compas_timber_fea**: `reconstruct.structural_to_timber` rebuilds a TimberModel from a StructuralModel (beams exact: GUID, axis, section, orientation; plates when 1:1; results attached; joints not). GH component `Tekton To Timber`.
 - **compas_timber_fea**: `results.samples_by_beam` projects member stations onto the physical beam axis without a timber model.
 - **compas_timber_fea**: attached results carry the displacement vector per sample and in the envelope (plain tuples).
+- **tekton_gh**: new `Tekton Upgrade` - one button replaces every Tekton component on the canvas with its installed template, wires carried by parameter name, report of dropped wires; runs after the solve (`tekton_gh.upgrade`).
 - **tekton_gh**: `Tekton Display` gets a `geometry` toggle (member geometry off by default) and an icon; `Tekton To Timber` gets an icon; both listed in ICONS.md.
 - **tekton_gh**: new `Tekton Display`, the model view: elements, connections (rigid/coupling/hinge/shared node), support symbols by condition with labels, load arrows and moment rings, reaction arrows; vertex-coloured meshes, text-dot labels. Logic in `tekton_gh.model_view`.
 - **tekton_gh**: `build_value_list` kept as a compatibility shim so definitions with pre-2026-09-15 component instances open without errors.
@@ -34,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **tekton_gh**: the Grasshopper worker call passes `--delete-all` for rfem/rstab, matching the documented "every run rebuilds" contract.
 
 ### Fixed
+- **compas_timber_fea**: translating the same TimberModel twice no longer doubles its plates - the model appends structural surfaces on every generation (and its `remove_plate_structural_surfaces` is a no-op: it passes `None`, which compas reads as "get"); the translator now clears them first.
 - **compas_dlubal**: surfaces now calculate in RFEM - the library timber material (1D model) cannot carry a plate; the importer pushes an orthotropic-2D variant per material for the thicknesses.
 - **tekton_gh**: `Tekton Run` no longer uses the backend's SAF filepath as the result path for rfem/rstab.
 - **examples**: the plate box's slab sits on centre-line dimensions, so it shares nodes with the wall tops (was floating 9 cm above them).

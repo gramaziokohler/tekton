@@ -153,3 +153,13 @@ def test_connections_sharing_a_release_share_one_hinge(surface_mapper):
     assert len(hinges) == 1
     # Both edges are listed on the single hinge.
     assert len(hinges[0].assigned_to.split(",")) == 2
+
+
+def test_translating_twice_does_not_double_the_surfaces():
+    """The model appends structural surfaces on generation; a Grasshopper re-solve must not stack them."""
+    timber_model = json_load(PLATES)
+    first = TimberToStructural(source_units="mm").translate(timber_model)
+    second = TimberToStructural(source_units="mm").translate(timber_model)
+
+    assert len(second.surfaces) == len(first.surfaces)
+    assert len(second.surface_connections) == len(first.surface_connections)

@@ -13,7 +13,7 @@
             {
                 "name": "backend",
                 "nickname": "backend",
-                "description": "'rfem' | 'rstab' | 'saf'.",
+                "description": "'rfem' | 'rstab' | 'saf' | 'opensees' (beams only, no licence).",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,

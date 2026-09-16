@@ -107,10 +107,14 @@ Grasshopper reads UserObjects only at startup, so a restart is required.
 
 **Instances on the canvas do not update.** A UserObject is a template; a
 component already placed in a definition keeps its embedded script. After a
-rebuild, either drop the components fresh from the ribbon, or — with the
-[LAMCP bridge](https://github.com/gramaziokohler/lamcp) on the canvas — let
-`upgrade_components(only_categories=["Tekton"])` swap every instance in place
-and carry the wires over (2026-09-15: 10 components, no wire lost).
+rebuild (and a Rhino restart, so Grasshopper has read the new files), drop a
+**`Tekton Upgrade`** on the canvas and press its button: every Tekton
+component is replaced by its installed template at the same place, wires
+carried over by parameter name, and the report names any wire that was
+dropped because a parameter changed. It replaces everything but itself, and
+it does the work after the solve, on the UI thread (`tekton_gh.upgrade`).
+Alternatively the [LAMCP bridge](https://github.com/gramaziokohler/lamcp)
+can instantiate templates from the `.ghuser` files without a restart.
 
 **Editing the shared runtime** (`src/tekton_gh/*.py`) needs no rebuild: the
 components put the repo path on `sys.path` and `Tekton Run` / `Tekton
@@ -120,6 +124,41 @@ componentizer.
 The componentizer comes from `lorin-gh-tools` and is deliberately copied here
 rather than referenced — the repo should stay buildable on its own. The only
 change: `components/` sits one level above the tool folder.
+
+## Updating a definition
+
+A Grasshopper component keeps the script it was placed with. When Tekton is
+updated (new components installed, Rhino restarted), the components already
+sitting in your definition are still the old ones — they work as before,
+but without the fixes and new inputs. You would notice it as a component
+that behaves differently from a freshly placed one, or a red component
+after opening an older file.
+
+**`Tekton Upgrade`** fixes that in one go:
+
+1. Place `Tekton Upgrade` (Setup group) anywhere on the canvas and connect a
+   **Button** to `upgrade`.
+2. Press the button once. Every Tekton component in the definition is
+   replaced by its current version — same place, same nickname, same wires.
+   The definition re-solves; nothing else on the canvas is touched, and the
+   upgrade component itself stays.
+3. Read `report`. One line per component with the number of wires carried
+   over. If an input or output was renamed or removed in the update, its
+   wire is listed as *dropped* — reconnect that one by hand. Everything not
+   listed as dropped is exactly as it was.
+
+Things to know:
+
+- `Tekton Run` forgets its cached results in the swap (the cache belongs to
+  the old instance). Press its button again for fresh results.
+- Components with a drop-down input (Material Library, Backend, …) keep their
+  existing drop-down; no second one appears.
+- The swap happens after the current solve, never during it, so the canvas
+  is stable throughout. If you press twice quickly, the second press is
+  ignored while the first is still queued.
+- Old definitions from before 2026-09-15 may show a `menu` input on some
+  components; that input no longer exists and is reported as dropped —
+  the drop-down attaches itself now, nothing to reconnect.
 
 ## Layout
 
@@ -152,7 +191,9 @@ wiring. Only append, never reassign.
 ## The components
 
 **0 | Setup** — `Tekton Info`: diagnostics. First place to look when something
-goes wrong.
+goes wrong. `Tekton Upgrade`: after a Tekton update, one button press brings
+every Tekton component in your definition to the current version — see
+"Updating a definition" below.
 
 **1 | Author** — what used to be possible only in Python: `Material`,
 `Support`, `Load Case`, `Point Load`, `Member Load`, `Load Combination`,
