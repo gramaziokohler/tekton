@@ -1,6 +1,6 @@
 # Icon briefing — Tekton components
 
-Template for designing the icons of the 25 Grasshopper components. All 25 are
+Template for designing the icons of the 26 Grasshopper components. All 26 are
 drawn and installed; the motifs below are the brief they were made against,
 and the reference when one is reworked.
 
@@ -64,7 +64,7 @@ audience reads them without explanation.
 
 ---
 
-# The 25 components
+# The 26 components
 
 ## 0 | Setup — grey `#a5a9ae`
 
@@ -241,6 +241,15 @@ presentation view - Inspect is the debug view.
 *Motif:* a beam on two pinned supports (triangles on base lines) with a load
 arrow from above - the textbook sketch, in the Results accent.
 
+### Tekton Summary (`TSummary`)
+The analysis report: max and mean displacement, reactions with an equilibrium
+check, extreme section forces, and EC5 utilisation computed in the neutral
+layer. Also the honest one: it names the assumptions it used and the checks
+it did *not* run.
+*Motif:* a document sheet with a folded corner and report lines, the last
+line short and in the accent — the summarised value. Sibling to Info's list,
+but a document rather than a check.
+
 ---
 
 ## 5 | IO — dark grey `#7a8288`
@@ -293,10 +302,10 @@ Bundle names: `tekton_info`, `tekton_upgrade`, `tekton_material`,
 `tekton_joint_policy`, `tekton_plate_policy`, `tekton_translate`,
 `tekton_support_nodes`, `tekton_apply_loads`, `tekton_preflight`,
 `tekton_backend`, `tekton_run`, `tekton_results`, `tekton_attach_results`,
-`tekton_visualize`, `tekton_inspect`, `tekton_display`, `tekton_save_model`,
-`tekton_to_timber`, `tekton_load_model`.
+`tekton_visualize`, `tekton_inspect`, `tekton_display`, `tekton_summary`,
+`tekton_save_model`, `tekton_to_timber`, `tekton_load_model`.
 
-All 25 carry real icons. `icons/_todo/` keeps only the magenta placeholder
+All 26 carry real icons. `icons/_todo/` keeps only the magenta placeholder
 itself, for the next component that arrives without one.
 
 Then:

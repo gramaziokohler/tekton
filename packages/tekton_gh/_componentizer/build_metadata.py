@@ -561,6 +561,40 @@ COMPONENTS = [
         ],
     ),
     dict(
+        folder="tekton_summary",
+        uid=27,
+        name="Tekton Summary",
+        nickname="TSummary",
+        sub=SUB_RESULTS,
+        description=(
+            "The analysis summary as a readable report: maximum and mean displacement with "
+            "the node they sit on, support reactions with an equilibrium check against the "
+            "applied loads, extreme section forces with their location, and utilisation per "
+            "EC5 computed here in the neutral layer - so it also works with the OpenSees "
+            "backend, offline, without a licence or a design add-on. Every design number "
+            "names the k_mod, gamma_M and service class it used. Buckling and "
+            "lateral-torsional buckling are NOT verified: the neutral model carries no "
+            "buckling length, and the report says so - a member that passes here may still "
+            "fail on stability. Outputs the text, a CSV with one row per member, and the "
+            "headline numbers separately; give 'path' a file name to write both to disk."
+        ),
+        inputs=[
+            p("structural", desc="StructuralModel with results (from TektonRun).", optional=False),
+            p("service_class", "int", desc="EC5 service class 1, 2 or 3. 1 = heated interior, 2 = covered outdoors, 3 = fully exposed. Default 1. An assumption, not a result - it is printed in the report."),
+            p("duration", "str", desc="Load-duration class for k_mod: permanent | long-term | medium-term | short-term | instantaneous. Empty = inferred per load case from its action category, and the report says which."),
+            p("gamma_M", "float", desc="Partial factor for the material. Empty = per material (1.3 solid timber, 1.25 glulam)."),
+            p("path", "str", desc="Optional file path. Writes the report there and the CSV next to it with a .csv suffix."),
+        ],
+        outputs=[
+            o("report", "The summary as text, ready for a panel"),
+            o("csv", "One row per member sample, worst first"),
+            o("max_displacement", "Largest nodal displacement, in metres"),
+            o("max_utilization", "Largest utilisation ratio; None when no check could run"),
+            o("worst_member", "Member id carrying that ratio"),
+            o("ok", "True when a report was produced"),
+        ],
+    ),
+    dict(
         folder="tekton_save_model",
         uid=18,
         name="Tekton Save Model",

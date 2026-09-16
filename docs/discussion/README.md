@@ -8,6 +8,7 @@ argued with, not treated as spec.
 |---|---|
 | [loads-and-supports.md](loads-and-supports.md) | How do loads, load cases and supports live in the neutral model, software-agnostically? |
 | [materials.md](materials.md) | Material library, presets, physical properties, overrides |
+| [design-checks.md](design-checks.md) | Which EC5 checks Tekton computes itself, and what the neutral model still lacks for stability |
 | [plate-model.md](plate-model.md) | How a plate is represented, and who tessellates |
 | [software-comparison.md](software-comparison.md) | One table: how each target software wants things |
 | [opensees-backend.md](opensees-backend.md) | OpenSees as a backend: what was verified, what an adapter needs |

@@ -16,7 +16,7 @@ As of 2026-09-15:
 
 | Goal | State |
 |---|---|
-| Designer loop | **Works end to end** for beams and plates: translate → preflight → RFEM → forces, deformations, reactions → deformed and coloured on the canvas, numbers per beam, results attached to beams. Missing: utilisation. |
+| Designer loop | **Works end to end** for beams and plates: translate → preflight → RFEM → forces, deformations, reactions → deformed and coloured on the canvas, numbers per beam, results attached to beams. Missing: utilisation (WP1/WP1b) and a report that summarises a run (WP1d). |
 | Storage | **Solved.** Neutral model + results round-trip through JSON; `To Timber` rebuilds beams exactly from it. |
 | Communication | **Half.** RFEM/RSTAB live, SAF as file. Handoff is one-way: the engineer's RFEM edits die on the next push. |
 | Idealisation | **A third.** Containers and policies have the right shape; the rules that fill them with engineering content (fasteners → stiffness, loads → combinations, design → utilisation) are defaults. |
@@ -63,7 +63,7 @@ Run` that recomputes on the slider now that a solve is cheap.
 
 **Size of what is open.** Plates two to three days; the live mode a day.
 
-## WP1 — Utilisation
+## WP1 — Utilisation, read from the backend
 
 **Why first.** It is *the* designer number, the one thing the loop still
 cannot deliver, and every later package (loads, joints) is judged by it.
@@ -90,6 +90,163 @@ the add-on needs; the smoke test shows a utilisation colouring.
 self-weight case; the governing check is readable per beam.
 
 **Size.** One live session to learn the add-on's API, then a day.
+
+**Relation to WP1b/WP1c.** This package *reads* a ratio that RFEM computed.
+It therefore needs RFEM, its add-on and its licence, and it says nothing for
+the OpenSees backend or for an offline check. WP1b computes the same number
+in the neutral layer, from forces and material. The two are not redundant:
+having both is how we find out whether our own check agrees with a
+certified one — the same trick WP0 used when it calibrated OpenSees against
+recorded RFEM numbers.
+
+---
+
+## WP1b — Utilisation, computed in the neutral layer (done, 2026-09-16)
+
+**Why.** Three reasons the backend read (WP1) cannot cover. It needs RFEM,
+so the OpenSees backend — the one that runs in CI in milliseconds — stays
+without a design number. It needs a licence and the timber add-on, so
+"is this beam too small" costs a desktop session. And it is opaque: a ratio
+arrives, the check behind it does not. A check we compute ourselves is
+testable offline, runs for every backend, and can name what governed.
+
+**Scope.** Everything that needs no stability assumption, i.e. everything
+whose inputs are already in the neutral model:
+- Section properties on `StructuralSection` — `area`, `moment_of_inertia_y/z`,
+  `section_modulus_y/z` — and `length` on `StructuralMember`. Pure geometry,
+  no engineering assumption, missing today.
+- Stresses from the section forces already returned: σ_m,y, σ_m,z (bending),
+  σ_t,0 / σ_c,0 (axial), τ (shear, with the 1.5 factor for rectangles).
+- Design values: `f_d = k_mod · f_k / γ_M`, with `k_mod` looked up from
+  service class × load-duration class per EC5 Table 3.1, and `γ_M` per
+  material type. Both are *inputs*, defaulted and always reported —
+  never silently assumed.
+- The checks that follow from EC5 6.2.3/6.2.4 and 6.1.6/6.1.7: bending
+  about both axes with `k_m`, tension and compression parallel to grain,
+  shear, and the bending+axial interactions.
+- Per member: the governing check, its ratio, its location along the member.
+- Explicitly *not*: buckling (6.3.2) and lateral-torsional buckling (6.3.3).
+  They need a buckling length, which the model does not have — that is WP1c.
+
+**Depends on.** Nothing. Benefits from WP3 (combinations) exactly as WP1
+does. Independent of WP1 — and worth doing *before* it, because it needs no
+live RFEM session.
+
+**Deliverables.** `compas_timber_fea/design/` with the section properties,
+the `k_mod` table and the checks; `Tekton Summary` (WP1d) surfaces it;
+`tests/unit/test_design_checks.py` against hand-calculated values from a
+textbook example; a `docs/discussion/design-checks.md` recording the clauses
+used and, once WP1 exists, the comparison against RFEM's ratios.
+
+**Acceptance.** A single-span beam under self-weight reproduces the
+hand-calculated bending ratio to within rounding. The report names the
+governing check and the assumed `k_mod`/`γ_M`. Runs with `backend=opensees`
+and no licence anywhere.
+
+**Size.** Two days, half of it EC5 reading and test-case construction.
+
+---
+
+## WP1c — Stability, and what the neutral model is missing for it
+
+**Why.** The honest limit of WP1b. Buckling and lateral-torsional buckling
+are what decide slender timber members, and neither can be computed from
+the neutral model as it stands. This package is mostly a *model* package,
+not a formula package.
+
+**What is missing.** Verified by grep against `core/model.py` — none of
+these exist today:
+
+| Missing | Needed for | Why it cannot be derived |
+|---|---|---|
+| `service_class` (1/2/3) | `k_mod`, `k_def` | A property of the building, not of the geometry |
+| `load_duration_class` per load case | `k_mod` | `action_category` is close but not the same thing |
+| `gamma_M` | `f_d` | A choice of code and national annex |
+| buckling lengths / β per member and axis | `k_c` (6.3.2) | Depends on bracing a beam FE model does not know |
+| `l_ef`, load application point | `k_crit` (6.3.3) | Depends on fork supports and where the load sits |
+
+`k_h` (size factor) is the exception: derivable from `height`, trivial.
+
+**Scope.**
+- Extend `StructuralModel`: `service_class` and `gamma_M` on the model,
+  `load_duration_class` on `StructuralLoadCase`, `buckling_length_y/z` (or
+  β factors) and lateral-restraint data on `StructuralMember`.
+- Serialisation, defaults and migration: an older JSON must still load,
+  with the new fields at documented defaults.
+- A `Tekton Design Policy` component in `1 | Author` that sets them —
+  the same role Joint Policy and Plate Policy play: an engineering
+  decision the geometry does not carry, authored explicitly and reported.
+- Then the checks: 6.3.2 with `k_c`, 6.3.3 with `k_crit`, and the combined
+  bending+compression interaction.
+- Alternative worth a spike before committing to β inputs: take buckling
+  lengths from an OpenSees eigenvalue analysis instead of from the user.
+  Cheaper for the user, harder to defend per member — decide with a test
+  case, not in the abstract.
+
+**Depends on.** WP1b (the checks it extends). Touches `core/model.py` and
+`core/serialization.py`, so it wants coordinating with whatever else is
+mid-flight in those files.
+
+**Deliverables.** The model fields plus migration test; `Design Policy`
+component and icon; the stability checks with tests; `design-checks.md`
+extended with the assumptions and their defaults.
+
+**Acceptance.** A slender column under axial load reproduces a
+hand-calculated `k_c` and the interaction ratio. An old serialized model
+still loads. The assumptions report names every stability assumption used.
+
+**Size.** Three to four days, plus the eigenvalue spike if we take it.
+
+---
+
+## WP1d — Tekton Summary (the analysis report) (done, 2026-09-16)
+
+**Why.** Today the results are on the canvas as numbers per beam and as
+colour. What is missing is the one-page answer to "how did this model do" —
+the thing you read before you trust anything else, and the thing you hand
+over. It is also where a model error shows up fastest: a reaction sum that
+does not match the applied load is visible in one line.
+
+**Scope.** A component in `4 | Results`, bundle `tekton_summary`, nickname
+`TSummary`, accent `#8f50d3`:
+- Deformations: maximum and mean, per load case, with the node or member
+  where the maximum sits; span/deflection ratio where a span is known.
+- Reactions: sum per direction against the applied load total — the
+  equilibrium check that catches a wrong support or a lost load.
+- Section forces: extremes per component (N, V, M) with their location.
+- Utilisation: from WP1b when computed, from WP1 when the backend
+  delivered it; the governing check named; the worst members listed.
+- Model facts: nodes, members, surfaces, supports, load cases, and the
+  assumptions that were in force (`k_mod`, `γ_M`, service class, and
+  explicitly which checks were *not* run).
+- Output: a readable text report as a string (panel-ready), single value
+  outputs for the headline numbers so they stay usable downstream, and an
+  optional CSV — one row per member — for the spreadsheet.
+
+**Depends on.** WP1b for the utilisation section; works without it, and
+then says so instead of printing a zero.
+
+**Deliverables.** `tekton_gh/components/tekton_summary`, the report builder
+in `tekton_gh/src` (so it is testable without Rhino), unit tests on a
+recorded result model, an entry in `ICONS.md` and an icon.
+
+**Acceptance.** Run the sticks example: the report names max deflection and
+where it is, the reaction sum matches the applied load within tolerance,
+and — with WP1b — the governing check per worst member. CSV opens in Excel
+with one row per member.
+
+**Size.** A day and a half, most of it in what the report should say rather
+than in code.
+
+**Done.** `compas_timber_fea/design/` (sections, factors, checks) with 23
+tests against hand calculations; `tekton_gh/summary.py` with 16 tests;
+`Tekton Summary` in `4 | Results` with its icon. Verified on the sticks
+model through the OpenSees backend: 404 members, max displacement 6.8 mm at
+node 180, governing check "bending + compression" (6.2.4) at 0.200 under
+self-weight with the defaults. Changing the assumptions moves the number the
+way it should — service class 2 / short-term / γ_M 1.25 takes the same model
+to 0.128. The equilibrium check declines to compare when self-weight or
+member loads are in play, rather than comparing against a partial sum.
 
 ---
 
@@ -299,7 +456,8 @@ Not a package, a list to drain alongside:
 
 ```text
 Phase 0  (done)                WP0 OpenSees for beams
-Phase A  (designer number)     WP1 utilisation  →  WP3 loads  →  WP4 supports
+Phase A  (designer number)     WP1b own checks  →  WP1d Summary  →  WP1 backend ratio
+                               →  WP3 loads  →  WP4 supports  →  WP1c stability
 Phase B  (timber layer)        WP2 joints from fasteners  →  WP5 plates second half  →  WP7 materials
 Phase C  (engineer handoff)    WP6 stable ids + BackendMap + read-back
 ```
@@ -309,9 +467,16 @@ can already use Tekton daily, even with default joints. B is the substance
 that makes Tekton timber-specific. C is the largest and touches the
 workflow decision; it should not block A and B.
 
-Total, rough: A ≈ 5 days, B ≈ 8 days, C ≈ 5–7 days, plus one live RFEM
-session per package. Every package ends with its finding written into the
-matching discussion document and its example definition updated.
+Within A, WP1b comes before WP1: it needs no licence and no live session,
+so it can be written and tested the same day, and it gives WP1 something to
+be compared against. WP1d follows immediately because it is what makes the
+numbers readable. WP1c is deliberately last in A — it extends the neutral
+model, and that is worth doing once the checks around it have settled.
+
+Total, rough: A ≈ 5 days plus ≈ 5 for WP1b–d and WP1c, B ≈ 8 days,
+C ≈ 5–7 days, plus one live RFEM session per package. Every package ends
+with its finding written into the matching discussion document and its
+example definition updated.
 
 ## Explicitly out of scope here
 
