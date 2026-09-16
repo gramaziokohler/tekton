@@ -1,10 +1,12 @@
 # tekton_gh — Grasshopper components
 
-*Status: 2026-09-15 — the roundtrip is real: the smoke test goes
-Grasshopper → worker → RFEM 6 → calculate → internal forces, deformations
-and reactions back onto the canvas, deformed and coloured. Verified on Windows
-against a live RFEM. What is still missing is listed under "What is not real
-yet". Concept: [`docs/concepts/gh-addon.md`](../../docs/concepts/gh-addon.md).*
+*Status: 2026-09-16 — the roundtrip is real for beams and plates:
+Grasshopper → worker → RFEM 6 → internal forces, deformations and reactions
+back onto the canvas, deformed and coloured. Since 2026-09-16 there is a
+second backend, **OpenSees** (`backend = opensees` on `Tekton Backend`): beams
+only, no licence, no API key, solves the smoke test in 0.1 s - calibrated
+against RFEM on the same model. What is still missing is listed under "What
+is not real yet". Concept: [`docs/concepts/gh-addon.md`](../../docs/concepts/gh-addon.md).*
 
 ## Why two processes
 
@@ -50,6 +52,11 @@ export TEKTON_REPO="/path/to/tekton"
 
 **3. Worker venv.** In the repo, `uv sync --extra dev` — that is the 3.12 env
 `TektonRun` calls.
+
+**3a. Backends.** `rfem` / `rstab` need the desktop application running and
+the API key below. `opensees` needs nothing: it is pip-installed with the
+repo venv (Python 3.12) and runs in the worker process — beams only today,
+plates go to RFEM. `saf` writes an xlsx.
 
 **3b. API key.** The Dlubal API refuses without one, also for a local RFEM.
 Three ways in, in order of preference: leave `api_key` on `Tekton Backend`

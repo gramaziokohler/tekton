@@ -39,6 +39,30 @@ The work packages below turn the last row into the first.
 
 ---
 
+## WP0 — OpenSees backend (done for beams, 2026-09-16)
+
+**Why.** The first backend without a licence or a desktop application:
+the whole chain - translate, solve, results, attach - runs in CI, and a
+solve takes milliseconds instead of 25 seconds. Details and findings in
+[opensees-backend.md](opensees-backend.md).
+
+**Done.** `packages/compas_opensees`: builder (nodes, supports, beams as
+`forceBeamColumn` with 9 Lobatto stations, releases and springs as ghost
+nodes + `zeroLength`, rigid links as stiff beams), per-case analysis loop,
+reader (nodal results, reactions, station forces, deflection line by
+curvature integration), worker flag, backend drop-down entry, 15 tests
+including a cross-backend calibration against recorded RFEM numbers. The
+calibration fixed the coupling mapping and the reaction sign in the RFEM
+adapter.
+
+**Open.** Plates (tessellation, nodal area loads, shell self-weight per
+element type, `span_direction` → element axes; single free plates first,
+connected ones after the BorderChain); line supports; `-jntOffset`
+eccentricities; combinations by superposition; a "live" mode of `Tekton
+Run` that recomputes on the slider now that a solve is cheap.
+
+**Size of what is open.** Plates two to three days; the live mode a day.
+
 ## WP1 — Utilisation
 
 **Why first.** It is *the* designer number, the one thing the loop still
@@ -274,6 +298,7 @@ Not a package, a list to drain alongside:
 ## Order and phases
 
 ```text
+Phase 0  (done)                WP0 OpenSees for beams
 Phase A  (designer number)     WP1 utilisation  →  WP3 loads  →  WP4 supports
 Phase B  (timber layer)        WP2 joints from fasteners  →  WP5 plates second half  →  WP7 materials
 Phase C  (engineer handoff)    WP6 stable ids + BackendMap + read-back
@@ -290,8 +315,8 @@ matching discussion document and its example definition updated.
 
 ## Explicitly out of scope here
 
-- OpenSees / other backends (`software-comparison.md`): after C, as a
-  second adapter that proves the neutral layer.
+- OpenSees for plates and the live-solve mode: WP0's open half, after A.
+- Other backends (`software-comparison.md`): after C.
 - LCA, building physics, IFC (`handoff.md`, open question): after the
   structural loop is complete — "deepen first, then widen".
 - Karamba-style embedded component UI: a C# front-end layer, considered

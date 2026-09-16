@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **compas_opensees**: a second backend on openseespy - beams, releases and springs, rigid links, nodal/member loads, self-weight, one result set per load case with 9 stations (forces and the deflection line). `--backend opensees` in the worker, `opensees` on `Tekton Backend`. No licence, no key; the sticks model solves in 0.08 s. Calibrated against recorded RFEM results (`tests/unit/fixtures`).
 - **tekton_gh**: `Tekton Visualize` draws the deformed shape — polylines through the RFEM stations, sections swept along them as vertex-coloured meshes, one colour per member; quantities `displacement | N | Vy | Vz | Mt | My | Mz | utilization`, `exaggeration` input, auto-scaled colour range. Geometry lives in `tekton_gh.visualize` (pure, tested).
 - **compas_dlubal**: the result reader reads surface results per mesh node (global deformations, basic internal forces) into `StructuralSurfaceResult`.
 - **tekton_gh**: `Tekton Display` draws surfaces (mid-plane extruded by the thickness, semi-transparent) and their edge connections; `Tekton Visualize` draws surfaces deformed and coloured from the mesh-node samples (quantities `n_x n_y n_xy m_x m_y m_xy v_x v_y displacement`).
@@ -35,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **tekton_gh**: the Grasshopper worker call passes `--delete-all` for rfem/rstab, matching the documented "every run rebuilds" contract.
 
 ### Fixed
+- **compas_dlubal**: coupling types 21-24 are used only for a full hinge (all rotations free); a partial release such as the neutral `pinned` (torsion held) becomes a rigid member with an explicit hinge. Type 22 had freed the torsion the neutral model keeps - found by the OpenSees cross-check (2.5x softer grid).
+- **compas_dlubal**: support reactions are now the force on the structure (RFEM reports the force on the support); matches OpenSees and the Display arrows.
 - **compas_timber_fea**: translating the same TimberModel twice no longer doubles its plates - the model appends structural surfaces on every generation (and its `remove_plate_structural_surfaces` is a no-op: it passes `None`, which compas reads as "get"); the translator now clears them first.
 - **compas_dlubal**: surfaces now calculate in RFEM - the library timber material (1D model) cannot carry a plate; the importer pushes an orthotropic-2D variant per material for the thicknesses.
 - **tekton_gh**: `Tekton Run` no longer uses the backend's SAF filepath as the result path for rfem/rstab.

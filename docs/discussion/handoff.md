@@ -46,6 +46,7 @@ TimberModel  →  StructuralModel (neutral)  →  Backend-Adapter  →  RFEM / S
 |---|---|
 | `compas_timber_fea` | **Neutrale Schicht.** Übersetzt Timber → `StructuralModel` (Knoten, Stäbe, Flächen, Gelenke, Lager, Lasten). Enthält Joint-Policy, Einheiten-Vertrag, Serialisierung. |
 | `compas_dlubal` | Dlubal-Adapter: gRPC-Client, ein Mapper pro Objekttyp, Ergebnis-Reader (live gegen RFEM 6 verifiziert). |
+| `compas_opensees` | OpenSees-Adapter (openseespy, pip-installierbar, kein Lizenzserver): Balken, Gelenke/Federn, Lasten, Eigengewicht, Ergebnisse an 9 Stationen. Gegen RFEM kalibriert; die ganze Kette läuft damit in CI. Platten noch nicht. |
 | `compas_saf` | SAF-Export (xlsx) — Handoff ohne Live-Verbindung. |
 | `tekton_app` | GUI (PySide6) + CLI für Nutzer ohne Python; `tekton_app.worker` ist der Subprozess, den Grasshopper aufruft. |
 | `tekton_gh` | Grasshopper-Komponenten (Rhino 8, CPython 3.9): Authoring, Translate, Preflight, Run, Results, Visualize. Spricht mit dem Worker über JSON-Dateien, weil `dlubal-api` Python ≥ 3.10 braucht. |
@@ -91,6 +92,13 @@ und `roundtrip.md`):
   über alle Segmente in `beam.attributes["analysis"]`, mit Hüllwerten und
   Provenienz. Live: 84/84 Balken. **Results** liest dieselben Zahlen direkt
   aus dem StructuralModel (Bäume, Vorzeichen, `stale`-Prüfung).
+- **OpenSees als zweites Backend** (2026-09-16): `--backend opensees` im
+  Worker, im Backend-Dropdown. Sticks-Modell in 0,08 s statt 25 s. Die
+  Kalibrierung gegen RFEM hat zwei Dinge aufgedeckt: RFEMs Kopplungstyp 22
+  gab die Torsion frei, die der neutrale Release festhält (Mapper
+  korrigiert — beide Backends treffen sich jetzt auf 5 %), und RFEMs
+  Lagerkräfte sind Kräfte *auf das Lager* (neutrale Konvention: auf die
+  Struktur; Dlubal-Reader dreht). Vorzeichen Station für Station gleich.
 - **Rückweg Structural → Timber** (`reconstruct.py`, GH `To Timber`): Balken
   exakt aus Segmenten, Querschnitt und Orientierung, GUIDs wiederhergestellt,
   Ergebnisse dran. Joints nicht — deren Typ steht nicht im neutralen Modell.
