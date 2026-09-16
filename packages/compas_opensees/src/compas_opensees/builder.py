@@ -24,8 +24,12 @@ Every construction below was proven in ``tests/spike_opensees.py``:
   springs are a ``zeroLength`` to a fixed ghost (same construction as a
   release).
 
-Surfaces are not built. The builder refuses a model with surfaces rather
-than silently dropping them.
+- A **surface** is meshed into triangles (see :mod:`compas_opensees.meshing`,
+  gmsh, conforming along shared edges) and emitted as one ``ShellDKGT`` per
+  triangle on an elastic plate section. The mesh belongs to the run, not to
+  the model: results go back per plate through ``source_element_id``.
+  Orthotropy is *not* modelled - see :meth:`ModelBuilder._surfaces` for the
+  measurement behind that, and the warning every oriented panel gets.
 """
 
 from compas_timber_fea.core.materials import Material as NeutralMaterial
@@ -65,36 +69,59 @@ class BuiltModel:
         self.member_stiffness = {}     # member id -> (E*Iy, E*Iz) in kN m2, for the deflection line
         self.free_dofs = 0             # 6 per node minus the fixed ones; zero means LAPACK would kill the process
         self.warnings = []
+        # --- surfaces (WP0b) ---
+        self.surface_elements = {}     # surface id -> [element tags]
+        self.surface_nodes = {}        # surface id -> [node tags of its mesh]
+        self.surface_area = {}         # surface id -> m2
+        self.surface_self_weight = {}  # surface id -> kN/m2 (positive magnitude)
+        self.mesh_points = {}          # generated node tag -> (x, y, z)
+        self.node_points = {}          # neutral node id -> (x, y, z), for area loads
+        self.mesh = None               # the MeshResult, for the reader
 
 
 class ModelBuilder:
-    def __init__(self, ops, structural_model, stations=9):
+    def __init__(self, ops, structural_model, stations=9, mesh_target_length=None):
         self.ops = ops
         self.model = structural_model
         # OpenSees' Lobatto integration allows at most 10 points.
         self.stations = max(2, min(10, int(stations)))
+        self.mesh_target_length = mesh_target_length
         self.built = BuiltModel()
         self._next_ghost = GHOST_TAG_BASE
         self._next_material = 1
         self._next_transf = 1
         self._next_section = 1
+        self._next_element = 1_000_000   # surface elements, clear of member ids
 
     # ------------------------------------------------------------------ public
 
     def build(self):
         ops = self.ops
         model = self.model
+
+        # Surfaces are meshed before anything is emitted: the mesh introduces
+        # nodes, and they have to exist before an element references them.
+        mesh = None
         if model.surfaces:
-            raise NotImplementedError(
-                "The OpenSees backend builds beams only for now ({} surfaces in the model). "
-                "Use rfem for plate models.".format(len(model.surfaces)))
+            from compas_opensees.meshing import DEFAULT_TARGET_LENGTH
+            from compas_opensees.meshing import mesh_surfaces
+
+            target = self.mesh_target_length or DEFAULT_TARGET_LENGTH
+            mesh = mesh_surfaces(model, target)
+            self.built.mesh = mesh
+            self.built.mesh_points = mesh.points
+            self.built.warnings.extend(mesh.warnings)
 
         ops.wipe()
         ops.model("basic", "-ndm", 3, "-ndf", 6)
 
         self._nodes()
+        if mesh is not None:
+            self._mesh_nodes(mesh)
         self._supports()
         self._members()
+        if mesh is not None:
+            self._surfaces(mesh)
         # A system without a free DOF (every node fully fixed) does not fail,
         # it aborts the process inside LAPACK. Refuse it here instead.
         if self.built.free_dofs <= 0 and self._next_ghost == GHOST_TAG_BASE:
@@ -107,6 +134,8 @@ class ModelBuilder:
         for node in self.model.nodes:
             self.ops.node(int(node.id), float(node.point.x), float(node.point.y), float(node.point.z))
             self.built.node_tags[node.id] = int(node.id)
+            self.built.node_points[int(node.id)] = (
+                float(node.point.x), float(node.point.y), float(node.point.z))
             self.built.free_dofs += 6
 
     def _supports(self):
@@ -212,6 +241,93 @@ class ModelBuilder:
         return ghost
 
     # ---------------------------------------------------------------- helpers
+
+    def _mesh_nodes(self, mesh):
+        """Nodes the mesher generated. The outline keeps its neutral ids."""
+        for tag, (x, y, z) in sorted(mesh.points.items()):
+            self.ops.node(int(tag), float(x), float(y), float(z))
+            self.built.free_dofs += 6
+
+    def _surfaces(self, mesh):
+        """One ShellDKGT per triangle, with an elastic plate section per thickness.
+
+        ``ShellDKGT`` was validated against the Navier solution for a simply
+        supported square plate: -4.1 % on a coarse mesh, -0.4 % at 12x12
+        divisions (``tests/spike_opensees_shells.py``). The triangle is the
+        right element here because gmsh gives us triangles.
+
+        **Orthotropy is not modelled.** Timber panels are markedly stiffer
+        along the face grain, and the honest route - ``ElasticOrthotropic``
+        wrapped in ``PlateFiber`` inside a ``LayeredShell`` - builds without
+        error but does *not* transport the direction: a 30:1 stiffness ratio
+        came out as 1.2:1 in deflection, while the same test on an isotropic
+        section reproduced a factor of 30 exactly. So the section is isotropic
+        along the stronger axis, which is conservative across the span and
+        unconservative across it. Every model with a ``span_direction`` gets a
+        warning saying so. Resolving it properly needs either a material with
+        working axes or an equivalent-stiffness formulation per direction -
+        WP0b's open item, and the reason plates still go to RFEM when the
+        answer has to be defensible.
+        """
+        thicknesses = {t.id: t for t in getattr(self.model, "thicknesses", [])}
+        section_cache = {}
+        oriented = []
+
+        for surface in self.model.surfaces:
+            meshed = mesh.surfaces.get(surface.id)
+            if meshed is None:
+                continue
+            thickness = thicknesses.get(surface.thickness_id)
+            if thickness is None:
+                self.built.warnings.append(
+                    "surface {} references unknown thickness {} - skipped".format(
+                        surface.id, surface.thickness_id))
+                continue
+
+            material = self._material(thickness.material_id)
+            key = (thickness.id, material.name)
+            if key not in section_cache:
+                section_cache[key] = self._plate_section(material, thickness.thickness)
+            section_tag = section_cache[key]
+
+            if getattr(surface, "span_direction", None) is not None:
+                oriented.append(surface.id)
+
+            tags = []
+            for triangle in meshed.triangles:
+                tag = self._next_element
+                self._next_element += 1
+                self.ops.element("ShellDKGT", tag, *(int(node) for node in triangle), section_tag)
+                tags.append(tag)
+
+            self.built.surface_elements[surface.id] = tags
+            self.built.surface_nodes[surface.id] = list(meshed.node_tags)
+            self.built.surface_area[surface.id] = meshed.area
+            # kN/m2, positive magnitude - the analysis loop applies the sign.
+            self.built.surface_self_weight[surface.id] = (
+                material.density_mean * G_ACC / 1000.0 * float(thickness.thickness)
+            )
+
+        if oriented:
+            self.built.warnings.append(
+                "span_direction is set on {} surface(s) but the shell section is isotropic: "
+                "OpenSees' orthotropic plate path does not transport the material axes "
+                "(measured). Panel results are therefore direction-agnostic - use rfem "
+                "when the anisotropy matters.".format(len(oriented)))
+
+    def _plate_section(self, material, thickness):
+        """An elastic plate section for a panel of this material and thickness."""
+        tag = self._next_section
+        self._next_section += 1
+        self.ops.section(
+            "ElasticMembranePlateSection",
+            tag,
+            stiffness_kn_m2(material.E0_mean),
+            float(material.poisson or 0.0),
+            float(thickness),
+            0.0,   # mass density: self-weight is applied as a load, not by the element
+        )
+        return tag
 
     def _material(self, material_id):
         raw = (self.model.materials or {}).get(material_id, "C24")

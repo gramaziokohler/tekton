@@ -19,9 +19,12 @@ OpenSees reports them, the interpolated shear negated.
 
 from compas.geometry import Vector
 
+from compas.geometry import Point
+
 from compas_timber_fea.core.model import StructuralMemberResult
 from compas_timber_fea.core.model import StructuralNodeResult
 from compas_timber_fea.core.model import StructuralResultSet
+from compas_timber_fea.core.model import StructuralSurfaceResult
 
 from compas_opensees.conventions import MY_SIGN
 from compas_opensees.conventions import MZ_SIGN
@@ -152,13 +155,56 @@ def read_case(ops, model, built, case, stations):
                 ))
         member_results[member.id] = rows
 
+    surface_results = read_surfaces(ops, model, built, case)
+
     return StructuralResultSet(
         load_case_id=case.id,
         name=case.name,
         node_results=node_results,
         member_results=member_results,
+        surface_results=surface_results,
         metadata={"source": "opensees", "stations": stations, "columns": {"member_forces": ["P", "Mz", "My", "T"], "shear": "interpolated from end forces"}},
     )
 
 
-__all__ = ["read_case"]
+def read_surfaces(ops, model, built, case):
+    """Sample every meshed plate at its mesh nodes.
+
+    One sample per node of the plate's mesh, carrying the displacement. The
+    mesh itself stays inside the run - the samples are points in space, so a
+    later refinement changes the sampling but not the meaning, and results
+    map back to the plate through its own id.
+
+    Membrane forces and moments are left at zero for now: ``ShellDKGT``
+    reports them per element in the element's own axes, and without working
+    orthotropy the axis convention is not yet pinned down (see
+    :meth:`ModelBuilder._surfaces`). Reporting a number whose axes we cannot
+    name would be worse than reporting none.
+    """
+    if not getattr(built, "surface_elements", None):
+        return {}
+
+    out = {}
+    for surface in getattr(model, "surfaces", []) or []:
+        tags = built.surface_nodes.get(surface.id)
+        if not tags:
+            continue
+        rows = []
+        for tag in tags:
+            point = built.mesh_points.get(tag) or built.node_points.get(tag)
+            if point is None:
+                continue
+            d = list(ops.nodeDisp(int(tag)))
+            rows.append(StructuralSurfaceResult(
+                surface_id=surface.id,
+                load_case_id=case.id,
+                position=Point(*point),
+                displacement=Vector(d[0], d[1], d[2]),
+                metadata={"node_tag": int(tag), "from_mesh": tag in built.mesh_points},
+            ))
+        if rows:
+            out[surface.id] = rows
+    return out
+
+
+__all__ = ["read_case", "read_surfaces"]

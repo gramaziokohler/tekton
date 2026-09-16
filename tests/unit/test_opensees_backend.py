@@ -165,7 +165,9 @@ def test_mechanism_fails_loudly():
         run_model(model)
 
 
-def test_surfaces_are_refused_not_dropped():
+def test_a_degenerate_surface_is_reported_not_silently_dropped():
+    """Surfaces are built since WP0b (see test_opensees_shells.py); an outline
+    that is not a polygon still has to say so rather than vanish."""
     from compas_timber_fea.core.model import StructuralSurface
 
     from compas_timber_fea.core.model import StructuralThickness
@@ -174,8 +176,8 @@ def test_surfaces_are_refused_not_dropped():
     model.thicknesses = [StructuralThickness(id=1, name="t", material_id=1, thickness=0.1)]
     model.surfaces = [StructuralSurface(id=1, nodes=[1, 2, 2, 1], thickness_id=1)]
 
-    with pytest.raises(NotImplementedError, match="beams only"):
-        run_model(model)
+    result = run_model(model)
+    assert any("fewer than 3" in line for line in result.log)
 
 
 # ---------------------------------------------------------------- cross-backend

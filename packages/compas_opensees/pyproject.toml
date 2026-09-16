@@ -13,6 +13,13 @@ dependencies = [
     # openseespywin needs Python >= 3.12 (the Windows wheel), so the solver is
     # conditional; on older interpreters the package imports but cannot run.
     "openseespy >= 3.8; python_version >= '3.12'",
+    # OpenSees has no mesher, and the neutral model carries no mesh by design,
+    # so plates are meshed here in the adapter. gmsh rather than compas_cgal
+    # because `setTransfiniteCurve` lets a shared edge's node count be
+    # prescribed - the only way two plates provably meet on the same nodes.
+    # Measured in tests/spike_meshers.py, written up in
+    # docs/discussion/opensees-backend.md.
+    "gmsh >= 4.13",
 ]
 
 [tool.setuptools]

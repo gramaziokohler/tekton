@@ -345,6 +345,105 @@ Display symbol row matches RFEM's for every authored type.
 
 ---
 
+## WP0b — OpenSees for plates (meshing in the adapter)
+
+**Why.** WP0 left plates out: OpenSees has no mesher, and the neutral model
+carries no mesh by design. Closing it makes the licence-free backend able to
+run the same models as RFEM, in CI, in milliseconds — and it is the first
+place where Tekton has to mesh anything itself.
+
+**The decision, measured** (2026-09-16, `tests/spike_meshers.py`, written up
+in [opensees-backend.md](opensees-backend.md)). The question is not mesh
+quality, it is **conformity**: two plates sharing an edge must get identical
+nodes on it, or the model has a crack that solves and reports nonsense.
+
+- `compas_cgal` 0.10.0 meshes one polygon well (holes, corners kept) but
+  **refines the boundary on its own** — 8 nodes against 10 on a shared edge
+  at a 0.5 m target, and pre-densifying both sides identically does not stop
+  it. At 0.75 m the sides happened to agree, which is worse than a
+  consistent failure.
+- `gmsh` 4.15.2 conformed at every target tried, because
+  `setTransfiniteCurve` *prescribes* a curve's node count — exactly what a
+  BorderChain is.
+- `libigl` 2.6.3 exposes no 2D mesher; it is a processing library.
+
+**Scope.**
+- gmsh in `compas_opensees` only — never in the neutral layer. The plate
+  study (`../reviews/plattengraph_design_2026-08-27.md` F1/F3) permits
+  tessellation exactly here, "inside a Karamba-like backend adapter",
+  because subdivision upstream destroys plate identity and the result
+  mapping with it.
+- Mesh per plate, every shared edge prescribed from its BorderChain so
+  conformity holds by construction; free edges may be meshed freely.
+- `ShellMITC4`/`ShellDKGT` with an orthotropic section from the layup, the
+  element axes driven by `span_direction` (WP0's open item, and the reason
+  it needs an asymmetric test model).
+- Nodal area loads and shell self-weight per element.
+- Results back **per plate** via `source_element_id`, never per triangle —
+  the mesh is internal to the run and must not leak into the model.
+
+**Depends on.** Nothing hard. Single free plates first, connected ones once
+the BorderChain exists (plate study §2.1). Benefits from WP1b, which then
+gives plates a design number too.
+
+**Deliverables.** `compas_opensees` meshes and builds surfaces; a conformity
+test asserting two neighbouring plates share the same nodes on the edge; a
+cross-backend calibration against recorded RFEM plate numbers, the way WP0
+did for beams; gmsh as a dependency with its global state handled
+(`finalize()` in a `finally`, one model per process).
+
+**Acceptance.** The plates example solves through OpenSees; a two-plate
+model shows identical nodes on the shared edge; deflection and m_x agree
+with RFEM within the same tolerance band WP0 established for beams.
+
+**Size.** Three to four days; the calibration is the long pole.
+
+**Progress (2026-09-16).** Step 1 of the scope, the mesher, is done:
+`compas_opensees/meshing.py` with 23 tests. The whole assembly goes into
+**one** gmsh model, so an edge shared by two plates is one curve object used
+by both faces — conformity is then a property of the geometry, not something
+to be checked afterwards. Shared edges get `setTransfiniteCurve` from the
+same target on both sides. Verified: two plates conform at 0.3/0.5/0.75/1.0 m
+with evenly spaced seam nodes; three plates in a row conform at both seams;
+a non-coplanar wall-on-slab pair conforms along its edge (the WP5 case); an
+L-shaped outline keeps 12 m² rather than filling its notch; outline vertices
+keep their neutral node ids, so results can still map back per plate. gmsh is
+initialised and finalised around each call, so repeated meshing in one
+process is safe.
+
+**Progress (2026-09-16, later).** The shells too: `ShellDKGT` per triangle on
+an `ElasticMembranePlateSection`, self-weight as consistent nodal loads, and
+surface samples in `StructuralSurfaceResult`. Validated against the Navier
+solution for a simply supported square plate — −3.3 % at a 0.5 m target,
+−0.8 % at 0.25 m, walking towards the closed form as the mesh refines; the
+reaction sum matches the self-weight exactly. The real 4-plate test model
+solves in 0.09 s (600 shells).
+
+Two findings worth keeping:
+
+- **Orthotropy does not survive OpenSees' plate path.** The honest route
+  (`ElasticOrthotropic` → `PlateFiber` → `LayeredShell`) builds without
+  error but does not transport the material axes: a 30:1 stiffness ratio
+  came out as 1.2:1 in deflection, while the same test on an isotropic
+  section reproduced a factor of 30 exactly, so it is not the element. The
+  section is therefore isotropic and every plate carrying a
+  `span_direction` gets a warning saying the result is direction-agnostic.
+  For CLT that matters, so plates still go to RFEM when the answer has to be
+  defensible. Fixing it needs either a material with working axes or an
+  equivalent-stiffness formulation per direction.
+- **A unit mismatch used to hang, not fail.** A millimetre model translated
+  as metres asks gmsh for ~10^9 triangles inside C++, where it neither
+  returns nor honours a Python timeout. `meshing.py` now estimates the mesh
+  size first and refuses with a message naming the likely cause — the same
+  failure mode `core/units.py` warns about, one layer down.
+
+Still open from the scope: membrane forces and moments per plate (the
+element reports them in its own axes, and without working orthotropy that
+convention is not yet pinned down), line supports, and the cross-backend
+calibration against recorded RFEM plate numbers.
+
+---
+
 ## WP5 — Plates, second half
 
 **Why.** Surfaces push, calculate, draw. The numbers do not reach the
@@ -458,7 +557,8 @@ Not a package, a list to drain alongside:
 Phase 0  (done)                WP0 OpenSees for beams
 Phase A  (designer number)     WP1b own checks  →  WP1d Summary  →  WP1 backend ratio
                                →  WP3 loads  →  WP4 supports  →  WP1c stability
-Phase B  (timber layer)        WP2 joints from fasteners  →  WP5 plates second half  →  WP7 materials
+Phase B  (timber layer)        WP0b OpenSees plates  →  WP2 joints from fasteners
+                               →  WP5 plates second half  →  WP7 materials
 Phase C  (engineer handoff)    WP6 stable ids + BackendMap + read-back
 ```
 

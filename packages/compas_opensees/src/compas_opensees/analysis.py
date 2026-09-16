@@ -57,7 +57,75 @@ def apply_case(ops, model, built, case, time_series_tag=1):
                 continue
             wy, wz, wx = member_uniform_load(built, member_id, (0.0, 0.0, -w))
             ops.eleLoad("-ele", built.member_elements[member_id], "-type", "-beamUniform", wy, wz, wx)
+        _surface_area_load(ops, built, surface_pressures(built))
+
     return tag
+
+
+def surface_pressures(built, pressures=None):
+    """Self-weight of every meshed surface as a downward pressure, kN/m2."""
+    out = {}
+    for surface_id, w in (built.surface_self_weight or {}).items():
+        if w > 0.0:
+            out[surface_id] = (0.0, 0.0, -w)
+    if pressures:
+        out.update(pressures)
+    return out
+
+
+def _surface_area_load(ops, built, pressures):
+    """Apply a pressure to a meshed surface as consistent nodal loads.
+
+    ``eleLoad -surfaceLoad`` is not available for ShellDKGT, so the pressure
+    is integrated per triangle and lumped at its three corners - each node
+    takes a third of the triangle's share. For a linear-elastic plate that is
+    the standard consistent lumping, and it keeps the total load exact, which
+    is what the summary's equilibrium check verifies.
+    """
+    if not pressures:
+        return
+    mesh = getattr(built, "mesh", None)
+    if mesh is None:
+        return
+    nodal = {}
+    for surface_id, pressure in pressures.items():
+        meshed = mesh.surfaces.get(surface_id)
+        if meshed is None:
+            continue
+        for triangle in meshed.triangles:
+            area = _triangle_area(built, triangle)
+            if area <= 0.0:
+                continue
+            share = area / 3.0
+            for tag in triangle:
+                fx, fy, fz = nodal.get(tag, (0.0, 0.0, 0.0))
+                nodal[tag] = (
+                    fx + pressure[0] * share,
+                    fy + pressure[1] * share,
+                    fz + pressure[2] * share,
+                )
+    for tag, (fx, fy, fz) in nodal.items():
+        ops.load(int(tag), fx, fy, fz, 0.0, 0.0, 0.0)
+
+
+def _triangle_area(built, triangle):
+    import math
+
+    points = [_point_of(built, tag) for tag in triangle]
+    if any(point is None for point in points):
+        return 0.0
+    (ax, ay, az), (bx, by, bz), (cx, cy, cz) = points
+    ux, uy, uz = bx - ax, by - ay, bz - az
+    vx, vy, vz = cx - ax, cy - ay, cz - az
+    nx, ny, nz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
+    return 0.5 * math.sqrt(nx * nx + ny * ny + nz * nz)
+
+
+def _point_of(built, tag):
+    if tag in built.mesh_points:
+        return built.mesh_points[tag]
+    node = built.node_points.get(tag) if hasattr(built, "node_points") else None
+    return node
 
 
 def solve_case(ops, case_tag, case_name=""):

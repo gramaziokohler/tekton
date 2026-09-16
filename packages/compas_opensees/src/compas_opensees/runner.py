@@ -47,9 +47,10 @@ class OpenSeesRunner:
         An ``openseespy.opensees``-compatible module; defaults to the real one.
     """
 
-    def __init__(self, structural_model, stations=9, ops=None):
+    def __init__(self, structural_model, stations=9, ops=None, mesh_target_length=None):
         self.model = structural_model
         self.stations = stations
+        self.mesh_target_length = mesh_target_length
         self.ops = ops or load_opensees()
         self.built = None
         self.log = []
@@ -63,13 +64,21 @@ class OpenSeesRunner:
         if report.errors:
             raise RuntimeError("Preflight blocks the run:\n" + report.summary())
 
-        self.built = ModelBuilder(self.ops, self.model, stations=self.stations).build()
+        self.built = ModelBuilder(
+            self.ops, self.model, stations=self.stations,
+            mesh_target_length=self.mesh_target_length).build()
         self.log.extend(self.built.warnings)
+        shells = sum(len(tags) for tags in self.built.surface_elements.values())
         self.log.append("OpenSees {}: {} nodes, {} elements ({} beams, {} rigid), {} release springs".format(
-            self._version(), len(self.built.node_tags), len(self.built.member_elements),
+            self._version(),
+            len(self.built.node_tags) + len(self.built.mesh_points),
+            len(self.built.member_elements) + shells,
             sum(1 for k in self.built.member_kind.values() if k == "beam"),
             sum(1 for k in self.built.member_kind.values() if k == "rigid"),
             len(self.built.release_elements)))
+        if shells:
+            self.log.append("  {} surface(s) meshed into {} shells".format(
+                len(self.built.surface_elements), shells))
 
         cases = list(self.model.load_cases)
         if load_cases:

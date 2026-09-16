@@ -180,6 +180,59 @@ numbers — which pins the Dlubal parsers' signs at the same time.
 7. **Later** — `-jntOffset` eccentricities, line supports (once the neutral
    model has them), EC0 combinations, `LayeredShell` for CLT.
 
+## Meshing for plates: which library, and the property that decides it
+
+*Measured 2026-09-16, before WP5 starts. Scripts: the benchmark in this
+section is reproducible from the numbers below.*
+
+OpenSees has no mesher. RFEM does, which is why the neutral model carries
+**no mesh at all** — a surface is a polygon of node ids, and the plate design
+study (`../reviews/plattengraph_design_2026-08-27.md`, F1/F3) is explicit
+that tessellation must not enter the neutral layer: it destroys plate
+identity and thereby the result mapping. The same study leaves exactly one
+door open — tessellation "inside a Karamba-like backend adapter". OpenSees is
+that kind of backend, so the mesher belongs in `compas_opensees`, nowhere
+else.
+
+**The decisive property is not mesh quality. It is conformity.** Two plates
+sharing an edge must end up with *identical* nodes on it; otherwise the
+plates are not connected and the model has a crack that solves happily and
+reports nonsense.
+
+Measured on two 4x3 plates sharing an edge, each meshed on its own:
+
+| Library | Available (py3.12) | Boundary honoured | Conforming shared edge |
+|---|---|---|---|
+| `compas_cgal` 0.10.0 | yes | **no — adds its own boundary nodes** | **no** |
+| `gmsh` 4.15.2 | yes | yes, with `setTransfiniteCurve` | **yes, at every target size** |
+| `libigl` 2.6.3 | yes | n/a | n/a — a processing library, exposes no 2D mesher |
+
+The CGAL result is the interesting one. `refined_delaunay_mesh` produced a
+correct, good-looking mesh (holes respected, input corners kept) — and still
+split the shared edge differently on the two sides: 8 nodes against 10 at a
+0.5 m target. Pre-densifying the shared edge with identical vertices on both
+sides did **not** fix it: the refiner adds boundary nodes regardless, even at
+irregular positions (a 4 m edge at target 1.0 came back with a node at 0.5).
+At a 0.75 m target the two sides happened to agree — which is worse than a
+consistent failure, because it looks like it works.
+
+gmsh conformed at 0.3, 0.5 and 0.75 m, with identical triangle counts on both
+plates, because `setTransfiniteCurve` *prescribes* the node count on a curve.
+That is precisely what a BorderChain is: a shared edge whose subdivision both
+neighbours must accept.
+
+**Consequence for WP5.** The mesher is gmsh, driven per plate, with every
+shared edge prescribed from the BorderChain so conformity is guaranteed by
+construction rather than hoped for. `compas_cgal` stays a reasonable choice
+for anything where only one polygon is meshed at a time — it is not one here.
+The mesh lives in the adapter and never in the neutral model; results come
+back per plate through `source_element_id`, not per triangle.
+
+Open: the free (non-shared) edges may be meshed freely, so the target length
+is a mesh *hint* and not part of the model. And gmsh is a 60 MB dependency
+that initialises global state — same discipline as openseespy: one model per
+process, `finalize()` in a `finally`.
+
 ## Risks
 
 - **Silent failures are the norm, not the exception.** Unsupported element
