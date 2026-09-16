@@ -1,8 +1,60 @@
 # OpenSees as a backend
 
-*Status: 2026-09-15 — spiked against openseespy 3.8.0.0 (`tests/spike_opensees.py`).
-Every ✅ below was run and checked against a closed-form solution, not read
-from a manual. ◐ = documented but not run today. ❌ = tried, does not work.*
+*Status: 2026-09-16 — **implemented for beams** as `packages/compas_opensees`,
+wired into the worker (`--backend opensees`) and the `Tekton Backend`
+drop-down, calibrated against RFEM on the sticks model and run from
+Grasshopper. The spike (`tests/spike_opensees.py`) remains the evidence for
+the mapping table; `tests/unit/test_opensees_backend.py` guards it. What the
+implementation taught is in "What building it taught" below. Every ✅ in the
+table was run and checked against a closed-form solution. ◐ = documented but
+not run. ❌ = tried, does not work.*
+
+## What building it taught (2026-09-16)
+
+- **It works, and it is fast.** The sticks model (344 nodes, 304 beams,
+  100 couplings with one-sided hinges): 0.08 s to solve, 0.5 s for the
+  whole worker call, 6.6 s from the Grasshopper button including process
+  start and JSON. RFEM: 25 s. That is the speed at which `Tekton Run` could
+  stop being a button.
+- **Cross-backend calibration found a bug in the RFEM mapper.** With the
+  same model, OpenSees gave 6.8 mm, RFEM 17 mm. The cause: RFEM's coupling
+  type 22 frees *all three* rotations at the hinged end; the neutral
+  `pinned` release keeps torsion. Freeing torsion in OpenSees reproduced
+  RFEM to 5 %. The Dlubal mapper now uses the coupling types only for a
+  full hinge and a rigid member with an explicit hinge otherwise, so RFEM
+  sees the release the neutral model states. Whether a lap joint transfers
+  torsion is a joint-policy question (WP2) - the backends now at least
+  agree on what they were asked.
+- **Signs, measured instead of assumed.** Across the 200 beams, midspan
+  against midspan: OpenSees' `sectionForce` My, Mz and P carry RFEM's sign
+  as they are - the spike's "sagging positive" assumption about RFEM was
+  wrong. The shear derived from the end forces is opposite to RFEM's.
+  Reactions: RFEM reports the force on the support, OpenSees the force on
+  the structure; the neutral model now defines the latter (the Dlubal reader
+  negates). Fixture: `tests/unit/fixtures/sticks_rfem_calibration.json`.
+- **RFEM runs g = 10 m/s².** Self-weight reactions differ by exactly
+  10/9.81. The adapter keeps 9.81; the calibration test scales.
+- **RFEM includes shear deformation** (Timoshenko members); OpenSees'
+  elastic section does not. With timber's G/E = 1/16 that is a few percent
+  on deflections - the residual after gravity.
+- **Lobatto is capped at 10 points.** 11 stations (RFEM's count) is
+  refused; the adapter uses 9, which keeps a station at midspan.
+- **A fully fixed system aborts the process**, not the analysis: LAPACK's
+  `DGBSV` complains about parameter 9 and Python is gone. The builder counts
+  free DOFs and refuses before OpenSees sees it.
+- **Deflection along a member** is not an OpenSees result for
+  `forceBeamColumn`. The reader integrates the curvature M/EI from the
+  station moments twice (the moment line is a polynomial the Lobatto
+  stations interpolate exactly), pinned to the end displacements. Midspan sag
+  of the test beams to all printed digits, in both bending directions.
+- **A simply supported beam in 3D needs a fork.** Two supports that both
+  free rx let the beam spin about its own axis; OpenSees refuses (correctly),
+  and the adapter turns the non-zero return into an exception naming the
+  case. The test models use a fork support at one end.
+- **Ghost nodes for releases** use stiff springs (1e10) for the fixed DOFs
+  rather than `equalDOF`, because the releases are in the member's local
+  axes and `equalDOF` ties global ones. Conditioning was fine on every model
+  tried.
 
 ## Why bother
 
@@ -98,7 +150,7 @@ testable offline: one canonical model (cantilever, SS beam with UDL, hinge,
 spring) run through OpenSees, compared in `tests/unit` against recorded RFEM
 numbers — which pins the Dlubal parsers' signs at the same time.
 
-## What an implementation needs
+## What an implementation needs (written before it existed - kept as the plan it was)
 
 1. **`packages/compas_opensees`** — a workspace member shaped like
    `compas_dlubal`: `builder.py` (StructuralModel → ops commands, in the

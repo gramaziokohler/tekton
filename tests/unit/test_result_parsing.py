@@ -115,13 +115,13 @@ def test_node_deformations_convert_z_back_to_neutral():
 
 def test_support_forces_enrich_existing_node_results():
     deformations = parse_node_deformations(pd.DataFrame({"node_no": [3], "displacement_u_z": [0.002]}), load_case_id=1)
-    reactions = pd.DataFrame({"node_no": [3], "support_force_p_z": [12500.0]})  # N
+    reactions = pd.DataFrame({"node_no": [3], "support_force_p_z": [12500.0]})  # N, force ON the support, Z-down
 
     results = parse_support_forces(reactions, load_case_id=1, node_results=deformations)
 
     entry = results[3]
     assert entry.displacement.z == -0.002, "deformation was lost while merging reactions"
-    assert entry.reaction_force.z == -12.5  # kN, Z-up
+    assert entry.reaction_force.z == 12.5  # kN: the reaction on the structure, Z-up - pushing up
 
 
 def test_member_lengths_from_model():

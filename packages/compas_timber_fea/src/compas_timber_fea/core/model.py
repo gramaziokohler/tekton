@@ -84,8 +84,8 @@ class StructuralNodeResult:
     load_case_id: int
     displacement: Vector = field(default_factory=lambda: Vector(0, 0, 0)) # m
     rotation: Vector = field(default_factory=lambda: Vector(0, 0, 0)) # rad
-    reaction_force: Optional[Vector] = None # kN
-    reaction_moment: Optional[Vector] = None # kNm
+    reaction_force: Optional[Vector] = None # kN, the force the support exerts ON the structure (a pinned foot under gravity: +z)
+    reaction_moment: Optional[Vector] = None # kNm, same convention
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass

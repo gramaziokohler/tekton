@@ -17,6 +17,7 @@ resolution-markers = [
 [manifest]
 members = [
     "compas-dlubal",
+    "compas-opensees",
     "compas-saf",
     "compas-timber-fea",
     "tekton",
@@ -89,6 +90,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/33/ae/b853b2af041caf88fbb845dfbbcac4568270e825136b35bfed90ddfe8486/compas_model-0.9.2.tar.gz", hash = "sha256:876a92356c37526f8968ae2cfc3c503d18b1c9066d0e2aaa2f224a2b47c2fac5", size = 40180, upload-time = "2025-11-14T12:15:46.177Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3b/e3/9c2629cda9ca36f72d9fa9150a41082aa3f5b3feb8ed638b179ff42d47ac/compas_model-0.9.2-py3-none-any.whl", hash = "sha256:8da271238bc497023d930658ee950d7557a8416fcb643f1ac867234cbb2e44fe", size = 49319, upload-time = "2025-11-14T12:15:45.049Z" },
+]
+
+[[package]]
+name = "compas-opensees"
+version = "0.1.0"
+source = { editable = "packages/compas_opensees" }
+dependencies = [
+    { name = "compas-timber-fea" },
+    { name = "openseespy", marker = "python_full_version >= '3.12'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "compas-timber-fea", editable = "packages/compas_timber_fea" },
+    { name = "openseespy", marker = "python_full_version >= '3.12'", specifier = ">=3.8" },
 ]
 
 [[package]]
@@ -1110,6 +1126,43 @@ wheels = [
 ]
 
 [[package]]
+name = "openseespy"
+version = "3.8.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "openseespylinux", marker = "python_full_version >= '3.12' and sys_platform == 'linux'" },
+    { name = "openseespymac", marker = "python_full_version >= '3.12' and sys_platform == 'darwin'" },
+    { name = "openseespywin", marker = "python_full_version >= '3.12' and sys_platform == 'win32'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5d/f0/7cf984fed2e96286427828a0b669d034f18b674ccc84042d20835a99d543/openseespy-3.8.0.0-py3-none-any.whl", hash = "sha256:ce6a43503b737025f763a87bebacb1cc2fbd82a156982647e9e014a11b85fdbd", size = 2792, upload-time = "2026-03-18T22:23:27.372Z" },
+]
+
+[[package]]
+name = "openseespylinux"
+version = "3.8.0.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a4/77/83cd6946a4710916e0a85df9fcd5271db3c94ac018a59f113acfd5ee40e2/openseespylinux-3.8.0.0-py3-none-any.whl", hash = "sha256:2307e40213f1d7128a5a5151d5c8beee8244b8b988528a58f5e44394a045ba64", size = 86251016, upload-time = "2026-03-18T21:47:48.539Z" },
+]
+
+[[package]]
+name = "openseespymac"
+version = "3.8.0.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/ca/4d8eff97f95ad415010fefe595738162fc052cb8536434d5124fb0b46e99/openseespymac-3.8.0.0-py3-none-macosx_13_0_arm64.whl", hash = "sha256:c6ddd1a28ce528258ef41237dd7883c827b8aa6f1a2d9b62e65da1f1074779ef", size = 10115801, upload-time = "2026-03-18T22:21:08.233Z" },
+]
+
+[[package]]
+name = "openseespywin"
+version = "3.8.0.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fc/6f/7d77002684c8075e024001fbe82ba695dbd553cb30d5ee2335a677344faa/openseespywin-3.8.0.0-py3-none-win_amd64.whl", hash = "sha256:ee0f48317582641cf06347fe0babd34a230823b56397603c9b5b2d3b96089b73", size = 6787016, upload-time = "2026-03-18T22:18:55.099Z" },
+]
+
+[[package]]
 name = "packaging"
 version = "26.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2026,6 +2079,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "compas-dlubal" },
+    { name = "compas-opensees" },
     { name = "compas-saf" },
     { name = "compas-timber-fea" },
     { name = "tekton-app" },
@@ -2041,6 +2095,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "compas-dlubal", editable = "packages/compas_dlubal" },
+    { name = "compas-opensees", editable = "packages/compas_opensees" },
     { name = "compas-saf", editable = "packages/compas_saf" },
     { name = "compas-timber-fea", editable = "packages/compas_timber_fea" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },

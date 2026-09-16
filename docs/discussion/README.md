@@ -13,6 +13,7 @@ argued with, not treated as spec.
 | [opensees-backend.md](opensees-backend.md) | OpenSees as a backend: what was verified, what an adapter needs |
 | [roundtrip.md](roundtrip.md) | Getting results back and attaching them to timber elements |
 | [workflow.md](workflow.md) | Who does what, where, in which package |
+| [work-packages.md](work-packages.md) | Where Tekton stands against its goals (2026-09-15) and the plan: eight work packages in three phases |
 
 Related, more detailed material:
 

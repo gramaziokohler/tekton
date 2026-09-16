@@ -107,6 +107,24 @@ def run_saf(model, out_path, model_name):
     return None
 
 
+def run_opensees(model, load_cases, calculate):
+    """Modell mit OpenSees rechnen - im Prozess, ohne Lizenz, ohne Key."""
+    from compas_opensees import run_model
+
+    if not calculate:
+        log("OpenSees hat keinen Modellzustand ohne Rechnung - --no-calculate ist hier bedeutungslos.")
+        return model
+
+    started = time.time()
+    runner = run_model(model, load_cases=load_cases)
+    for line in runner.log:
+        log("  " + line)
+    log("Berechnung abgeschlossen ({:.2f}s).".format(time.time() - started))
+    for case_id, result_set in sorted(model.results.items()):
+        log("  Lastfall {}: {} Staebe, {} Knoten".format(case_id, len(result_set.member_results or {}), len(result_set.node_results or {})))
+    return model
+
+
 def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, delete_all):
     """Modell nach RFEM/RSTAB schieben, rechnen, Ergebnisse zurueckholen."""
     from compas_dlubal.dlubal.importer import DlubalImporter
@@ -154,7 +172,7 @@ def main(argv=None):
         description="Neutrales Statikmodell an ein Backend schicken und Ergebnisse zurueckschreiben.",
     )
     parser.add_argument("input", help="Pfad zum serialisierten StructuralModel (.json)")
-    parser.add_argument("--backend", default="rfem", choices=["rfem", "rstab", "saf"])
+    parser.add_argument("--backend", default="rfem", choices=["rfem", "rstab", "saf", "opensees"])
     parser.add_argument("--out", help="Zielpfad. Bei rfem/rstab das Ergebnismodell (.json), bei saf die .xlsx")
     parser.add_argument("--model-name", default="tekton", help="Modellname im Backend")
     parser.add_argument("--load-cases", help="Kommaliste, z.B. '1,3'. Leer = alle Lastfaelle des Modells")
@@ -187,6 +205,8 @@ def main(argv=None):
 
     if args.backend == "saf":
         result_model = run_saf(model, args.out, args.model_name)
+    elif args.backend == "opensees":
+        result_model = run_opensees(model, parse_load_cases(args.load_cases), not args.no_calculate)
     else:
         result_model = run_dlubal(
             model,

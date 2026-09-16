@@ -84,10 +84,13 @@ class MemberMapper:
             hinge_start = self.hinge_numbers.get((member.id, "start"))
             hinge_end = self.hinge_numbers.get((member.id, "end"))
 
-            # A spring cannot be expressed by the coupling type, which is a
-            # plain hinge-hinge link, so a springy connector becomes a rigid
-            # member carrying explicit hinges instead.
-            if self._has_spring(member):
+            # The coupling types 21-24 free *all three* rotations at a hinged
+            # end. Anything else - a spring, or the neutral "pinned" that
+            # keeps torsion - is a rigid member with an explicit hinge, so
+            # RFEM sees exactly the release the neutral model states. Found
+            # on 2026-09-15 against OpenSees: type 22 made a lap-joint grid
+            # 2.5x softer than the neutral model says.
+            if self._needs_explicit_hinge(member):
                 kwargs = dict(
                     no=member.id,
                     type=2,  # TYPE_RIGID
@@ -173,16 +176,30 @@ class MemberMapper:
                     return True
         return False
 
+    @staticmethod
+    def _is_full_hinge(release):
+        """True if the release is exactly what a coupling type's hinged end means: all rotations free, translations fixed."""
+        return (release.ux == float("inf") and release.uy == float("inf") and release.uz == float("inf")
+                and release.rx == 0.0 and release.ry == 0.0 and release.rz == 0.0)
+
     def _needs_explicit_hinge(self, member):
         """Whether this member must reference a MemberHinge object.
 
-        A COUPLING member carries its hinges in the type (21-24), so it only
-        needs an explicit hinge when a spring stiffness has to be expressed.
+        A COUPLING member carries its hinges in the type (21-24) only when
+        every non-rigid end is a full hinge (all rotations free). A spring,
+        or a partial release such as the neutral "pinned" (ry/rz free, rx
+        held), needs the explicit hinge - otherwise RFEM would free the
+        torsion the neutral model keeps.
         """
         if member.member_type == "RIGID":
             return False
         if member.member_type == "COUPLING":
-            return self._has_spring(member)
+            for release in (member.release_start, member.release_end):
+                if release is None or release.is_rigid():
+                    continue
+                if not self._is_full_hinge(release):
+                    return True
+            return False
         return True
 
     def map_hinges_for_members(self, members):

@@ -1,6 +1,6 @@
 # Icon briefing — Tekton components
 
-Template for designing the icons of the 24 Grasshopper components. All 24 are
+Template for designing the icons of the 25 Grasshopper components. All 25 are
 drawn and installed; the motifs below are the brief they were made against,
 and the reference when one is reworked.
 
@@ -64,7 +64,7 @@ audience reads them without explanation.
 
 ---
 
-# The 24 components
+# The 25 components
 
 ## 0 | Setup — grey `#a5a9ae`
 
@@ -73,6 +73,15 @@ Diagnoses the environment: Python version, compas_timber version, is the repo
 found, is there a worker venv. First place to look when something is red.
 *Motif:* a tick/cross list or an "i" in a circle; alternatively a stethoscope
 idea — something that says "check the state", not "display information".
+
+### Tekton Upgrade (`TUpgrade`)
+Brings every Tekton component in the definition up to date with one button
+press: each is swapped for the current version in place, keeping its wires and
+nickname. A placed component otherwise keeps the script it was placed with, so
+this is what you press after a Tekton update. The report names any wire it
+could not carry over.
+*Motif:* two component boxes swapping places, the exchange arrows between them
+in the Setup grey. The statement is the swap, not the single box.
 
 ---
 
@@ -278,16 +287,16 @@ Finished icons go here, then rebuild:
 components/<bundle>/icon.png     # 24px, replaces the placeholder
 ```
 
-Bundle names: `tekton_info`, `tekton_material`, `tekton_material_library`,
-`tekton_support`, `tekton_load_case`, `tekton_point_load`,
-`tekton_member_load`, `tekton_combination`, `tekton_joint_policy`,
-`tekton_plate_policy`, `tekton_translate`, `tekton_support_nodes`,
-`tekton_apply_loads`, `tekton_preflight`, `tekton_backend`, `tekton_run`,
-`tekton_results`, `tekton_attach_results`, `tekton_visualize`,
-`tekton_inspect`, `tekton_display`, `tekton_save_model`, `tekton_to_timber`,
-`tekton_load_model`.
+Bundle names: `tekton_info`, `tekton_upgrade`, `tekton_material`,
+`tekton_material_library`, `tekton_support`, `tekton_load_case`,
+`tekton_point_load`, `tekton_member_load`, `tekton_combination`,
+`tekton_joint_policy`, `tekton_plate_policy`, `tekton_translate`,
+`tekton_support_nodes`, `tekton_apply_loads`, `tekton_preflight`,
+`tekton_backend`, `tekton_run`, `tekton_results`, `tekton_attach_results`,
+`tekton_visualize`, `tekton_inspect`, `tekton_display`, `tekton_save_model`,
+`tekton_to_timber`, `tekton_load_model`.
 
-All 24 carry real icons. `icons/_todo/` keeps only the magenta placeholder
+All 25 carry real icons. `icons/_todo/` keeps only the magenta placeholder
 itself, for the next component that arrives without one.
 
 Then:

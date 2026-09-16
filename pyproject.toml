@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 dependencies = [
     "compas_timber_fea",
     "compas_dlubal",
+    "compas_opensees",
     "compas_saf",
     "tekton-app",
     "tekton-gh",
@@ -28,6 +29,7 @@ members = ["packages/*"]
 [tool.uv.sources]
 compas_timber_fea = { workspace = true }
 compas_dlubal = { workspace = true }
+compas_opensees = { workspace = true }
 compas_saf = { workspace = true }
 tekton-app = { workspace = true }
 tekton-gh = { workspace = true }

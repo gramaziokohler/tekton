@@ -69,7 +69,7 @@ def run_backend(
     structural_model : compas_timber_fea.core.model.StructuralModel
     repo_root : str
         Root of the monorepo; the venv with the backend packages lives there.
-    backend : {'rfem', 'rstab', 'saf'}
+    backend : {'rfem', 'rstab', 'saf', 'opensees'}
     load_cases : list of int, optional
         Load cases whose results are read. None = all.
     api_key : str, optional

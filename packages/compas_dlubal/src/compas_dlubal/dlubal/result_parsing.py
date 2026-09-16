@@ -304,8 +304,11 @@ def parse_support_forces(dataframe, load_case_id, node_results=None):
             return _float(row[column]) if column else 0.0
 
         entry = results.get(node_id) or StructuralNodeResult(node_id=node_id, load_case_id=load_case_id)
-        entry.reaction_force = vector_from_dlubal(*(force_from_dlubal(value(k)) for k in ("px", "py", "pz")))
-        entry.reaction_moment = vector_from_dlubal(*(force_from_dlubal(value(k)) for k in ("mx", "my", "mz")))
+        # RFEM's support forces are the forces on the support; the neutral
+        # model stores the reaction on the structure (what OpenSees reports,
+        # and what the Display arrows point with). Hence the negation.
+        entry.reaction_force = vector_from_dlubal(*(-force_from_dlubal(value(k)) for k in ("px", "py", "pz")))
+        entry.reaction_moment = vector_from_dlubal(*(-force_from_dlubal(value(k)) for k in ("mx", "my", "mz")))
         results[node_id] = entry
     return results
 

@@ -38,7 +38,7 @@ filepath: str  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
-VALID = ("rfem", "rstab", "saf")
+VALID = ("rfem", "rstab", "saf", "opensees")
 try:
     _gh_src = os.path.join(os.path.expanduser(repo or os.environ.get("TEKTON_REPO", "")), "packages", "tekton_gh", "src")
     if os.path.isdir(_gh_src) and _gh_src not in sys.path:
@@ -127,3 +127,5 @@ print("Repo: {}".format(root or "NOT FOUND"))
 print("API key: {}".format(key_source))
 if kind == "saf" and not filepath:
     _warn("Backend 'saf' needs a filepath.")
+if kind == "opensees":
+    print("OpenSees: beams only today, no licence, no key, solves in milliseconds.")
