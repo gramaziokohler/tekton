@@ -123,6 +123,14 @@
                 "graft": false
             },
             {
+                "name": "backend_utilization",
+                "nickname": "backend_utilization",
+                "description": "Largest utilisation the backend's own design add-on reported (RFEM, 'design' on Tekton Backend); None otherwise",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
                 "name": "ok",
                 "nickname": "ok",
                 "description": "True when a report was produced",

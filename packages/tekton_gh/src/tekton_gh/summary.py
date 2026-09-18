@@ -117,6 +117,40 @@ def applied_load_total(model, load_case_id):
     }
 
 
+def backend_utilization_summary(result_set):
+    """The backend's own design ratios (WP1: RFEM's timber add-on), when it delivered any.
+
+    Returns None without them; otherwise the maximum per member, worst first,
+    plus what the ratio was computed for (``metadata["design"]``).
+    """
+    per_member = {}
+    for member_id, samples in (getattr(result_set, "member_results", None) or {}).items():
+        for sample in samples or []:
+            ratio = (getattr(sample, "metadata", None) or {}).get("utilization")
+            if ratio is None:
+                continue
+            current = per_member.get(member_id)
+            if current is None or ratio > current["ratio"]:
+                per_member[member_id] = {
+                    "member_id": member_id,
+                    "ratio": float(ratio),
+                    "position": getattr(sample, "position", 0.0),
+                    "check": sample.metadata.get("governing_check", ""),
+                }
+    if not per_member:
+        return None
+    worst = sorted(per_member.values(), key=lambda entry: entry["ratio"], reverse=True)
+    design = (getattr(result_set, "metadata", None) or {}).get("design") or {}
+    return {
+        "worst": worst,
+        "count": len(worst),
+        "above_1": len([entry for entry in worst if entry["ratio"] > 1.0]),
+        "loadings": list(design.get("loadings", [])),
+        "combinations": design.get("combinations", {}) or {},
+        "source": design.get("source", "backend"),
+    }
+
+
 def force_extremes(result_set):
     """Extreme section forces over all member samples."""
     quantities = ("axial", "shear_y", "shear_z", "torsion", "moment_y", "moment_z")
@@ -267,6 +301,23 @@ def build_report(model, checks_by_case=None, assumptions=None, title="Tekton ana
                     )
                 )
 
+        backend = backend_utilization_summary(result_set)
+        if backend:
+            top = backend["worst"][0]
+            lines.append("  Utilisation ({}{})".format(
+                backend["source"],
+                ", loading " + ", ".join(backend["loadings"]) if backend["loadings"] else ""))
+            lines.append("    max        {:.3f}  member {} ({}, t={:.2f})".format(
+                top["ratio"], top["member_id"], top["check"] or "-", top["position"]))
+            lines.append("    above 1.0  {}  of {} members".format(backend["above_1"], backend["count"]))
+            for label, combination in sorted(backend["combinations"].items()):
+                factors = " + ".join("{:g} x LC{}".format(f, lc) for lc, f in sorted(combination.get("factors", {}).items()))
+                lines.append("    {:<10} {}".format(label, factors or combination.get("name", "")))
+            for entry in backend["worst"][:worst_count]:
+                lines.append("      {:>6}  {:.3f}  {:<45} t={:.2f}  {}".format(
+                    entry["member_id"], entry["ratio"], entry["check"][:45], entry["position"],
+                    "" if entry["ratio"] <= 1.0 else "EXCEEDED"))
+
         case_checks = (checks_by_case or {}).get(case_id)
         if case_checks is None:
             lines.append("  Utilisation   not computed")
@@ -277,7 +328,7 @@ def build_report(model, checks_by_case=None, assumptions=None, title="Tekton ana
 
             worst = worst_per_member(case_checks)
             failing = [entry for entry in worst if not entry.passes]
-            lines.append("  Utilisation")
+            lines.append("  Utilisation (own EC5 checks)")
             lines.append(
                 "    max        {:.3f}  member {} ({}, {})".format(
                     worst[0].ratio,
@@ -301,6 +352,16 @@ def build_report(model, checks_by_case=None, assumptions=None, title="Tekton ana
                         "" if entry.passes else "EXCEEDED",
                     )
                 )
+            if backend:
+                # Two independent paths to the same number: the comparison is
+                # the point (design-checks.md). The backend ratio is for its
+                # design combination, ours for this load case - say so.
+                theirs = {entry["member_id"]: entry["ratio"] for entry in backend["worst"]}
+                pairs = [(entry.ratio, theirs[entry.member_id]) for entry in worst if entry.member_id in theirs and theirs[entry.member_id] > 0.01]
+                if pairs:
+                    deviation = max(abs(ours / ref - 1.0) for ours, ref in pairs)
+                    lines.append("    vs backend  max deviation {:.1%} over {} members (own load case vs backend combination)".format(
+                        deviation, len(pairs)))
         lines.append("")
 
     if assumptions is not None and checks_by_case:
@@ -357,12 +418,18 @@ def headline_numbers(model, checks_by_case=None):
         "max_utilization_member": None,
         "members_over_1": 0,
         "governing_check": "",
+        "max_utilization_backend": None,
+        "max_utilization_backend_member": None,
     }
     for result_set in (getattr(model, "results", {}) or {}).values():
         deformation = deformation_summary(result_set)
         if deformation and deformation["max"] > out["max_displacement"]:
             out["max_displacement"] = deformation["max"]
             out["max_displacement_node"] = deformation["max_node"]
+        backend = backend_utilization_summary(result_set)
+        if backend and (out["max_utilization_backend"] is None or backend["worst"][0]["ratio"] > out["max_utilization_backend"]):
+            out["max_utilization_backend"] = backend["worst"][0]["ratio"]
+            out["max_utilization_backend_member"] = backend["worst"][0]["member_id"]
     if checks_by_case:
         from compas_timber_fea.design.checks import worst_per_member
 

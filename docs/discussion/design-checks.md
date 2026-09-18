@@ -1,8 +1,8 @@
 # Design checks: what Tekton verifies itself
 
-*Status: 2026-09-16 — written as WP1b starts. What is implemented is marked
-as such; everything else is the plan and open to argument. The clause
-numbers are EN 1995-1-1 (Eurocode 5).*
+*Status: 2026-09-18 - WP1b implemented, WP1 (RFEM's add-on) read and
+compared; see "The comparison" below. Written 2026-09-16 as WP1b started.
+The clause numbers are EN 1995-1-1 (Eurocode 5).*
 
 ## Why compute checks ourselves at all
 
@@ -83,7 +83,10 @@ assumptions, not results.
 | Bending + compression | 6.2.4 | quadratic in the axial term |
 
 `k_h` (size factor, 3.2/3.3) is derivable from the section height and is
-applied where it raises `f_mk`.
+available as `DesignAssumptions(size_factor=True)`. **Off by default**: EC5
+says "may", RFEM's add-on leaves it off by default
+(`k_h_solid_timber_bending = false`), and omitting it is the safe side -
+it only ever raises the strength. The report prints which.
 
 ### Deferred to WP1c (needs the model extension)
 
@@ -95,6 +98,35 @@ applied where it raises `f_mk`.
 
 Until then, every report states explicitly that stability was not verified.
 An unverified check must never look like a passed one.
+
+## The comparison: own checks vs RFEM's add-on (2026-09-18)
+
+Sticks model (`tests/unit/fixtures/sticks_structural.json`, 304 timber
+members, C24, 8/10 cm), RFEM 6.13 timber design under CO1 = 1.35 * self-
+weight, service class 1, permanent duration, gamma_M = 1.3, stability off.
+Our checks were fed RFEM's own CO1 section forces, so the comparison
+isolates the formulas from the solver (the solver side is WP0's
+calibration).
+
+| RFEM governing check | members | our ratio / RFEM's - 1 |
+|---|---|---|
+| 6.2.4 bending + compression | 174 | -5e-6 ... +1.4e-5 |
+| 6.1.6 / 6.2.3 bending (+ tension) | 30 | +3e-6 ... +1.8e-3 |
+| "negligible internal forces" (ratio 0) | 100 | - |
+
+With `size_factor=True` every bending-governed member sat a constant
+**-7.8 %** below RFEM - exactly 1/k_h for h = 100 mm, (150/100)^0.2 =
+1.0845 - which is how the RFEM default was found. Our shear check (6.1.7)
+never governs on this model and is compared only implicitly; torsion
+shear (6.1.8) is in RFEM's table and not in ours. Pinned in
+`tests/unit/test_rfem_timber_design.py` against the recorded table.
+
+Where the two numbers meet in the product: `Tekton Summary` prints both
+blocks - "Utilisation (rfem timber design, loading LK1)" with the
+combination's factors, and "Utilisation (own EC5 checks)" - plus the
+maximum deviation between them. Without WP3 our checks run per load case
+and RFEM's for its combination, so on the sticks model that line reads
+26 % (= 1.35 - 1); it is a labelled caveat, not a discrepancy.
 
 ## Open questions
 

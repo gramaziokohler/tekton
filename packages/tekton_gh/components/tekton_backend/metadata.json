@@ -65,6 +65,20 @@
                 "typeHintID": "str",
                 "reverse": false,
                 "simplify": false
+            },
+            {
+                "name": "design",
+                "nickname": "design",
+                "description": "rfem only: run RFEM's timber design add-on and read its utilisation (EC5). Needs the add-on licence and, once per model, the combination-wizard standard group 'EN 1990 | Basis + Holz' set in the GUI.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
             }
         ],
         "outputParameters": [

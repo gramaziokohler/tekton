@@ -63,6 +63,20 @@ SURFACE_COLUMNS = {
     "v_y": ("v_y", "vy"),
 }
 
+#: The timber design add-on's ratio table (TIMBER_DESIGN_MEMBERS_DESIGN_RATIOS_BY_LOCATION),
+#: as delivered by RFEM 6.13 on 2026-09-18. One row per member, location and
+#: check; the loading label is the *design* loading (a combination, "CO1" or
+#: "LK1" depending on the UI language), never a bare load case.
+DESIGN_RATIO_COLUMNS = {
+    "member": ("member_no", "member", "no"),
+    "location": ("location_x", "location", "x"),
+    "ratio": ("design_ratio", "ratio", "eta"),
+    "check_type": ("design_check_type", "check_type"),
+    "description": ("design_check_description", "description"),
+    "loading": ("loading",),
+    "design_situation": ("design_situation_no", "design_situation"),
+}
+
 NODE_DEFORMATION_COLUMNS = {
     "node": ("node_no", "node", "no"),
     "ux": ("displacement_u_x", "u_x", "ux"),
@@ -201,6 +215,86 @@ def parse_member_deformations(dataframe, load_case_id, member_lengths=None, memb
             rows.sort(key=lambda r: r.position)
         match.displacement = displacement
     return results
+
+
+def parse_member_design_ratios(dataframe, load_case_id, member_lengths=None, member_results=None):
+    """Timber-design ratio table -> ``metadata["utilization"]`` on the member results.
+
+    RFEM reports the ratios on the same station grid as the internal forces,
+    so each row is matched to the StructuralMemberResult at that position;
+    stations the static reader did not produce get a result of their own. Per
+    station the *largest* ratio over all checks and all design loadings is
+    kept, together with the check that produced it::
+
+        metadata["utilization"]       0.299          (max ratio at this station)
+        metadata["governing_check"]   "Doppelbiegung und Drucknormalkraft nach 6.2.4"
+        metadata["check_type"]        "SP6300.00"    (RFEM's check code)
+        metadata["design_loading"]    "LK1"          (the combination it came from)
+
+    The ratio belongs to a design combination, not to the load case whose
+    result set it lands in; the reader records the mapping in the result-set
+    metadata. Rows with an empty or non-numeric ratio are skipped.
+
+    Returns
+    -------
+    dict
+        The (updated) ``{member_id: [StructuralMemberResult]}`` mapping.
+    """
+    columns = {key: _resolve(dataframe, names, key, required=key in ("member", "location", "ratio")) for key, names in DESIGN_RATIO_COLUMNS.items()}
+    member_lengths = member_lengths or {}
+    results = dict(member_results or {})
+
+    for _, row in dataframe.iterrows():
+        member_id = _int(row[columns["member"]])
+        if member_id is None:
+            continue
+        ratio = _float(row[columns["ratio"]], default=None)
+        if ratio is None:
+            continue
+
+        position = _float(row[columns["location"]])
+        length = member_lengths.get(member_id)
+        if length:
+            position = min(max(position / length, 0.0), 1.0)
+
+        def text(key, row=row):
+            column = columns.get(key)
+            if column is None:
+                return ""
+            value = row[column]
+            return "" if value is None or (isinstance(value, float) and math.isnan(value)) else str(value)
+
+        rows = results.setdefault(member_id, [])
+        match = next((r for r in rows if abs(r.position - position) < 1e-4), None)
+        if match is None:
+            match = StructuralMemberResult(
+                member_id=member_id,
+                load_case_id=load_case_id,
+                position=position,
+                metadata={"position_normalized": bool(length)},
+            )
+            rows.append(match)
+            rows.sort(key=lambda r: r.position)
+
+        current = match.metadata.get("utilization")
+        if current is None or ratio > current:
+            match.metadata["utilization"] = ratio
+            match.metadata["governing_check"] = text("description")
+            match.metadata["check_type"] = text("check_type")
+            match.metadata["design_loading"] = text("loading")
+    return results
+
+
+def design_ratio_summary(dataframe):
+    """What the ratio table covers: its design loadings and situations, for the result-set metadata."""
+    out = {"loadings": [], "design_situations": []}
+    loading = _resolve(dataframe, DESIGN_RATIO_COLUMNS["loading"], "loading", required=False)
+    situation = _resolve(dataframe, DESIGN_RATIO_COLUMNS["design_situation"], "design_situation", required=False)
+    if loading is not None:
+        out["loadings"] = sorted({str(v) for v in dataframe[loading].dropna()})
+    if situation is not None:
+        out["design_situations"] = sorted({_int(v) for v in dataframe[situation].dropna() if _int(v) is not None})
+    return out
 
 
 def parse_surface_results(deformations, forces, load_case_id):

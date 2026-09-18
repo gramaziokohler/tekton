@@ -63,7 +63,14 @@ Run` that recomputes on the slider now that a solve is cheap.
 
 **Size of what is open.** Plates two to three days; the live mode a day.
 
-## WP1 — Utilisation, read from the backend
+## WP1 - Utilisation, read from the backend
+
+*Done 2026-09-18 for members: `Tekton Backend` -> `design`, ratios per
+station in `metadata["utilization"]` with the governing check named,
+`Tekton Results`/`Visualize` quantity `utilization`, `Tekton Summary` prints
+RFEM's block next to ours. Comparison in design-checks.md; what the add-on
+needs (one GUI step) in roundtrip.md. Surfaces, and combinations beyond the
+wizard's 1.35 * G, wait for WP3/WP5.*
 
 **Why first.** It is *the* designer number, the one thing the loop still
 cannot deliver, and every later package (loads, joints) is judged by it.

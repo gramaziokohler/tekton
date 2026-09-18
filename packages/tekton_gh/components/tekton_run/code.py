@@ -102,6 +102,7 @@ else:
             model_name=model_name or "tekton-gh",
             api_key=api_key,
             calculate=True if calculate is None else bool(calculate),
+            design=bool(_cfg("design", False)) and kind == "rfem",
             # The backend's filepath is the SAF target - without it the xlsx
             # lands in the temp folder. For rfem/rstab the result model goes
             # to a temp file the component reads back; a SAF path left over

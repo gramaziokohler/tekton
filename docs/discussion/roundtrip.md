@@ -66,6 +66,49 @@ Four things, none visible offline:
    so the worker reads `TEKTON_API_KEY`, then `DLUBAL_API_KEY`, then the
    repo's `.env`.
 
+## What the timber design add-on needs (2026-09-18, WP1)
+
+RFEM 6.13, `dlubal.api` 2.13.8. The ratio table is
+`TIMBER_DESIGN_MEMBERS_DESIGN_RATIOS_BY_LOCATION`: one row per member,
+station and check - `design_ratio`, `design_check_type` (`SP6300.00`),
+`design_check_description` ("Doppelbiegung und Drucknormalkraft nach
+6.2.4"), `loading`. The stations are the internal-force stations, so the
+merge is by (member, x). Fixture: `tests/unit/fixtures/sticks_rfem_timber_design.json`.
+What it took to get there - `compas_dlubal/dlubal/design_setup.py` does
+all of it except item 5:
+
+1. **Add-on and standard in the base data.** `addons.timber_design_active`,
+   `standards.timber_design_standard = EN 1995 CEN 2014-05`. Activating
+   creates *service class 1* and *ULS configuration 1* - a second
+   `create_object` fails "existiert bereits", so they are updated.
+2. **The wizard must generate load combinations.** `CombinationWizard(
+   generate_combinations=True)` is the enum value for *result* combinations,
+   which no design add-on reads: `active_for_timber_design` stays False and
+   the design situation's `case_objects` lists an RC. Use
+   `GENERATE_COMBINATIONS_LOAD_COMBINATIONS`.
+3. **A ULS design situation on that wizard** (STR permanent/transient 6.10),
+   then `generate_combinations()`. RFEM makes `CO1 = 1.35 * LC1` from the
+   action category of the load case.
+4. **Stability off** in the ULS configuration (`perform_stability_analysis`
+   in the `settings_ec5` tree) until WP1c supplies effective lengths.
+5. **The wizard's standard group must be "EN 1990 | Basis + Holz"**
+   (Basisangaben > Normen > Lastkombinations-Assistent). Without it the GUI
+   says so ("Holzbemessung: Die Normgruppe des Lastkombinations-Assistenten
+   muss auf ... EN 1990 | Holz, EN 1990 | Basis + Holz gesetzt werden") - the
+   API does not: `calculate_all` reports "some errors and warnings", the
+   errors table stays empty for every loading, and the ratio table answers
+   "Results are not available". `set_base_data` silently ignores
+   `combination_wizard_standard`; the value is read-only. Once set in the
+   GUI it reads back as `..._EN_1990_BASE_TIMBER_DIN_2012_08_...`, which is
+   how `design_setup` detects and reports the missing step. **A one-time
+   GUI step per model**, and the one thing this roundtrip cannot automate.
+
+Also seen: the ratio table labels the loading in the UI language (`LK1` in
+German, `CO1` in English), so the reader does not filter on it; RFEM's
+`calculate_all(skip_warnings=True)` hides exactly the message that would
+have explained item 5; and this machine's RFEM listens on port 9001
+(`DLUBAL_API_PORT` in `.env`, read by `DlubalClient`).
+
 ## Mapping results back — the identity chain
 
 ```

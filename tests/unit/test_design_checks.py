@@ -153,6 +153,18 @@ def test_k_h_raises_strength_only_for_shallow_sections():
 
 # --- the checks ----------------------------------------------------------
 
+def test_size_factor_is_opt_in_and_raises_bending_strength():
+    """RFEM's add-on leaves k_h off by default; so do we (see design-checks.md)."""
+    model = FakeModel(section=FakeSection(width=0.08, height=0.10))
+    member, result = model.members[0], FakeResult(moment_y=1.0)
+    plain = check_member(model, member, result, DesignAssumptions())
+    sized = check_member(model, member, result, DesignAssumptions(size_factor=True))
+    k_h = (0.150 / 0.10) ** 0.2
+    assert ratio_of(plain, "bending") == pytest.approx(ratio_of(sized, "bending") * k_h, rel=1e-9)
+    assert "k_h=1.000" in plain.governing.detail
+    assert "not applied" in " ".join(DesignAssumptions().describe())
+
+
 def test_bending_matches_hand_calculation():
     member_check = check(moment_y=15.0)
     sigma = 15.0 / 0.001152                      # kN/m2

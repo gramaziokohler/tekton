@@ -3,6 +3,7 @@ import warnings
 from compas_timber_fea.core.preflight import preflight
 
 from compas_dlubal.dlubal.client import DlubalClient
+from compas_dlubal.dlubal.design_setup import setup_timber_design
 from compas_dlubal.dlubal.mappers.mapper_nodes import NodeMapper
 from compas_dlubal.dlubal.mappers.mapper_members import MemberMapper
 from compas_dlubal.dlubal.mappers.mapper_supports import SupportMapper
@@ -14,7 +15,7 @@ from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper
 class DlubalImporter:
     """Orchestrates the export from the neutral structural model to Dlubal via gRPC."""
     
-    def __init__(self, app_type="rfem", api_key=None, delete_all=False, **legacy):
+    def __init__(self, app_type="rfem", api_key=None, delete_all=False, design=False, service_class=1, **legacy):
         """
         Parameters
         ----------
@@ -24,6 +25,13 @@ class DlubalImporter:
             Dlubal machine key.
         delete_all : bool
             Wipe the active model before pushing.
+        design : bool
+            Set up the timber design add-on after the push (service class,
+            ULS configuration, combination wizard, ULS design situation) so
+            that ``DlubalResultReader.read(design=True)`` finds a ratio
+            table. See ``design_setup.py`` for the one GUI step it needs.
+        service_class : int
+            EN 1995 service class for every timber member when ``design``.
 
         Loading, material and joint idealisation are properties of the neutral
         model, decided during translation. The former material_preset,
@@ -33,6 +41,10 @@ class DlubalImporter:
         self.app_type = app_type
         self.api_key = api_key
         self.delete_all = delete_all
+        self.design = design
+        self.service_class = service_class
+        #: Filled by run() when design is on: what the add-on setup did.
+        self.design_report = None
 
         if legacy:
             names = ", ".join(sorted(legacy))
@@ -154,8 +166,13 @@ class DlubalImporter:
             try:
                 conn.create_object_list(objects)
                 print(f"Successfully exported {len(objects)} objects to Dlubal.")
-                return True
             except Exception as e:
                 print(f"Export error: {e}")
                 raise
+
+            # 5. Design add-on, once the structure and the load cases exist.
+            if self.design:
+                self.design_report = setup_timber_design(conn, structural_model, service_class=self.service_class)
+                print("Timber design: " + ", ".join(f"{k}={v}" for k, v in self.design_report.items()))
+            return True
 
