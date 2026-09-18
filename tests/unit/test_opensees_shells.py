@@ -160,3 +160,45 @@ def test_unknown_thickness_is_refused_before_anything_is_built():
     model.surfaces[0].thickness_id = 99
     with pytest.raises(RuntimeError, match="missing thickness"):
         run_model(model)
+
+
+# --- membrane forces and moments (WP0b-Rest) ---------------------------------
+
+def one_way_plate(along="x", target=0.35):
+    """The square plate supported on two opposite edges only: cylindrical bending."""
+    model = square_plate(target)
+    points = {node.id: node.point for node in model.nodes}
+    coordinate = (lambda p: p.x) if along == "x" else (lambda p: p.y)
+    support = model.supports[0]
+    support.nodes = [i for i in support.nodes
+                     if abs(coordinate(points[i])) < 1e-9 or abs(coordinate(points[i]) - SIDE) < 1e-9]
+    return model
+
+
+def centre_sample(model):
+    return min(model.results[1].surface_results[1],
+               key=lambda s: (s.position.x - SIDE / 2) ** 2 + (s.position.y - SIDE / 2) ** 2)
+
+
+def test_centre_moments_of_the_simply_supported_plate():
+    """m_x = m_y = 0.0368 q a^2 (nu = 0), sagging positive as RFEM reports it."""
+    model = square_plate(0.35)
+    run_model(model)
+    _, q = navier_deflection(model)
+    centre = centre_sample(model)
+    assert centre.moment_x == pytest.approx(0.0368 * q * SIDE ** 2, rel=0.05)
+    assert centre.moment_y == pytest.approx(centre.moment_x, rel=0.01)
+    assert abs(centre.moment_xy) < 0.01 * centre.moment_x
+    assert centre.membrane_force_x == pytest.approx(0.0, abs=1e-9)
+
+
+@pytest.mark.parametrize("along", ["x", "y"])
+def test_one_way_plate_bends_about_one_axis_only(along):
+    """q a^2 / 8 in the span direction, nothing across - the element-axis rotation must be right for every triangle."""
+    model = one_way_plate(along)
+    run_model(model)
+    _, q = navier_deflection(model)
+    centre = centre_sample(model)
+    spanning, across = (centre.moment_x, centre.moment_y) if along == "x" else (centre.moment_y, centre.moment_x)
+    assert spanning == pytest.approx(q * SIDE ** 2 / 8, rel=0.03)
+    assert abs(across) < 0.01 * spanning

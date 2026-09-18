@@ -3,6 +3,7 @@ import warnings
 from compas_timber_fea.core.preflight import preflight
 
 from compas_dlubal.dlubal.client import DlubalClient
+from compas_dlubal.dlubal.design_setup import disable_timber_design
 from compas_dlubal.dlubal.design_setup import setup_timber_design
 from compas_dlubal.dlubal.mappers.mapper_nodes import NodeMapper
 from compas_dlubal.dlubal.mappers.mapper_members import MemberMapper
@@ -15,7 +16,7 @@ from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper
 class DlubalImporter:
     """Orchestrates the export from the neutral structural model to Dlubal via gRPC."""
     
-    def __init__(self, app_type="rfem", api_key=None, delete_all=False, design=False, service_class=1, **legacy):
+    def __init__(self, app_type="rfem", api_key=None, delete_all=False, design=False, service_class=1, mesh_size=None, **legacy):
         """
         Parameters
         ----------
@@ -43,6 +44,7 @@ class DlubalImporter:
         self.delete_all = delete_all
         self.design = design
         self.service_class = service_class
+        self.mesh_size = mesh_size
         #: Filled by run() when design is on: what the add-on setup did.
         self.design_report = None
 
@@ -170,9 +172,45 @@ class DlubalImporter:
                 print(f"Export error: {e}")
                 raise
 
-            # 5. Design add-on, once the structure and the load cases exist.
+            if self.mesh_size:
+                settings = conn.application.get_mesh_settings()
+                settings.general_target_length_of_fe = float(self.mesh_size)
+                conn.application.set_mesh_settings(mesh_settings=settings)
+
+            # 5. Plate stiffness: the library's orthotropic variant is a one-way
+            # slab; the neutral plate is isotropic (see plate_material_values).
+            if structural_model.surfaces:
+                self._set_plate_material_values(conn, structural_model, member_mapper)
+
+            # 6. Design add-on, once the structure and the load cases exist.
+            # Base data outlives delete_all, and an active timber add-on with
+            # nothing configured makes RFEM calculate nothing - so it is
+            # switched off explicitly when design is not asked for.
             if self.design:
                 self.design_report = setup_timber_design(conn, structural_model, service_class=self.service_class)
                 print("Timber design: " + ", ".join(f"{k}={v}" for k, v in self.design_report.items()))
+            else:
+                disable_timber_design(conn)
             return True
+
+    @staticmethod
+    def _set_plate_material_values(conn, structural_model, member_mapper):
+        """Overwrite the surface variant's stiffness tree with the neutral (isotropic) values.
+
+        The tree only exists once RFEM has created the material, so this is a
+        get / set / update per material, after the push.
+        """
+        from dlubal.api import common
+
+        Material = conn.api.structure_core.Material
+        for mat_id, material in structural_model.materials.items():
+            no = member_mapper.surface_material_id(mat_id)
+            current = conn.application.get_object(Material(no=no))
+            tree = current.material_values.rows[0].material_values_tree
+            for key, value in member_mapper.plate_material_values(material).items():
+                common.tree_table.set_values_by_key(tree=tree, key=key, values=[value])
+            conn.application.update_object(Material(
+                no=no, user_defined=True,
+                material_values=current.material_values,
+                standard_parameters=current.standard_parameters))
 

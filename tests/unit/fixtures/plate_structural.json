@@ -1,0 +1,935 @@
+{
+  "format_version": 1,
+  "model": {
+    "__type__": "StructuralModel",
+    "value": {
+      "nodes": [
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 1,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 2,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.36363636363636365,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 3,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.7272727272727273,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 4,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                1.0909090909090908,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 5,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                1.4545454545454546,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 6,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                1.8181818181818181,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 7,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                2.1818181818181817,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 8,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                2.5454545454545454,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 9,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                2.909090909090909,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 10,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                3.272727272727273,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 11,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                3.6363636363636362,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 12,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                0.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 13,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                0.36363636363636365,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 14,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                0.7272727272727273,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 15,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                1.0909090909090908,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 16,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                1.4545454545454546,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 17,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                1.8181818181818181,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 18,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                2.1818181818181817,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 19,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                2.5454545454545454,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 20,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                2.909090909090909,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 21,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                3.272727272727273,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 22,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                3.6363636363636362,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 23,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                4.0,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 24,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                3.6363636363636362,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 25,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                3.272727272727273,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 26,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                2.909090909090909,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 27,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                2.5454545454545454,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 28,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                2.1818181818181817,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 29,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                1.8181818181818181,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 30,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                1.4545454545454546,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 31,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                1.0909090909090908,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 32,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.7272727272727273,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 33,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.36363636363636365,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 34,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                4.0,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 35,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                3.6363636363636362,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 36,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                3.272727272727273,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 37,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                2.909090909090909,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 38,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                2.5454545454545454,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 39,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                2.1818181818181817,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 40,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                1.8181818181818181,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 41,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                1.4545454545454546,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 42,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                1.0909090909090908,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 43,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                0.7272727272727273,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        },
+        {
+          "__type__": "StructuralNode",
+          "value": {
+            "id": 44,
+            "point": {
+              "__type__": "Point",
+              "value": [
+                0.0,
+                0.36363636363636365,
+                0.0
+              ]
+            },
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_node_id": null
+          }
+        }
+      ],
+      "members": [],
+      "sections": [],
+      "supports": [
+        {
+          "__type__": "StructuralSupport",
+          "value": {
+            "id": 1,
+            "nodes": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39,
+              40,
+              41,
+              42,
+              43,
+              44
+            ],
+            "name": "Support",
+            "ux": "Infinity",
+            "uy": "Infinity",
+            "uz": "Infinity",
+            "rx": 0.0,
+            "ry": 0.0,
+            "rz": 0.0
+          }
+        }
+      ],
+      "materials": {
+        "__dict__": [
+          [
+            1,
+            {
+              "__type__": "Material",
+              "value": {
+                "name": "C24",
+                "standard": "EN 338",
+                "density_mean": 420,
+                "density_k": 350,
+                "E0_mean": 11000,
+                "E0_k": 7400,
+                "E90_mean": 370,
+                "G_mean": 690,
+                "f_mk": 24,
+                "f_t0k": 14.0,
+                "f_c0k": 21.0,
+                "f_vk": 4.0,
+                "poisson": 0.0
+              }
+            }
+          ]
+        ]
+      },
+      "load_cases": [
+        {
+          "__type__": "StructuralLoadCase",
+          "value": {
+            "id": 1,
+            "name": "SW",
+            "action_category": "PERMANENT",
+            "self_weight": true
+          }
+        }
+      ],
+      "load_combinations": [],
+      "point_loads": [],
+      "member_loads": [],
+      "thicknesses": [
+        {
+          "__type__": "StructuralThickness",
+          "value": {
+            "id": 1,
+            "name": "t",
+            "material_id": 1,
+            "thickness": 0.2
+          }
+        }
+      ],
+      "surfaces": [
+        {
+          "__type__": "StructuralSurface",
+          "value": {
+            "id": 1,
+            "nodes": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39,
+              40,
+              41,
+              42,
+              43,
+              44
+            ],
+            "thickness_id": 1,
+            "span_direction": null,
+            "source_element_id": null,
+            "source_element_type": null,
+            "source_surface_id": null
+          }
+        }
+      ],
+      "surface_connections": [],
+      "results": {
+        "__dict__": []
+      },
+      "source_units": "m"
+    }
+  }
+}

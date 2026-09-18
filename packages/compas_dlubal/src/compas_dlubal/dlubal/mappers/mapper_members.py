@@ -229,6 +229,30 @@ class MemberMapper:
     def surface_material_id(cls, mat_id: int) -> int:
         return mat_id + cls.SURFACE_MATERIAL_OFFSET
 
+    #: MPa -> N/m2, the unit RFEM's material tree holds.
+    MPA_TO_N_M2 = 1.0e6
+
+    @staticmethod
+    def plate_material_values(material):
+        """The stiffness the surface variant must carry: isotropic, E0_mean, the neutral Poisson's ratio.
+
+        RFEM's library variant of a timber grade as ORTHOTROPIC_2D comes with
+        E_x = E0 and E_y = E90 (370 MPa for C24) along the surface's local
+        axes - axes the neutral model never set. The plate calibration of
+        2026-09-19 found RFEM deflecting 3.2x the Navier value on a square
+        plate: a one-way slab. The neutral contract (plate-model.md) is an
+        isotropic plate until a layup exists, which is what OpenSees builds;
+        so the orthotropic variant is overwritten with equal moduli, the
+        in-plane and transverse shear from E and nu. Keys are the ones in
+        RFEM's ``material_values`` tree (``e_x`` ... ``nu_yx``), values in
+        N/m2. Orthotropy returns with ``span_direction`` and the layup.
+        """
+        material = NeutralMaterial.resolve(material)
+        E = float(material.E0_mean) * MemberMapper.MPA_TO_N_M2
+        nu = float(material.poisson or 0.0)
+        G = E / (2.0 * (1.0 + nu))
+        return {"e_x": E, "e_y": E, "g_xy": G, "g_xz": G, "g_yz": G, "nu_xy": nu, "nu_yx": nu}
+
     def map_material(self, mat_id: int, material, for_surfaces: bool = False):
         """Map a neutral material (Material object or grade-name string).
 

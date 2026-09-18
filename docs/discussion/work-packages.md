@@ -444,6 +444,42 @@ Two findings worth keeping:
   size first and refuses with a message naming the likely cause — the same
   failure mode `core/units.py` warns about, one layer down.
 
+**Progress (2026-09-19, WP0b-Rest: the RFEM calibration).** Recorded with
+`tests/record_plate_rfem.py`, pinned in `tests/unit/test_rfem_plate_calibration.py`
+against `tests/unit/fixtures/plate_rfem_calibration.json`. On the same
+simply supported square plate (4 m, t = 0.2, C24, 0.35 m mesh in both):
+
+| | deflection / Navier | centre m_x | reactions |
+|---|---|---|---|
+| RFEM 6.13 (g = 10) | 1.052 (Mindlin + g) | 0.504 kNm/m | q·a² exactly |
+| OpenSees (g = 9.81, scaled) | 0.992 | 0.480 kNm/m | q·a² exactly |
+| closed form (ν = 0) | 1 | 0.495 kNm/m | |
+
+The calibration found what WP0 found for beams — a mapper bug that no
+single backend could have shown: **RFEM's library variant of C24 for
+surfaces is orthotropic with E90 = 370 MPa across**, along surface axes the
+neutral model never set. The plate came back as a one-way slab 3.2× softer
+than Navier with m_x = 1.59 against m_y = 0.03. The neutral contract is an
+isotropic plate until a layup exists (plate-model.md), so the importer now
+overwrites that variant with E0 both ways, ν and G from the material
+(`MemberMapper.plate_material_values`). Two more things the session
+settled: base data survive `delete_all`, so an active timber add-on from a
+previous run makes RFEM calculate nothing — the importer switches it off
+when `design` is not asked for; and the isotropic 1D/linear-elastic
+library variants do not calculate for surfaces at all (an E/G pair with
+ν ≈ 7), the orthotropic 2D model with equal moduli is the working route.
+
+**Membrane forces and moments now come out of OpenSees.** `read_surfaces`
+reads `eleResponse "stresses"` per shell, averages the Gauss points,
+rotates the tensors from the element frame (x along the edge node 1 → 2,
+verified) into the surface's frame (x along its first outline edge — RFEM's
+default for a surface's local axes) and averages over the elements around
+each node. Signs match RFEM: n tension positive, m positive when the side
+away from the surface normal is in tension. Verified on the one-way plate
+spanning x and spanning y (q·a²/8 in the span direction, nothing across,
+to 3 %) and against RFEM's centre moment (−4.8 %). Transverse shear is not
+reported; its sign was not calibrated.
+
 Still open from the scope: membrane forces and moments per plate (the
 element reports them in its own axes, and without working orthotropy that
 convention is not yet pinned down), line supports, and the cross-backend

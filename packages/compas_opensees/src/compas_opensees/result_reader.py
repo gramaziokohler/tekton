@@ -168,18 +168,25 @@ def read_case(ops, model, built, case, stations):
 
 
 def read_surfaces(ops, model, built, case):
-    """Sample every meshed plate at its mesh nodes.
+    """Sample every meshed plate at its mesh nodes: displacement, membrane forces, moments.
 
-    One sample per node of the plate's mesh, carrying the displacement. The
-    mesh itself stays inside the run - the samples are points in space, so a
-    later refinement changes the sampling but not the meaning, and results
-    map back to the plate through its own id.
+    One sample per node of the plate's mesh. The mesh itself stays inside
+    the run - the samples are points in space, so a later refinement changes
+    the sampling but not the meaning, and results map back to the plate
+    through its own id.
 
-    Membrane forces and moments are left at zero for now: ``ShellDKGT``
-    reports them per element in the element's own axes, and without working
-    orthotropy the axis convention is not yet pinned down (see
-    :meth:`ModelBuilder._surfaces`). Reporting a number whose axes we cannot
-    name would be worse than reporting none.
+    Membrane forces and moments come from ``eleResponse(tag, "stresses")``,
+    ``[n11 n22 n12 m11 m22 m12 q13 q23]`` per Gauss point in the *element's*
+    axes (``ShellDKGT``: local x along the edge from node 1 to node 2 -
+    verified on a one-way plate, 2026-09-19). Per element the Gauss points
+    are averaged, the tensors rotated into the surface's own axes (x along
+    its first outline edge, the convention RFEM uses for a surface's local
+    axes by default), and the values averaged over the elements around
+    each node - the same nodal smoothing RFEM's mesh-node tables carry.
+    Signs: tension positive for n; for m, positive when the side *away*
+    from the surface normal is in tension (a slab with its normal up sags
+    positive), matching RFEM's tables. Transverse shear is not reported:
+    its sign convention was not calibrated.
     """
     if not getattr(built, "surface_elements", None):
         return {}
@@ -189,22 +196,117 @@ def read_surfaces(ops, model, built, case):
         tags = built.surface_nodes.get(surface.id)
         if not tags:
             continue
+        resultants = _nodal_resultants(ops, model, built, surface)
         rows = []
         for tag in tags:
             point = built.mesh_points.get(tag) or built.node_points.get(tag)
             if point is None:
                 continue
             d = list(ops.nodeDisp(int(tag)))
+            n_x, n_y, n_xy, m_x, m_y, m_xy = resultants.get(int(tag), (0.0,) * 6)
             rows.append(StructuralSurfaceResult(
                 surface_id=surface.id,
                 load_case_id=case.id,
                 position=Point(*point),
+                membrane_force_x=n_x, membrane_force_y=n_y, membrane_force_xy=n_xy,
+                moment_x=m_x, moment_y=m_y, moment_xy=m_xy,
                 displacement=Vector(d[0], d[1], d[2]),
                 metadata={"node_tag": int(tag), "from_mesh": tag in built.mesh_points},
             ))
         if rows:
             out[surface.id] = rows
     return out
+
+
+def _unit(v):
+    length = (v[0] ** 2 + v[1] ** 2 + v[2] ** 2) ** 0.5
+    return (v[0] / length, v[1] / length, v[2] / length) if length else (0.0, 0.0, 0.0)
+
+
+def _cross(a, b):
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
+
+def _dot(a, b):
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+
+def _surface_axes(model, surface, built):
+    """(x, y, normal) of the surface: x along its first outline edge, normal by Newell."""
+    points = []
+    for node_id in surface.nodes:
+        point = built.node_points.get(node_id)
+        if point is not None:
+            points.append(tuple(point))
+    if len(points) < 3:
+        return None
+    nx = ny = nz = 0.0
+    for i, p in enumerate(points):
+        q = points[(i + 1) % len(points)]
+        nx += (p[1] - q[1]) * (p[2] + q[2])
+        ny += (p[2] - q[2]) * (p[0] + q[0])
+        nz += (p[0] - q[0]) * (p[1] + q[1])
+    normal = _unit((nx, ny, nz))
+    x = _unit(tuple(points[1][i] - points[0][i] for i in range(3)))
+    y = _unit(_cross(normal, x))
+    return x, y, normal
+
+
+def _element_axes(ops, tag):
+    """ShellDKGT's local frame: x from node 1 to node 2, normal from the node order."""
+    coords = [tuple(ops.nodeCoord(int(n))) for n in ops.eleNodes(int(tag))]
+    e1 = tuple(coords[1][i] - coords[0][i] for i in range(3))
+    e2 = tuple(coords[2][i] - coords[0][i] for i in range(3))
+    x = _unit(e1)
+    normal = _unit(_cross(e1, e2))
+    y = _unit(_cross(normal, x))
+    return x, y, normal
+
+
+def _rotate_tensor(t11, t22, t12, c, s):
+    """Components of a plane tensor in a frame rotated by -theta (c = cos, s = sin of the element frame's angle)."""
+    return (
+        t11 * c * c + t22 * s * s - 2.0 * t12 * s * c,
+        t11 * s * s + t22 * c * c + 2.0 * t12 * s * c,
+        (t11 - t22) * s * c + t12 * (c * c - s * s),
+    )
+
+
+def _nodal_resultants(ops, model, built, surface):
+    """{node tag: (n_x, n_y, n_xy, m_x, m_y, m_xy)} in the surface's axes, averaged over adjacent elements."""
+    axes = _surface_axes(model, surface, built)
+    if axes is None:
+        return {}
+    sx, sy, sn = axes
+    sums = {}
+    counts = {}
+    for tag in built.surface_elements.get(surface.id, []):
+        stresses = list(ops.eleResponse(int(tag), "stresses"))
+        if len(stresses) < 8:
+            continue
+        points = len(stresses) // 8
+        avg = [sum(stresses[k + 8 * g] for g in range(points)) / points for k in range(8)]
+        n11, n22, n12, m11, m22, m12 = avg[:6]
+
+        ex, ey, en = _element_axes(ops, tag)
+        if _dot(en, sn) < 0:
+            # The element looks at the plate from the other side: its y axis
+            # and its top/bottom are mirrored relative to the surface frame.
+            n12 = -n12
+            m11, m22 = -m11, -m22
+        c, s = _dot(ex, sx), _dot(ex, sy)
+        n_x, n_y, n_xy = _rotate_tensor(n11, n22, n12, c, s)
+        m_x, m_y, m_xy = _rotate_tensor(m11, m22, m12, c, s)
+        # OpenSees reports a sagging slab (normal up) with negative m.
+        values = (n_x, n_y, n_xy, -m_x, -m_y, -m_xy)
+
+        for node in ops.eleNodes(int(tag)):
+            node = int(node)
+            acc = sums.setdefault(node, [0.0] * 6)
+            for i, value in enumerate(values):
+                acc[i] += value
+            counts[node] = counts.get(node, 0) + 1
+    return {node: tuple(v / counts[node] for v in acc) for node, acc in sums.items()}
 
 
 __all__ = ["read_case", "read_surfaces"]

@@ -120,3 +120,22 @@ def setup_timber_design(conn, structural_model, service_class=1, stability=False
             "Lastkombinations-Assistent) - the API cannot - then run again.")
     return report
 
+
+
+def disable_timber_design(conn):
+    """Switch the timber design add-on (and the wizard) off if it is on.
+
+    Base data survive ``delete_all_objects``; an active add-on whose
+    configuration objects were just deleted makes ``calculate_all`` report
+    "errors and warnings" and produce nothing (seen 2026-09-19 on the plate
+    model, right after the sticks design run). One read, one write when
+    needed.
+    """
+    app = conn.application
+    base = app.get_base_data()
+    if not (base.addons.timber_design_active or base.addons.combination_wizard_and_classification_active):
+        return False
+    base.addons.timber_design_active = False
+    base.addons.combination_wizard_and_classification_active = False
+    app.set_base_data(base_data=base)
+    return True

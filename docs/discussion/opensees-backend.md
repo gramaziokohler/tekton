@@ -139,7 +139,7 @@ cantilever and simply supported beam came out exact to all printed digits ✅.
 | `reaction_force/moment` | `reactions()` then `nodeReaction(tag)` | ✅ kN / kNm — but see rigid-link caveat above |
 | `StructuralMemberResult` at ends | `eleResponse(tag, 'localForce')` → `[N, Vy, Vz, T, My, Mz]` at i, then at j | ✅ end forces only |
 | `StructuralMemberResult` along the member (`position` 0..1) | `forceBeamColumn` + `section Elastic` + `beamIntegration Lobatto N`; `sectionLocation` gives the stations, `sectionForce(tag, s, dof)` the forces (`P, Mz, My, T`) | ✅ exact (`q·x·(L−x)/2` at all five stations). Recommended over splitting members: one element per member, N stations, positions known. |
-| `StructuralSurfaceResult` | `eleResponse(tag, 'stresses')` → per Gauss point `[n11 n22 n12 m11 m22 m12 q13 q23]` | ✅ 32 values (4 GP × 8; also for DKGT). kN/m and kNm/m directly. **Element-local axes** → tie to `span_direction`. |
+| `StructuralSurfaceResult` | `eleResponse(tag, 'stresses')` → per Gauss point `[n11 n22 n12 m11 m22 m12 q13 q23]` | ✅ 32 values (4 GP × 8; also for DKGT). kN/m and kNm/m directly. Element frame: x along edge node 1 → 2 (verified 2026-09-19); `read_surfaces` rotates into the surface frame (x = first outline edge) and averages per node. Signs as RFEM. Calibrated: `test_rfem_plate_calibration.py`. |
 | solver failure | `analyze()` returns non-zero; messages on stdout from C++, never a Python exception | ✅ observed. Per-element warnings (`addLoad - load type unknown`) do **not** fail the run. |
 
 **Sign convention is the open calibration.** With a downward load, the
