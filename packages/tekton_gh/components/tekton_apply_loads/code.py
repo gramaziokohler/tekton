@@ -111,7 +111,7 @@ if structural is None:
     _warn("No StructuralModel connected.")
 else:
     _setup()
-    from compas_timber_fea.core.model import StructuralMemberLoad, StructuralPointLoad
+    from compas_timber_fea.core.model import StructuralMemberLoad, StructuralPointLoad, StructuralSurfaceLoad
 
     tol = 0.01 if tolerance is None else float(tolerance)
 
@@ -122,6 +122,11 @@ else:
 
     next_point_id = max([load.id for load in structural.point_loads] or [0]) + 1
     next_member_id = max([load.id for load in structural.member_loads] or [0]) + 1
+    next_surface_id = max([load.id for load in structural.surface_loads] or [0]) + 1
+    # Plate GUID -> the surfaces it became, the same idea as by_source for beams.
+    by_surface_source = {}
+    for surface in structural.surfaces:
+        by_surface_source.setdefault(str(surface.source_element_id), []).append(surface.id)
 
     # Element GUID -> all members that came out of it. A beam is split during
     # idealisation; a member load has to go onto every piece.
@@ -131,6 +136,7 @@ else:
 
     applied_points = 0
     applied_members = 0
+    applied_surfaces = 0
 
     for load in loads or []:
         if not isinstance(load, dict):
@@ -192,10 +198,35 @@ else:
             if hit:
                 applied_members += hit
 
+        elif load.get("kind") == "surface":
+            from compas.geometry import Vector
+
+            hit = 0
+            for element_id in load.get("element_ids", []):
+                surface_ids = by_surface_source.get(str(element_id), [])
+                if not surface_ids:
+                    report.append("Plate {} has no surface in the analysis model.".format(element_id))
+                    continue
+                for surface_id in surface_ids:
+                    structural.surface_loads.append(
+                        StructuralSurfaceLoad(
+                            id=next_surface_id,
+                            surface_id=surface_id,
+                            load_case_id=load.get("load_case_id", 1),
+                            pressure=Vector(*load["pressure"]),
+                            projected=bool(load.get("projected", False)),
+                        )
+                    )
+                    next_surface_id += 1
+                    hit += 1
+            if hit:
+                applied_surfaces += hit
+
     for combination in combinations or []:
         structural.load_combinations.append(combination)
 
-    report.insert(0, "{} point loads, {} member loads applied.".format(applied_points, applied_members))
+    report.insert(0, "{} point loads, {} member loads, {} area loads applied.".format(
+        applied_points, applied_members, applied_surfaces))
     if combinations:
         report.insert(1, "{} combination(s) taken over.".format(len(combinations)))
 

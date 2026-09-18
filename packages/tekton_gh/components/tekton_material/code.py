@@ -104,6 +104,7 @@ def _warn(message):
 grade: str  # type: ignore
 E0_mean: float  # type: ignore
 density: float  # type: ignore
+elements = elements  # type: ignore # noqa: F821
 
 # --------------------- SCRIPT ---------------------
 
@@ -144,6 +145,23 @@ info = [
 ]
 for key, value in sorted(overrides.items()):
     info.append("overridden: {} = {:g}".format(key, value))
+
+# Assign the grade to elements, when any are wired in. The grade travels on
+# the element, so the translator can give a C24 joist and a GL24h beam their
+# own material and their own section - see WP7. Without elements the
+# component is what it always was: a material definition.
+assigned = 0
+if elements:
+    for element in elements:
+        attributes = getattr(element, "attributes", None)
+        if attributes is None:
+            _warn("Skipped an object with no attributes - wire in beams or plates.")
+            continue
+        attributes["material"] = material.name
+        assigned += 1
+    info.append("assigned to {} element(s)".format(assigned))
+    if material.is_assumed:
+        info.append("careful: the properties are assumed, not from a standard")
 
 for line in info:
     print(line)

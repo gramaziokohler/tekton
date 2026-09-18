@@ -160,3 +160,73 @@ def test_unknown_thickness_is_refused_before_anything_is_built():
     model.surfaces[0].thickness_id = 99
     with pytest.raises(RuntimeError, match="missing thickness"):
         run_model(model)
+
+
+# --- authored pressure (WP3) ---------------------------------------------
+
+def surface_load(model, pressure_z, load_case_id=1, projected=False):
+    from compas.geometry import Vector
+
+    from compas_timber_fea.core.model import StructuralSurfaceLoad
+
+    model.surface_loads = [StructuralSurfaceLoad(
+        id=1, surface_id=1, load_case_id=load_case_id,
+        pressure=Vector(0, 0, pressure_z), projected=projected)]
+    return model
+
+
+def test_an_authored_pressure_reaches_the_supports_in_full():
+    """The equilibrium check for WP3: a lost area load shows up nowhere else."""
+    model = square_plate(0.5)
+    model.load_cases[0].self_weight = False
+    surface_load(model, -3.0)
+    run_model(model)
+    total = sum(node.reaction_force.z for node in model.results[1].node_results.values()
+                if node.reaction_force)
+    assert total == pytest.approx(3.0 * SIDE * SIDE, rel=1e-6)
+
+
+def test_pressure_and_self_weight_add_up_rather_than_replace_each_other():
+    model = square_plate(0.5)
+    model.load_cases[0].self_weight = True
+    surface_load(model, -3.0)
+    run_model(model)
+    _, q = navier_deflection(model)
+    total = sum(node.reaction_force.z for node in model.results[1].node_results.values()
+                if node.reaction_force)
+    assert total == pytest.approx((q + 3.0) * SIDE * SIDE, rel=1e-6)
+
+
+def test_a_pressure_on_another_load_case_is_not_applied():
+    model = square_plate(0.5)
+    model.load_cases[0].self_weight = False
+    surface_load(model, -3.0, load_case_id=99)
+    run_model(model)
+    total = sum(node.reaction_force.z for node in model.results[1].node_results.values()
+                if node.reaction_force)
+    assert total == pytest.approx(0.0, abs=1e-9)
+
+
+def test_a_pressure_on_an_unknown_surface_is_ignored_not_crashed():
+    from compas.geometry import Vector
+
+    from compas_timber_fea.core.model import StructuralSurfaceLoad
+
+    model = square_plate(0.5)
+    model.load_cases[0].self_weight = False
+    model.surface_loads = [StructuralSurfaceLoad(
+        id=1, surface_id=999, load_case_id=1, pressure=Vector(0, 0, -3.0))]
+    run_model(model)
+    assert model.results[1].surface_results
+
+
+def test_doubling_the_pressure_doubles_the_deflection():
+    """Linear elastic: the check that the load actually drives the solve."""
+    worst = []
+    for pressure in (-2.0, -4.0):
+        model = square_plate(0.5)
+        model.load_cases[0].self_weight = False
+        surface_load(model, pressure)
+        run_model(model)
+        worst.append(max(abs(s.displacement.z) for s in model.results[1].surface_results[1]))
+    assert worst[1] == pytest.approx(2 * worst[0], rel=1e-6)

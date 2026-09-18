@@ -41,7 +41,7 @@
             {
                 "name": "support_type",
                 "nickname": "support_type",
-                "description": "'pinned' | 'fixed' | 'roller'. Default: pinned.",
+                "description": "Support type; pick from the drop-down. pinned, fixed, roller, roller_x/y, sliding, hinge_x/y/z, vertical_only, horizontal_only, free.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,

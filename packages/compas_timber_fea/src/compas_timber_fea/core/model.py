@@ -163,6 +163,23 @@ class StructuralMemberLoad:
     dist_end: float = 1.0
 
 @dataclass
+class StructuralSurfaceLoad:
+    """A pressure on a plate, in kN/m2.
+
+    The load belongs to the plate, not to its mesh: how finely a backend
+    tessellates is its own business, and the load has to survive a change of
+    mesh density unchanged. Adapters distribute it over whatever elements
+    they built.
+    """
+    id: int
+    surface_id: int
+    load_case_id: int
+    pressure: Vector = field(default_factory=lambda: Vector(0, 0, 0)) # kN/m2
+    #: True = the pressure acts along the plate normal (snow on a pitched
+    #: roof is given per m2 of *plan* area, not of surface area).
+    projected: bool = False
+
+@dataclass
 class StructuralModel:
     nodes: List[StructuralNode] = field(default_factory=list)
     members: List[StructuralMember] = field(default_factory=list)
@@ -176,6 +193,7 @@ class StructuralModel:
     load_combinations: List[LoadCombination] = field(default_factory=list)
     point_loads: List[StructuralPointLoad] = field(default_factory=list)
     member_loads: List[StructuralMemberLoad] = field(default_factory=list)
+    surface_loads: List[StructuralSurfaceLoad] = field(default_factory=list)
     thicknesses: List[StructuralThickness] = field(default_factory=list)
     surfaces: List[StructuralSurface] = field(default_factory=list)
     surface_connections: List[StructuralSurfaceConnection] = field(default_factory=list)

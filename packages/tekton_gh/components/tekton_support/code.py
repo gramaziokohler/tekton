@@ -113,7 +113,9 @@ try:
     _setup()
     from tekton_gh.rhino_io import attach_value_list
 
-    attach_value_list(ghenv, ['pinned', 'fixed', 'roller'], param_index=2, nickname="Support_type")  # type: ignore # noqa: F821
+    from compas_timber_fea.core.support_types import support_type_names
+
+    attach_value_list(ghenv, support_type_names(), param_index=2, nickname="Support_type")  # type: ignore # noqa: F821
 except Exception:
     pass
 
@@ -126,14 +128,19 @@ else:
     _setup()
 
     tol = tolerance if tolerance else 1e-4
-    support_type = (support_type or "pinned").lower()
 
-    if support_type != "pinned":
-        _warn(
-            "Support type '{}' requested. The translator only ever creates "
-            "pinned supports today - the type is ignored. (TODO: support types "
-            "in the neutral model.)".format(support_type)
-        )
+    from compas_timber_fea.core.support_types import SUPPORT_TYPE_ORDER
+    from compas_timber_fea.core.support_types import describe as _describe_support
+    from compas_timber_fea.core.support_types import key_from_name
+    from compas_timber_fea.core.support_types import stiffnesses
+
+    support_type = key_from_name(support_type) if support_type else "pinned"
+    try:
+        _dofs = stiffnesses(support_type)
+    except ValueError as error:
+        _warn("{} Using pinned.".format(error))
+        support_type = "pinned"
+        _dofs = stiffnesses(support_type)
 
     # Map points to beams: a point belongs to the beam on whose centreline it
     # lies (within the tolerance).
@@ -154,7 +161,9 @@ else:
             distance = ((px - cx) ** 2 + (py - cy) ** 2 + (pz - cz) ** 2) ** 0.5
             if distance <= tol:
                 existing = beam.attributes.get("support_points") or []
-                existing.append([px, py, pz])
+                # The type travels with the point, so one beam can carry a
+                # pinned and a roller support without them merging.
+                existing.append([px, py, pz, support_type])
                 beam.attributes["support_points"] = existing
                 found.append(point)
                 matched = True

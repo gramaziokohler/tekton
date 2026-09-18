@@ -47,11 +47,24 @@ def _magnitude(value):
 
 
 def deformation_summary(result_set):
-    """Max and mean nodal displacement, and where the maximum sits."""
-    nodes = list((getattr(result_set, "node_results", None) or {}).values())
-    if not nodes:
+    """Max and mean displacement, and where the maximum sits.
+
+    Plate samples count too. In a pure plate model the only `node_results`
+    are the outline nodes, which carry the supports and therefore do not
+    move - reporting their maximum would say "0 m" about a plate that is
+    visibly sagging. The interesting displacement lives on the mesh, in
+    `surface_results`.
+    """
+    magnitudes = [
+        (node.node_id, _magnitude(node.displacement))
+        for node in (getattr(result_set, "node_results", None) or {}).values()
+    ]
+    for surface_id, samples in (getattr(result_set, "surface_results", None) or {}).items():
+        for sample in samples or []:
+            label = (sample.metadata or {}).get("node_tag", "surface {}".format(surface_id))
+            magnitudes.append((label, _magnitude(sample.displacement)))
+    if not magnitudes:
         return None
-    magnitudes = [(node.node_id, _magnitude(node.displacement)) for node in nodes]
     worst_node, worst = max(magnitudes, key=lambda item: item[1])
     total = sum(value for _, value in magnitudes)
     return {
@@ -99,6 +112,21 @@ def applied_load_total(model, load_case_id):
         totals[1] += y
         totals[2] += z
         count += 1
+
+    # Plate pressures integrate exactly over the plate area, so unlike member
+    # loads they can be summed here without needing the mesh.
+    areas = _surface_areas(model)
+    for load in getattr(model, "surface_loads", []) or []:
+        if getattr(load, "load_case_id", None) != load_case_id:
+            continue
+        area = areas.get(getattr(load, "surface_id", None))
+        if area is None:
+            continue
+        x, y, z = _vector_components(getattr(load, "pressure", None))
+        totals[0] += x * area
+        totals[1] += y * area
+        totals[2] += z * area
+        count += 1
     has_other = any(
         getattr(load, "load_case_id", None) == load_case_id
         for load in (getattr(model, "member_loads", []) or [])
@@ -108,6 +136,22 @@ def applied_load_total(model, load_case_id):
         None,
     )
     self_weight = bool(getattr(case, "self_weight", False))
+    if self_weight:
+        # A plate's own weight is thickness x density x area - exact, so it
+        # can be summed. A beam's needs its length and section, which is the
+        # part that stays out of this sum.
+        thicknesses = {t.id: t for t in getattr(model, "thicknesses", []) or []}
+        materials = getattr(model, "materials", {}) or {}
+        for surface in getattr(model, "surfaces", []) or []:
+            thickness = thicknesses.get(getattr(surface, "thickness_id", None))
+            area = areas.get(surface.id)
+            if thickness is None or area is None:
+                continue
+            material = materials.get(getattr(thickness, "material_id", None))
+            density = getattr(material, "density_mean", 0.0) or 0.0
+            totals[2] -= density * 9.81 / 1000.0 * float(thickness.thickness) * area
+            count += 1
+        self_weight = bool(getattr(model, "members", None))       # beams still unaccounted
     return {
         "fx": totals[0],
         "fy": totals[1],
@@ -115,6 +159,28 @@ def applied_load_total(model, load_case_id):
         "count": count,
         "partial": has_other or self_weight,
     }
+
+
+def _surface_areas(model):
+    """Plan area of every plate, from its outline polygon.
+
+    Computed here rather than taken from a mesh: the equilibrium check must
+    work for any backend, including one whose mesh we never see.
+    """
+    points = {node.id: node.point for node in getattr(model, "nodes", []) or []}
+    areas = {}
+    for surface in getattr(model, "surfaces", []) or []:
+        corners = [points[i] for i in surface.nodes if i in points]
+        if len(corners) < 3:
+            continue
+        # Newell's method: the polygon's area vector, valid for any plane.
+        nx = ny = nz = 0.0
+        for current, following in zip(corners, corners[1:] + corners[:1]):
+            nx += current[1] * following[2] - current[2] * following[1]
+            ny += current[2] * following[0] - current[0] * following[2]
+            nz += current[0] * following[1] - current[1] * following[0]
+        areas[surface.id] = 0.5 * math.sqrt(nx * nx + ny * ny + nz * nz)
+    return areas
 
 
 def force_extremes(result_set):
@@ -190,9 +256,25 @@ def build_report(model, checks_by_case=None, assumptions=None, title="Tekton ana
 
     for case_id, result_set in sorted(results.items()):
         name = case_names.get(case_id) or getattr(result_set, "name", "") or "case {}".format(case_id)
-        heading = "Load case {} - {}".format(case_id, name)
-        lines.append(heading)
-        lines.append("-" * len(heading))
+        metadata = getattr(result_set, "metadata", None) or {}
+        # A combination is assembled, not solved. Saying so matters: the
+        # factors are what an engineer checks first, and superposition is
+        # only valid while the model is linear.
+        if metadata.get("source") == "superposition":
+            heading = "Combination {} - {}".format(case_id, name)
+            terms = ", ".join(
+                "{}x LC{}".format(_format_number(factor, 2), key)
+                for key, factor in sorted(metadata.get("factors", {}).items())
+            )
+            lines.append(heading)
+            lines.append("-" * len(heading))
+            if terms:
+                lines.append("  from        {}".format(terms))
+            lines.append("  assembled by superposition (valid for a linear model)")
+        else:
+            heading = "Load case {} - {}".format(case_id, name)
+            lines.append(heading)
+            lines.append("-" * len(heading))
 
         deformation = deformation_summary(result_set)
         if deformation:
@@ -311,6 +393,12 @@ def build_report(model, checks_by_case=None, assumptions=None, title="Tekton ana
         lines.append("")
         lines.append("  These are assumptions, not results. Stability was not verified;")
         lines.append("  a member that passes here may still fail on buckling.")
+        lines.append("")
+        lines.append("  NOT VERIFIED BY AN ENGINEER: the code tables behind these numbers")
+        lines.append("  (k_mod, gamma_M, material strengths, psi factors) were transcribed")
+        lines.append("  from the Eurocodes by a developer and carry the base recommended")
+        lines.append("  values, not a national annex. Use for orientation during design,")
+        lines.append("  not for verification.")
         lines.append("")
 
     return "\n".join(lines)

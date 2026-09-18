@@ -1,5 +1,18 @@
 """The modification factors, and the assumptions they stand on.
 
+.. warning::
+
+   **These tables have not been checked by a structural engineer.** They were
+   transcribed from EN 1995-1-1 by a developer reading the standard. A wrong
+   value here does not crash and does not look wrong - a k_mod of 0.8 where
+   0.6 belongs overstates every resistance in the model by a third, and the
+   tests assert against the same transcribed numbers, so they would not catch
+   it either. Until an engineer has signed these off, Tekton's design numbers
+   are for orientation during design, not for verification. The values are the
+   recommended ones from the base Eurocode; CH, DE and AT national annexes
+   deviate. See the warning section in
+   ``docs/discussion/work-packages.md``.
+
 Everything in this module is a *choice*, not a result: service class and
 load duration are properties of the building and the action, not of the
 geometry, and the neutral model does not carry them (WP1c would add them).
@@ -56,10 +69,11 @@ _K_MOD = {
     },
 }
 
-#: Which action category maps to which duration class, as a default only.
-#: EN 1991 assigns duration to the action, not to our category names, so this
-#: is a convenience: it gets a sensible k_mod out of a model that only carries
-#: `action_category`, and the report says it was inferred.
+#: Fallback map, used only when the load catalogue is unavailable. The
+#: catalogue (`core/load_catalogue.py`) is the real source: it carries the
+#: duration class next to the psi factors for every EN 1990 category, so
+#: imposed-storage (long-term) and wind (instantaneous) come out right
+#: instead of collapsing into "medium-term".
 ACTION_CATEGORY_DURATION = {
     "PERMANENT": "permanent",
     "VARIABLE": "medium-term",
@@ -108,11 +122,23 @@ def k_mod(service_class=1, duration="medium-term"):
 
 
 def duration_for_action_category(category):
-    """Default duration class for an ``action_category`` on a load case.
+    """Duration class for an ``action_category`` on a load case.
 
-    Returns ``"medium-term"`` for anything unrecognised - and the caller is
-    expected to report that it was a fallback, not a datum.
+    Read from the load catalogue, which holds the EN 1990 categories and the
+    EN 1995 duration class each of them implies. Falls back to the small map
+    above only if the catalogue cannot be imported; unknown categories end up
+    at "medium-term", and the caller is expected to report that as a fallback
+    rather than a datum.
     """
+    try:
+        from compas_timber_fea.core.load_catalogue import CATEGORIES
+        from compas_timber_fea.core.load_catalogue import category as lookup
+
+        key = str(category or "").strip().upper()
+        if key in CATEGORIES:
+            return lookup(key).load_duration
+    except ImportError:
+        pass
     return ACTION_CATEGORY_DURATION.get(str(category).upper(), "medium-term")
 
 

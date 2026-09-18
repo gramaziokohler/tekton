@@ -112,19 +112,26 @@ id: int  # type: ignore
 # and TektonInfo says what is missing.
 try:
     _setup()
+    from compas_timber_fea.core.load_catalogue import category_names
     from tekton_gh.rhino_io import attach_value_list
 
-    attach_value_list(ghenv, ['PERMANENT', 'VARIABLE', 'SNOW', 'WIND'], param_index=1, nickname="Category")  # type: ignore # noqa: F821
+    attach_value_list(ghenv, category_names(), param_index=1, nickname="Category")  # type: ignore # noqa: F821
 except Exception:
     pass
 
 _setup()
-from compas_timber_fea.core.model import StructuralLoadCase
+from compas_timber_fea.core.load_catalogue import CATEGORIES  # noqa: E402
+from compas_timber_fea.core.load_catalogue import category as _category  # noqa: E402
+from compas_timber_fea.core.load_catalogue import key_from_name  # noqa: E402
+from compas_timber_fea.core.model import StructuralLoadCase  # noqa: E402
 
-VALID = ("PERMANENT", "VARIABLE", "SNOW", "WIND")
-action = (category or "PERMANENT").upper()
-if action not in VALID:
-    _warn("Unknown category '{}'. Allowed: {}. PERMANENT is used instead.".format(action, ", ".join(VALID)))
+# The drop-down hands over "A - Imposed - domestic, residential"; a typed
+# value is just the key. Both end up as the key.
+action = key_from_name(category) if category else "PERMANENT"
+if action not in CATEGORIES:
+    _warn(
+        "Unknown category '{}'. PERMANENT is used instead. Available: {}.".format(
+            action, ", ".join(sorted(CATEGORIES))))
     action = "PERMANENT"
 
 load_case = StructuralLoadCase(
@@ -134,6 +141,14 @@ load_case = StructuralLoadCase(
     self_weight=bool(self_weight),
 )
 
+_entry = _category(action)
 print("Load case {}: '{}' ({}{})".format(
     load_case.id, load_case.name, load_case.action_category,
     ", self-weight" if load_case.self_weight else ""))
+print("  {}".format(_entry.name))
+print("  psi_0 {:.2f}  psi_1 {:.2f}  psi_2 {:.2f}  gamma {:.2f}".format(
+    _entry.psi_0, _entry.psi_1, _entry.psi_2, _entry.gamma_unfavourable))
+print("  duration for k_mod: {}".format(_entry.load_duration))
+if _entry.note:
+    print("  note: {}".format(_entry.note))
+print("  EN 1990 recommended values - NOT verified by an engineer, and not a national annex.")

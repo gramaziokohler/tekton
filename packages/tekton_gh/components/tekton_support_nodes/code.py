@@ -106,6 +106,7 @@ structural = structural  # type: ignore # noqa: F821
 points = points  # type: ignore # noqa: F821
 level: float  # type: ignore
 support_type: str  # type: ignore
+stiffness = stiffness  # type: ignore # noqa: F821
 tolerance: float  # type: ignore
 
 # --------------------- SCRIPT ---------------------
@@ -117,7 +118,9 @@ try:
     _setup()
     from tekton_gh.rhino_io import attach_value_list
 
-    attach_value_list(ghenv, ['pinned', 'fixed', 'roller'], param_index=3, nickname="Support_type")  # type: ignore # noqa: F821
+    from compas_timber_fea.core.support_types import support_type_names
+
+    attach_value_list(ghenv, support_type_names(), param_index=3, nickname="Support_type")  # type: ignore # noqa: F821
 except Exception:
     pass
 
@@ -131,22 +134,32 @@ else:
     import Rhino.Geometry as rg
     from compas_timber_fea.core.model import StructuralSupport
 
-    RIGID = float("inf")
-    FREE = 0.0
-    # A roller only holds vertically; fixed also holds rotations. Everything
-    # else the neutral model can express is a spring, which belongs on a
-    # dedicated input rather than a keyword.
-    KINDS = {
-        "pinned": dict(ux=RIGID, uy=RIGID, uz=RIGID, rx=FREE, ry=FREE, rz=FREE),
-        "fixed": dict(ux=RIGID, uy=RIGID, uz=RIGID, rx=RIGID, ry=RIGID, rz=RIGID),
-        "roller": dict(ux=FREE, uy=FREE, uz=RIGID, rx=FREE, ry=FREE, rz=FREE),
-    }
+    from compas_timber_fea.core.support_types import SUPPORT_TYPE_ORDER
+    from compas_timber_fea.core.support_types import describe as _describe_support
+    from compas_timber_fea.core.support_types import key_from_name
+    from compas_timber_fea.core.support_types import stiffnesses
 
-    kind = (support_type or "pinned").lower()
-    if kind not in KINDS:
-        _warn("Unknown support type '{}'. Allowed: {}. Using pinned.".format(
-            kind, ", ".join(sorted(KINDS))))
+    # The catalogue carries all twelve named types plus the explicit and
+    # spring paths; see core/support_types.py.
+    kind = key_from_name(support_type) if support_type else "pinned"
+    _springs = {}
+    if stiffness:
+        _values = [float(v) for v in stiffness]
+        if len(_values) == 6:
+            _explicit = _values
+        else:
+            _warn("'stiffness' needs 6 values (ux, uy, uz, rx, ry, rz); {} given - ignored.".format(len(_values)))
+            _explicit = None
+    else:
+        _explicit = None
+
+    try:
+        _dofs = stiffnesses(kind, explicit=_explicit, springs=_springs)
+    except ValueError as error:
+        _warn("{} Using pinned.".format(error))
         kind = "pinned"
+        _dofs = stiffnesses(kind)
+    KINDS = {kind: _dofs}
 
     # The model is in metres, the canvas in document units.
     units = getattr(structural, "source_units", "m")
@@ -196,7 +209,9 @@ else:
         scale = 1.0 / to_meters
         nodes = [rg.Point3d(n.point[0] * scale, n.point[1] * scale, n.point[2] * scale)
                  for n in unique]
-        report.insert(0, "{} node(s) supported, type '{}'.".format(len(unique), kind))
+        report.insert(0, "{} node(s) supported, type '{}'.".format(
+            len(unique), "explicit" if _explicit else kind))
+        report.insert(1, "  {}".format(_describe_support(KINDS[kind])))
     else:
         report.insert(0, "No node supported.")
 

@@ -3,7 +3,7 @@
     "nickname": "TMat",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Pick the material for the analysis model. Today the neutral model carries only a name string that RFEM resolves against its own library. Once the material dataclass with presets exists (see discussion/materials.md), this component will return a full material with overrides.",
+    "description": "Define a material, and optionally assign it to elements. Without 'elements' it returns a material for TektonTranslate, which then applies to the whole model. Wire beams or plates into 'elements' and the grade is written onto them instead, so one model can mix C24 joists, GL24h beams and CLT plates - the translator gives each grade its own material and its own sections. Single properties can be overridden; an overridden or unknown grade is marked as an assumption wherever it shows up.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000002",
     "ghpython": {
@@ -49,6 +49,20 @@
                 "wireDisplay": "default",
                 "sourceCount": 0,
                 "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "elements",
+                "nickname": "elements",
+                "description": "Optional: beams or plates to assign this grade to. Empty = the material applies to the whole model through TektonTranslate.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
                 "reverse": false,
                 "simplify": false
             }

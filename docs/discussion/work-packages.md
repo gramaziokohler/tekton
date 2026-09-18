@@ -39,6 +39,48 @@ The work packages below turn the last row into the first.
 
 ---
 
+## ⚠ The code tables have not been checked by an engineer
+
+**Every number Tekton takes from a standard was transcribed by a developer
+reading the standard, not verified by a structural engineer. None of it is
+fit for design use until it has been.**
+
+This affects, concretely:
+
+| Table | Where | What it decides |
+|---|---|---|
+| EN 1995 Table 3.1 — `k_mod` | `design/factors.py` | Scales *every* resistance |
+| EN 1995 Table 2.3 — `gamma_M` | `design/factors.py` | Scales *every* resistance |
+| Size factors `k_h`, `k_m` | `design/factors.py` | Bending resistance |
+| EN 338 / EN 14080 strengths | `core/materials.py` | Every check |
+| EN 1990 Table A1.1 — psi factors | `core/load_catalogue.py` | Every combination |
+| EN 1990 Table A1.2(B) — gamma_G/gamma_Q | `core/load_catalogue.py` | Every combination |
+| Duration class per action category | `core/load_catalogue.py` | `k_mod`, hence every resistance |
+
+Why this warning and not just "review it sometime": a transcription error in
+any of these produces numbers that look entirely plausible. A `k_mod` of 0.8
+where 0.6 belongs overstates the resistance by a third, and nothing in the
+output looks wrong — there is no crash, no outlier, no failing test, because
+the tests assert against the same transcribed values. Only someone who knows
+the standards can catch it.
+
+Three things follow:
+
+- **The values are the recommended ones from the base Eurocode**, not from
+  any national annex. CH, DE and AT all deviate. A project under a national
+  annex needs its values substituted, which today means editing the tables.
+- **Until an engineer signs them off**, Tekton's design numbers are for
+  orientation during design — comparing variants, spotting the member that
+  is obviously too small — and not for verification.
+- **The review has to cover the clause logic too**, not only the numbers:
+  which check applies when, how the interactions are formed, and that
+  stability really is absent rather than silently assumed to pass.
+
+`docs/discussion/design-checks.md` records the clauses used and is the place
+to start that review.
+
+---
+
 ## WP0 — OpenSees backend (done for beams, 2026-09-16)
 
 **Why.** The first backend without a licence or a desktop application:
@@ -284,7 +326,7 @@ result. No two-hinge couplings ever generated (already guaranteed).
 
 ---
 
-## WP3 — Loads as a catalogue
+## WP3 — Loads as a catalogue (neutral layer done, 2026-09-18)
 
 **Why.** Utilisation without combinations is a number for self-weight.
 The Karamba screenshot is the target: EN 1990 categories, ψ/γ, design
@@ -317,9 +359,34 @@ generated ULS combination → utilisation from WP1 for the combination.
 
 **Size.** Two days.
 
+**Done (2026-09-18), neutral layer.** `core/load_catalogue.py` with the
+EN 1990 categories (permanent, imposed A-H, snow below/above 1000 m, wind,
+thermal), their psi_0/psi_1/psi_2 from Table A1.1 and the partial factors
+from A1.2(B); a generator for ULS 6.10 (every variable action leads once,
+the rest by psi_0), SLS characteristic 6.14b and quasi-permanent 6.16b.
+`core/superposition.py` assembles the combination *results* from the load
+case results rather than re-solving - verified against a directly solved
+model to 1e-16. `StructuralSurfaceLoad` puts pressure on plates, applied by
+the OpenSees adapter as consistent nodal loads; an authored 3 kN/m2 arrives
+in the reactions exactly. 44 new tests, all combination arithmetic checked
+term by term against hand-written EN 1990 values.
+
+Two fixes fell out of it. Each category now carries its EN 1995 duration
+class, so `k_mod` distinguishes storage (long-term, 0.7) from wind
+(instantaneous, 1.1) instead of collapsing both into 0.8. And `Summary`
+counted only `node_results` for deflection, which in a pure plate model are
+the supported outline nodes - it reported "0 m" for a visibly sagging
+plate; it now counts the mesh samples too, and its equilibrium check sums
+plate pressures and plate self-weight, both of which are exact.
+
+**Still open.** The two Grasshopper components (category drop-down on
+`Load Case`, "generate EN 1990" on `Load Combination`), the RFEM mapper for
+combinations and design situations, and reading results per combination
+(`loading="CO1"`). The example definitions still carry self-weight only.
+
 ---
 
-## WP4 — Supports, authored
+## WP4 — Supports, authored (authoring done, 2026-09-18)
 
 **Why.** The symbols now render all 64 stiffness combinations; the
 authoring cannot produce most of them. Plates get supports only through
@@ -342,6 +409,23 @@ authoring cannot produce most of them. Plates get supports only through
 Display symbol row matches RFEM's for every authored type.
 
 **Size.** One to two days.
+
+**Done (2026-09-18), authoring.** `core/support_types.py` holds twelve named
+types - the classic three plus directional rollers, sliding, the three
+hinges, vertical-only and horizontal-only - as the six stiffnesses each
+stands for, with an explicit six-value path and per-DOF springs for anything
+the names do not cover. Both components pick from the catalogue, and the
+type now survives translation: it travels on the support point, and points
+sharing a type become one support object, so a model can carry a pinned and
+a roller line at once. Before this the translator hard-coded pinned and
+`Tekton Support` warned that the type was ignored. A support point written
+without a type still becomes pinned, so older models translate unchanged.
+19 tests.
+
+**Still open.** Line supports for plates (`StructuralLineSupport` → RFEM
+`LineSupport`, a `line` mode on `Support Nodes`) and reactions per line in
+the reader - all three need the RFEM side, so they belong to a Windows
+session.
 
 ---
 
@@ -510,7 +594,7 @@ attach to the same beam GUID.
 
 ---
 
-## WP7 — Materials per element
+## WP7 — Materials per element (beams and plates done, 2026-09-18)
 
 **Why.** One grade for the whole model is a placeholder. Real projects mix
 C24 joists and GL24h beams and CLT plates.
@@ -531,6 +615,22 @@ example uses a CLT layup.
 
 **Size.** Two days; layups another two.
 
+**Done (2026-09-18), beams and plates.** An element naming a grade in
+`attributes["material"]` (or `["grade"]`) gets its own material id; grades
+are pooled by name, so a hundred C24 beams stay one material. `Tekton
+Material` assigns to wired elements instead of only defining.
+
+The fix that made it work is worth recording: `SectionLibrary` keyed
+sections by dimensions alone, so a C24 joist and a GL24h beam of the same
+size shared one section - and therefore one material. Every beam silently
+took the grade of whichever was translated first, and nothing looked wrong.
+The material is now part of the key. 12 tests.
+
+**Still open.** CLT layups as a material for plates (EN 16351: layer count,
+thickness, orientation) and RFEM's multilayer surface - the latter needs a
+Windows session. The orthotropic 2D variant is also blocked by WP0b's
+finding that OpenSees does not transport material axes.
+
 ---
 
 ## WP8 — Housekeeping (continuous)
@@ -548,6 +648,39 @@ Not a package, a list to drain alongside:
   Grasshopper side exists.
 - Commit discipline: 2026-09-15 left ~30 changed files uncommitted; the
   changelog under `[Unreleased]` is the commit message source.
+
+---
+
+## What needs Windows, and what does not
+
+RFEM 6 and RSTAB are Windows-only desktop applications, and the Dlubal API
+talks to a *running* instance. The `dlubal-api` client itself installs and
+imports on macOS - it is gRPC - so the constraint is the application, not our
+code. Development therefore splits cleanly: everything in the neutral layer
+and the OpenSees backend runs anywhere; anything that has to see RFEM's own
+numbers waits for a Windows session.
+
+**Needs Windows with RFEM running** (collect these and do them in one go):
+
+| Work | From | Why |
+|---|---|---|
+| Plate calibration against RFEM | WP0b, open | Our plate numbers are checked against the Navier solution only - one isolated plate with clean supports. WP0 found two real bugs (coupling mapping, reaction sign) exactly this way for beams. |
+| Utilisation from the design add-on | WP1, whole package | Needs the add-on and a licence; also the cross-check against our own EC5 checks (WP1b). |
+| Combinations to RFEM | WP3, open | `LoadCombination` + design situations in the mapper; reading results per combination (`loading="CO1"`). |
+| Membrane forces vs. RFEM | WP0b, open | The element reports them in its own axes; the convention needs a reference to be pinned against. |
+| Read-back from RFEM | WP6 | The engineer's edits come back only through a live model. |
+| Surface results, RFEM side | WP5 | `Results`/`Attach Results` for plates, checked against the backend. |
+
+**Runs on macOS** — everything else: the neutral model, the design checks,
+the load catalogue and combinations, superposition, the OpenSees backend for
+beams and plates, all Grasshopper components, and every unit test. A full
+plate model solves through OpenSees in under a tenth of a second without any
+licence, which is what makes the split workable in the first place.
+
+**Practical consequence.** Do the neutral-layer work first and let the
+Windows items accumulate; a single RFEM session can then calibrate plates,
+read the design ratios, and push a combination, instead of three separate
+trips. Findings from such a session go into `roundtrip.md`.
 
 ---
 

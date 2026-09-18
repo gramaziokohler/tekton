@@ -3,7 +3,7 @@
     "nickname": "TCase",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Define a load case (self-weight, imposed, snow, wind). Load cases are the containers that loads and combinations refer to.",
+    "description": "Define a load case. Load cases are the containers that loads and combinations refer to, and the action category is what makes a combination possible: it carries the EN 1990 psi factors and the EN 1995 duration class that sets k_mod. The drop-down lists the catalogue - permanent, imposed A to H, snow below and above 1000 m, wind, thermal. The factors are EN 1990 recommended values, NOT checked by an engineer and not a national annex.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000004",
     "ghpython": {
@@ -27,7 +27,7 @@
             {
                 "name": "category",
                 "nickname": "category",
-                "description": "PERMANENT | VARIABLE | SNOW | WIND.",
+                "description": "EN 1990 action category; pick from the drop-down. PERMANENT, A-H (imposed), SNOW, SNOW_HIGH, WIND, THERMAL.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
