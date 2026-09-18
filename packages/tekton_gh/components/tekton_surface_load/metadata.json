@@ -1,0 +1,81 @@
+{
+    "name": "Tekton Surface Load",
+    "nickname": "TSLoad",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Pressure on plates, in kN/m2. Like Member Load the assignment goes through the element GUID, because which surfaces a plate becomes is decided during idealisation. The load belongs to the plate, not to its mesh: how finely a backend tessellates is its own business, and the pressure survives a change of mesh density unchanged.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000028",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "plates",
+                "nickname": "plates",
+                "description": "Plates (COMPAS Timber) or their GUIDs.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "pressure",
+                "nickname": "pressure",
+                "description": "Area load [kN/m2]. Negative z is downward.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "vector",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_case",
+                "nickname": "load_case",
+                "description": "Load case from TektonLoadCase.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "projected",
+                "nickname": "projected",
+                "description": "The value is per m2 of plan area rather than of the sloped surface - how snow is given. Default False.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "load",
+                "nickname": "load",
+                "description": "Area load for TektonApplyLoads",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

@@ -237,6 +237,27 @@ COMPONENTS = [
         outputs=[o("load", "Line load for TektonApplyLoads")],
     ),
     dict(
+        folder="tekton_surface_load",
+        uid=28,
+        name="Tekton Surface Load",
+        nickname="TSLoad",
+        sub=SUB_AUTHOR,
+        description=(
+            "Pressure on plates, in kN/m2. Like Member Load the assignment goes through the "
+            "element GUID, because which surfaces a plate becomes is decided during "
+            "idealisation. The load belongs to the plate, not to its mesh: how finely a "
+            "backend tessellates is its own business, and the pressure survives a change of "
+            "mesh density unchanged."
+        ),
+        inputs=[
+            p("plates", access="list", desc="Plates (COMPAS Timber) or their GUIDs."),
+            p("pressure", "vector", desc="Area load [kN/m2]. Negative z is downward."),
+            p("load_case", desc="Load case from TektonLoadCase."),
+            p("projected", "bool", desc="The value is per m2 of plan area rather than of the sloped surface - how snow is given. Default False."),
+        ],
+        outputs=[o("load", "Area load for TektonApplyLoads")],
+    ),
+    dict(
         folder="tekton_combination",
         uid=7,
         name="Tekton Load Combination",

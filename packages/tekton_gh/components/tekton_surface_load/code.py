@@ -15,9 +15,6 @@ imposed loads.
 # venv: tekton-test
 # r: compas, compas_timber
 
-import os
-import sys
-
 ghenv.Component.Message = "Surface Load"  # type: ignore # noqa: F821
 
 
@@ -32,7 +29,7 @@ def _warn(message):
 plates = plates  # type: ignore # noqa: F821
 pressure = pressure  # type: ignore # noqa: F821
 load_case = load_case  # type: ignore # noqa: F821
-projected: bool  # type: ignore
+projected = projected  # type: ignore # noqa: F821
 
 # --------------------- SCRIPT ---------------------
 
