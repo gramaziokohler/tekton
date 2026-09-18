@@ -21,10 +21,56 @@ import sys
 ghenv.Component.Message = "Material"  # type: ignore # noqa: F821
 
 
+def _repo_candidates(explicit):
+    """Where to look for the monorepo, cheapest and most certain first.
+
+    Only `isdir` calls - never a filesystem search, this runs on every solve.
+    The document guess is what makes a definition stored inside the repo work
+    with nothing configured at all; the cache file is what makes the path
+    survive a Rhino restart. Mirrors tekton_gh.env.discover_repo_root, which
+    cannot be imported yet - finding the repo is what makes it importable.
+    """
+    yield explicit
+    yield os.environ.get("TEKTON_REPO")
+    try:
+        document = ghenv.Component.OnPingDocument()  # type: ignore # noqa: F821
+        current = os.path.dirname(document.FilePath) if document and document.FilePath else None
+        for _ in range(8):
+            if not current:
+                break
+            yield current
+            parent = os.path.dirname(current)
+            current = None if parent == current else parent
+    except Exception:
+        pass
+    try:
+        with open(os.path.join(os.path.expanduser("~"), ".tekton", "repo-root")) as handle:
+            yield handle.read()
+    except Exception:
+        pass
+    for guess in ("~/Documents/GitHub/tekton", "~/Documents/git/tekton", "~/git/tekton",
+                  "~/GitHub/tekton", "~/Developer/tekton", "~/src/tekton", "~/tekton",
+                  "~/Documents/tekton", "~/Desktop/tekton"):
+        yield guess
+
+
+def _remember_repo(root):
+    """Write the root down so the next Rhino session finds it by itself."""
+    try:
+        directory = os.path.join(os.path.expanduser("~"), ".tekton")
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
+        with open(os.path.join(directory, "repo-root"), "w") as handle:
+            handle.write(root)
+    except Exception:
+        pass
+
+
 def _setup(explicit_repo=None):
     """Make compas_timber_fea importable."""
     root = None
-    for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
+    for candidate in _repo_candidates(explicit_repo):
+        candidate = str(candidate).strip() if candidate else ""
         if candidate and os.path.isdir(os.path.join(os.path.expanduser(candidate), "packages")):
             root = os.path.expanduser(candidate)
             break
@@ -34,6 +80,10 @@ def _setup(explicit_repo=None):
             "(TektonInfo, TektonTranslate, TektonBackend) on the canvas once - "
             "the path then applies for the whole session. See TektonInfo."
         )
+    # Deposit it for the components without a repo input of their own, and
+    # for the next Rhino session.
+    os.environ["TEKTON_REPO"] = root
+    _remember_repo(root)
     for package in ("tekton_gh", "compas_timber_fea"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
@@ -54,6 +104,7 @@ def _warn(message):
 grade: str  # type: ignore
 E0_mean: float  # type: ignore
 density: float  # type: ignore
+elements = elements  # type: ignore # noqa: F821
 
 # --------------------- SCRIPT ---------------------
 
@@ -94,6 +145,23 @@ info = [
 ]
 for key, value in sorted(overrides.items()):
     info.append("overridden: {} = {:g}".format(key, value))
+
+# Assign the grade to elements, when any are wired in. The grade travels on
+# the element, so the translator can give a C24 joist and a GL24h beam their
+# own material and their own section - see WP7. Without elements the
+# component is what it always was: a material definition.
+assigned = 0
+if elements:
+    for element in elements:
+        attributes = getattr(element, "attributes", None)
+        if attributes is None:
+            _warn("Skipped an object with no attributes - wire in beams or plates.")
+            continue
+        attributes["material"] = material.name
+        assigned += 1
+    info.append("assigned to {} element(s)".format(assigned))
+    if material.is_assumed:
+        info.append("careful: the properties are assumed, not from a standard")
 
 for line in info:
     print(line)

@@ -57,7 +57,24 @@ def apply_case(ops, model, built, case, time_series_tag=1):
                 continue
             wy, wz, wx = member_uniform_load(built, member_id, (0.0, 0.0, -w))
             ops.eleLoad("-ele", built.member_elements[member_id], "-type", "-beamUniform", wy, wz, wx)
-        _surface_area_load(ops, built, surface_pressures(built))
+
+    # Authored plate pressures and, for a self-weight case, the plates' own
+    # weight. Both end up as consistent nodal loads on the same mesh, so they
+    # add up per node rather than overwriting each other.
+    pressures = {}
+    if getattr(case, "self_weight", False):
+        pressures = surface_pressures(built)
+    for load in getattr(model, "surface_loads", []) or []:
+        if getattr(load, "load_case_id", None) != case.id:
+            continue
+        surface_id = getattr(load, "surface_id", None)
+        if surface_id not in getattr(built, "surface_elements", {}):
+            continue
+        p = load.pressure
+        current = pressures.get(surface_id, (0.0, 0.0, 0.0))
+        pressures[surface_id] = (
+            current[0] + float(p[0]), current[1] + float(p[1]), current[2] + float(p[2]))
+    _surface_area_load(ops, built, pressures)
 
     return tag
 

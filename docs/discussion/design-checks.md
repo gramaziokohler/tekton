@@ -4,6 +4,17 @@
 compared; see "The comparison" below. Written 2026-09-16 as WP1b started.
 The clause numbers are EN 1995-1-1 (Eurocode 5).*
 
+> **⚠ Not verified by an engineer.** Every value and every clause below was
+> transcribed by a developer reading the standard. A wrong `k_mod` or a
+> misread interaction formula produces numbers that look completely
+> plausible — no crash, no outlier, and the unit tests assert against the
+> same transcribed values, so they cannot catch it either. Until a
+> structural engineer has reviewed both the tables and the clause logic,
+> treat Tekton's design numbers as orientation during design (comparing
+> variants, spotting the obviously undersized member), not as verification.
+> The values are the base Eurocode recommendations; CH, DE and AT national
+> annexes deviate. This document is the place to start that review.
+
 ## Why compute checks ourselves at all
 
 RFEM has a timber design add-on, and reading its ratios is WP1. So why

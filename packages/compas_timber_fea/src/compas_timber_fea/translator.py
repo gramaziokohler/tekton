@@ -45,7 +45,10 @@ class SectionLibrary:
         self._section_id_counter = 1
 
     def create_section(self, name, width, height, shape, material_id):
-        key = _dimension_key(width, height, shape)
+        # The material is part of the key: a C24 and a GL24h beam of the same
+        # dimensions are two sections, not one. Leaving it out silently gave
+        # every beam the material of whichever one was translated first.
+        key = _dimension_key(width, height, shape, material_id)
         if key in self.sections_map:
             raise ValueError(f"Section with dimensions {width}x{height} and shape {shape} already exists.")
         sec_id = self._section_id_counter
@@ -57,9 +60,9 @@ class SectionLibrary:
         return section
 
     def get_or_create_section(self, width, height, shape, material_id):
-        key = _dimension_key(width, height, shape)
+        key = _dimension_key(width, height, shape, material_id)
         if key not in self.sections_map:
-            name = f"R_M1 {width}/{height}"
+            name = f"R_M{material_id} {width}/{height}"
             self.create_section(name, width, height, shape, material_id)
         return self.sections_map[key]
 
@@ -133,6 +136,35 @@ class TimberToStructural:
         #: Assumptions and anomalies recorded during the last translate().
         self.report = []
 
+    def _material_id_for(self, model, source):
+        """Material id for one timber element, from its own grade if it has one.
+
+        An element names its grade in ``attributes["material"]`` - a string
+        like "GL24h", or a Material. Everything else falls back to the
+        model-wide grade, which is what every model did before WP7.
+
+        Grades are pooled by name, so a hundred C24 beams share one material
+        entry and one section per size, the way a backend expects.
+        """
+        raw = None
+        attributes = getattr(source, "attributes", None)
+        if attributes:
+            raw = attributes.get("material") or attributes.get("grade")
+        if not raw:
+            return 1
+
+        material = Material.resolve(raw)
+        existing = self._material_ids.get(material.name)
+        if existing is not None:
+            return existing
+
+        new_id = max(model.materials) + 1 if model.materials else 1
+        model.materials[new_id] = material
+        self._material_ids[material.name] = new_id
+        if material.is_assumed:
+            self.report.append(f"material {material.name!r}: {material.standard}")
+        return new_id
+
     def _scaled_point(self, point):
         if self.scale == 1.0:
             return point
@@ -179,8 +211,12 @@ class TimberToStructural:
         self.sections_library.model_sections = model.sections  # Damit die SectionLibrary direkt in das Model schreibt
         self.thicknesses_library.model_thicknesses = model.thicknesses
 
+        # Material id 1 is the model default; elements that name their own
+        # grade get an id of their own (see _material_id_for).
+        self._material_ids = {}
         material = Material.resolve(self.material_name)
         model.materials[1] = material
+        self._material_ids[material.name] = 1
         if material.is_assumed:
             self.report.append(f"material {material.name!r}: {material.standard}")
 
@@ -248,7 +284,7 @@ class TimberToStructural:
         node are recorded in the report rather than dropped silently: a model
         that reaches analysis without supports is a mechanism.
         """
-        support_node_ids = set()
+        by_type = {}
         unmatched = 0
 
         for u, v in structural_graph.beam_edges:
@@ -258,7 +294,14 @@ class TimberToStructural:
             if not support_points:
                 continue
 
-            for support_point in support_points:
+            # A point is either [x, y, z] (written before support types
+            # existed) or [x, y, z, "type"]. Both stay readable.
+            types = beam.attributes.get("support_types") or {}
+            for index, support_point in enumerate(support_points):
+                if len(support_point) > 3:
+                    support_type = str(support_point[3])
+                else:
+                    support_type = types.get(str(index)) or types.get(index) or "pinned"
                 matched = False
                 for node in (u, v):
                     node_point = structural_graph.node_point(node)
@@ -266,7 +309,7 @@ class TimberToStructural:
                     dy = node_point.y - support_point[1]
                     dz = node_point.z - support_point[2]
                     if (dx * dx + dy * dy + dz * dz) ** 0.5 <= tol:
-                        support_node_ids.add(node_to_id(structural_graph, node))
+                        by_type.setdefault(support_type, set()).add(node_to_id(structural_graph, node))
                         matched = True
                 if not matched:
                     unmatched += 1
@@ -274,7 +317,7 @@ class TimberToStructural:
         if unmatched:
             self.report.append(f"{unmatched} declared support point(s) matched no structural node and were ignored")
 
-        return sorted(support_node_ids)
+        return by_type
 
     def _add_sections_and_members(self, model, structural_graph):
         for n1, n2 in structural_graph.beam_edges:
@@ -283,7 +326,10 @@ class TimberToStructural:
 
             w, h = (value * self.scale for value in segment.cross_section)
             shape = "rectangular"
-            section = self.sections_library.get_or_create_section(w, h, shape, material_id=1)
+            # The grade travels with the beam, so a C24 joist and a GL24h
+            # beam of the same size stay two sections.
+            material_id = self._material_id_for(model, structural_graph.beam(n1, n2))
+            section = self.sections_library.get_or_create_section(w, h, shape, material_id=material_id)
 
             problem = check_section_plausible(w, h, units=self.source_units)
             if problem and problem not in self.report:
@@ -398,7 +444,9 @@ class TimberToStructural:
             node_ids = [node_to_id(structural_graph, n) for n in boundary_nodes]
             
             thickness_value = surface.thickness * self.scale
-            thickness_obj = self.thicknesses_library.get_or_create_thickness(thickness_value, material_id=1)
+            material_id = self._material_id_for(model, surface_data.get("plate") or surface)
+            thickness_obj = self.thicknesses_library.get_or_create_thickness(
+                thickness_value, material_id=material_id)
 
             problem = check_thickness_plausible(thickness_value, units=self.source_units)
             if problem and problem not in self.report:
@@ -477,20 +525,32 @@ class TimberToStructural:
             self.report.append(f"{count}x {description}")
 
     def _add_support_nodes(self, model, structural_graph):
-        base_nodes = self._get_support_nodes(model, structural_graph)
-        if base_nodes:
-            # Standardmäßig Pinned Support (Rotation frei, Bewegung gesperrt)
-            # inf = gesperrt, 0.0 = frei
+        """Turn the authored support points into supports, one per type.
+
+        `Tekton Support` writes a type alongside each point; points that
+        share a type share a support object, which is how an engineer reads
+        it ("the roller line") and how RFEM groups them. Points written
+        before the type existed carry none and become pinned - the old
+        behaviour, kept so existing models translate unchanged.
+        """
+        from compas_timber_fea.core.support_types import stiffnesses
+
+        by_type = self._get_support_nodes(model, structural_graph)
+        for index, (support_type, node_ids) in enumerate(sorted(by_type.items()), start=1):
+            if not node_ids:
+                continue
+            try:
+                dofs = stiffnesses(support_type)
+            except ValueError as error:
+                self.report.append(
+                    "{} Falling back to pinned for {} node(s).".format(error, len(node_ids)))
+                dofs = stiffnesses("pinned")
+                support_type = "pinned"
             model.supports.append(
                 StructuralSupport(
-                    id=1,
-                    nodes=base_nodes,
-                    name="Designated Pinned Support",
-                    ux=float("inf"),  # X gesperrt
-                    uy=float("inf"),  # Y gesperrt
-                    uz=float("inf"),  # Z gesperrt
-                    rx=0.0,  # Rotation X frei
-                    ry=0.0,  # Rotation Y frei
-                    rz=0.0,  # Rotation Z frei
+                    id=index,
+                    nodes=sorted(node_ids),
+                    name="Designated {} support".format(support_type.replace("_", " ")),
+                    **dofs
                 )
             )

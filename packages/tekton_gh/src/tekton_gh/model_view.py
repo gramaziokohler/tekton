@@ -259,7 +259,94 @@ def load_specs(structural_model, load_case_id=None, scale=1.0, size=0.1, per_kn=
         mid = tips[len(tips) // 2]
         specs.append({"kind": "text", "point": _offset(mid, direction, -length - s * 0.3), "text": "{:.3g} kN/m".format(f.length), "colour": COLOURS["load"]})
 
+    specs.extend(_surface_load_specs(structural_model, load_case_id, scale, s, per_kn))
+
     return specs
+
+
+def _surface_load_specs(structural_model, load_case_id, scale, s, per_kn):
+    """A grid of arrows over a loaded plate.
+
+    Drawn from the plate's outline, not from its mesh: the mesh belongs to
+    whichever backend is running and may not exist at all when this is
+    called. A fixed handful of arrows says "this plate carries a pressure"
+    without pretending to show a distribution.
+    """
+    points = {n.id: n.point for n in structural_model.nodes}
+    specs = []
+
+    for load in getattr(structural_model, "surface_loads", None) or []:
+        if load_case_id is not None and load.load_case_id != load_case_id:
+            continue
+        surface = next((s_ for s_ in structural_model.surfaces if s_.id == load.surface_id), None)
+        if surface is None:
+            continue
+        corners = [points[i] for i in surface.nodes if i in points]
+        if len(corners) < 3:
+            continue
+        pressure = Vector(*load.pressure)
+        if pressure.length < 1e-9:
+            continue
+
+        direction = pressure.unitized()
+        length = pressure.length * per_kn * scale
+        for anchor in _grid_over(corners):
+            tip = _scaled(anchor, scale)
+            specs.append({"kind": "arrow", "start": _offset(tip, direction, -length), "end": tip,
+                          "colour": COLOURS["load"]})
+
+        centre = Point(
+            sum(c.x for c in corners) / len(corners),
+            sum(c.y for c in corners) / len(corners),
+            sum(c.z for c in corners) / len(corners),
+        )
+        label = "{:.3g} kN/m2".format(pressure.length)
+        if getattr(load, "projected", False):
+            label += " (projected)"
+        specs.append({"kind": "text",
+                      "point": _offset(_scaled(centre, scale), direction, -length - s * 0.3),
+                      "text": label, "colour": COLOURS["load"]})
+    return specs
+
+
+def _grid_over(corners, divisions=3):
+    """A few points spread inside a polygon, for hanging arrows on.
+
+    Bilinear over the outline's bounding corners and filtered to what is
+    inside - good enough for a symbol, and it costs nothing on a plate with
+    a hundred outline vertices.
+    """
+    xs = [c.x for c in corners]
+    ys = [c.y for c in corners]
+    zs = [c.z for c in corners]
+    out = []
+    for i in range(1, divisions + 1):
+        for j in range(1, divisions + 1):
+            u = i / (divisions + 1.0)
+            v = j / (divisions + 1.0)
+            x = min(xs) + (max(xs) - min(xs)) * u
+            y = min(ys) + (max(ys) - min(ys)) * v
+            # A plate is planar, so z follows from the other two on a tilted
+            # one; for a flat plate every z is the same anyway.
+            z = min(zs) + (max(zs) - min(zs)) * v
+            if _inside(corners, x, y):
+                out.append(Point(x, y, z))
+    return out or [Point(sum(xs) / len(xs), sum(ys) / len(ys), sum(zs) / len(zs))]
+
+
+def _inside(corners, x, y):
+    """Point in polygon, in plan. Ray casting."""
+    inside = False
+    count = len(corners)
+    for index in range(count):
+        a = corners[index]
+        b = corners[(index + 1) % count]
+        if (a.y > y) != (b.y > y):
+            if abs(b.y - a.y) > 1e-12:
+                crossing = a.x + (y - a.y) * (b.x - a.x) / (b.y - a.y)
+                if x < crossing:
+                    inside = not inside
+    return inside
 
 
 def reaction_specs(structural_model, load_case_id=None, scale=1.0, size=0.1, per_kn=0.5, per_knm=0.3):

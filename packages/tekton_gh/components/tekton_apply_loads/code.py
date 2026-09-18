@@ -19,10 +19,56 @@ import sys
 ghenv.Component.Message = "Apply Loads"  # type: ignore # noqa: F821
 
 
+def _repo_candidates(explicit):
+    """Where to look for the monorepo, cheapest and most certain first.
+
+    Only `isdir` calls - never a filesystem search, this runs on every solve.
+    The document guess is what makes a definition stored inside the repo work
+    with nothing configured at all; the cache file is what makes the path
+    survive a Rhino restart. Mirrors tekton_gh.env.discover_repo_root, which
+    cannot be imported yet - finding the repo is what makes it importable.
+    """
+    yield explicit
+    yield os.environ.get("TEKTON_REPO")
+    try:
+        document = ghenv.Component.OnPingDocument()  # type: ignore # noqa: F821
+        current = os.path.dirname(document.FilePath) if document and document.FilePath else None
+        for _ in range(8):
+            if not current:
+                break
+            yield current
+            parent = os.path.dirname(current)
+            current = None if parent == current else parent
+    except Exception:
+        pass
+    try:
+        with open(os.path.join(os.path.expanduser("~"), ".tekton", "repo-root")) as handle:
+            yield handle.read()
+    except Exception:
+        pass
+    for guess in ("~/Documents/GitHub/tekton", "~/Documents/git/tekton", "~/git/tekton",
+                  "~/GitHub/tekton", "~/Developer/tekton", "~/src/tekton", "~/tekton",
+                  "~/Documents/tekton", "~/Desktop/tekton"):
+        yield guess
+
+
+def _remember_repo(root):
+    """Write the root down so the next Rhino session finds it by itself."""
+    try:
+        directory = os.path.join(os.path.expanduser("~"), ".tekton")
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
+        with open(os.path.join(directory, "repo-root"), "w") as handle:
+            handle.write(root)
+    except Exception:
+        pass
+
+
 def _setup(explicit_repo=None):
     """Make compas_timber_fea + tekton_gh importable."""
     root = None
-    for candidate in (explicit_repo, os.environ.get("TEKTON_REPO")):
+    for candidate in _repo_candidates(explicit_repo):
+        candidate = str(candidate).strip() if candidate else ""
         if candidate and os.path.isdir(os.path.join(os.path.expanduser(candidate), "packages")):
             root = os.path.expanduser(candidate)
             break
@@ -34,6 +80,7 @@ def _setup(explicit_repo=None):
         )
     # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
+    _remember_repo(root)
     for package in ("tekton_gh", "compas_timber_fea"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
@@ -64,7 +111,7 @@ if structural is None:
     _warn("No StructuralModel connected.")
 else:
     _setup()
-    from compas_timber_fea.core.model import StructuralMemberLoad, StructuralPointLoad
+    from compas_timber_fea.core.model import StructuralMemberLoad, StructuralPointLoad, StructuralSurfaceLoad
 
     tol = 0.01 if tolerance is None else float(tolerance)
 
@@ -75,6 +122,11 @@ else:
 
     next_point_id = max([load.id for load in structural.point_loads] or [0]) + 1
     next_member_id = max([load.id for load in structural.member_loads] or [0]) + 1
+    next_surface_id = max([load.id for load in structural.surface_loads] or [0]) + 1
+    # Plate GUID -> the surfaces it became, the same idea as by_source for beams.
+    by_surface_source = {}
+    for surface in structural.surfaces:
+        by_surface_source.setdefault(str(surface.source_element_id), []).append(surface.id)
 
     # Element GUID -> all members that came out of it. A beam is split during
     # idealisation; a member load has to go onto every piece.
@@ -84,6 +136,7 @@ else:
 
     applied_points = 0
     applied_members = 0
+    applied_surfaces = 0
 
     for load in loads or []:
         if not isinstance(load, dict):
@@ -145,10 +198,35 @@ else:
             if hit:
                 applied_members += hit
 
+        elif load.get("kind") == "surface":
+            from compas.geometry import Vector
+
+            hit = 0
+            for element_id in load.get("element_ids", []):
+                surface_ids = by_surface_source.get(str(element_id), [])
+                if not surface_ids:
+                    report.append("Plate {} has no surface in the analysis model.".format(element_id))
+                    continue
+                for surface_id in surface_ids:
+                    structural.surface_loads.append(
+                        StructuralSurfaceLoad(
+                            id=next_surface_id,
+                            surface_id=surface_id,
+                            load_case_id=load.get("load_case_id", 1),
+                            pressure=Vector(*load["pressure"]),
+                            projected=bool(load.get("projected", False)),
+                        )
+                    )
+                    next_surface_id += 1
+                    hit += 1
+            if hit:
+                applied_surfaces += hit
+
     for combination in combinations or []:
         structural.load_combinations.append(combination)
 
-    report.insert(0, "{} point loads, {} member loads applied.".format(applied_points, applied_members))
+    report.insert(0, "{} point loads, {} member loads, {} area loads applied.".format(
+        applied_points, applied_members, applied_surfaces))
     if combinations:
         report.insert(1, "{} combination(s) taken over.".format(len(combinations)))
 

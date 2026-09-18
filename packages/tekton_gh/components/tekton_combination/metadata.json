@@ -3,7 +3,7 @@
     "nickname": "TComb",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Load combination from load cases and partial safety factors. Later: an EC0 generator instead of doing this by hand.",
+    "description": "Load combinations, generated or by hand. With 'generate' on, the EN 1990 combinations for the wired load cases are built: ULS 6.10 with every variable action leading once and the others entering by psi_0, plus SLS characteristic (6.14b) and quasi-permanent (6.16b) for deflection and creep. The psi factors come from the action category on each load case. Without 'generate', give factors parallel to load_cases and it builds that one combination. The factors are EN 1990 recommended values, NOT checked by an engineer and not a national annex - see docs/discussion/work-packages.md.",
     "exposure": 2,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000007",
     "ghpython": {
@@ -13,7 +13,7 @@
             {
                 "name": "name",
                 "nickname": "name",
-                "description": "Name, e.g. 'ULS 1'.",
+                "description": "Name, e.g. 'ULS 1'. Only for a manual combination; generated ones name themselves.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -41,7 +41,7 @@
             {
                 "name": "factors",
                 "nickname": "factors",
-                "description": "Factors, parallel to load_cases.",
+                "description": "Factors, parallel to load_cases. Ignored when 'generate' is on.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -55,7 +55,7 @@
             {
                 "name": "combination_type",
                 "nickname": "combination_type",
-                "description": "ULS | SLS. Default ULS.",
+                "description": "ULS | SLS, for a manual combination. Default ULS.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -65,13 +65,49 @@
                 "typeHintID": "str",
                 "reverse": false,
                 "simplify": false
+            },
+            {
+                "name": "generate",
+                "nickname": "generate",
+                "description": "Build the EN 1990 combinations from the load cases' action categories instead of taking 'factors'.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "favourable",
+                "nickname": "favourable",
+                "description": "Treat permanent actions as favourable (gamma_G = 1.0). For uplift, where self-weight helps and must not be inflated.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
+                "reverse": false,
+                "simplify": false
             }
         ],
         "outputParameters": [
             {
                 "name": "combination",
                 "nickname": "combination",
-                "description": "Combination for TektonApplyLoads",
+                "description": "Combination(s) for TektonApplyLoads",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "report",
+                "nickname": "report",
+                "description": "What was generated, with the clause each combination came from",
                 "optional": false,
                 "sourceCount": 0,
                 "graft": false

@@ -55,7 +55,7 @@
             {
                 "name": "support_type",
                 "nickname": "support_type",
-                "description": "'pinned' (default) | 'fixed' | 'roller'.",
+                "description": "Support type; pick from the drop-down. pinned, fixed, roller, roller_x/y, sliding, hinge_x/y/z, vertical_only, horizontal_only, free.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -63,6 +63,20 @@
                 "wireDisplay": "default",
                 "sourceCount": 0,
                 "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "stiffness",
+                "nickname": "stiffness",
+                "description": "Optional: six values ux, uy, uz, rx, ry, rz overriding the type. A number is a spring stiffness in kN/m or kNm/rad; use a large number for held, 0 for free.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
                 "reverse": false,
                 "simplify": false
             },

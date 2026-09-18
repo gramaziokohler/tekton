@@ -116,15 +116,19 @@ COMPONENTS = [
         nickname="TMat",
         sub=SUB_AUTHOR,
         description=(
-            "Pick the material for the analysis model. Today the neutral model carries only "
-            "a name string that RFEM resolves against its own library. Once the material "
-            "dataclass with presets exists (see discussion/materials.md), this component "
-            "will return a full material with overrides."
+            "Define a material, and optionally assign it to elements. Without 'elements' it "
+            "returns a material for TektonTranslate, which then applies to the whole model. "
+            "Wire beams or plates into 'elements' and the grade is written onto them "
+            "instead, so one model can mix C24 joists, GL24h beams and CLT plates - the "
+            "translator gives each grade its own material and its own sections. Single "
+            "properties can be overridden; an overridden or unknown grade is marked as an "
+            "assumption wherever it shows up."
         ),
         inputs=[
             p("grade", "str", desc="Grade, e.g. 'C24' or 'GL24h'."),
             p("E0_mean", "float", desc="Optional override for E0,mean [N/mm2]."),
             p("density", "float", desc="Optional override for density [kg/m3]."),
+            p("elements", access="list", desc="Optional: beams or plates to assign this grade to. Empty = the material applies to the whole model through TektonTranslate."),
         ],
         outputs=[o("material", "Material for TektonTranslate"), o("info", "What was actually set")],
     ),
@@ -162,7 +166,7 @@ COMPONENTS = [
         inputs=[
             p("model", desc="TimberModel (COMPAS Timber).", optional=False),
             p("points", "point", access="list", desc="Support points."),
-            p("support_type", "str", desc="'pinned' | 'fixed' | 'roller'. Default: pinned."),
+            p("support_type", "str", desc="Support type; pick from the drop-down. pinned, fixed, roller, roller_x/y, sliding, hinge_x/y/z, vertical_only, horizontal_only, free."),
             p("tolerance", "float", desc="Search radius around the beam axis. Default 1e-4 (model units)."),
         ],
         outputs=[
@@ -178,12 +182,16 @@ COMPONENTS = [
         nickname="TCase",
         sub=SUB_AUTHOR,
         description=(
-            "Define a load case (self-weight, imposed, snow, wind). Load cases are the "
-            "containers that loads and combinations refer to."
+            "Define a load case. Load cases are the containers that loads and combinations "
+            "refer to, and the action category is what makes a combination possible: it "
+            "carries the EN 1990 psi factors and the EN 1995 duration class that sets k_mod. "
+            "The drop-down lists the catalogue - permanent, imposed A to H, snow below and "
+            "above 1000 m, wind, thermal. The factors are EN 1990 recommended values, NOT "
+            "checked by an engineer and not a national annex."
         ),
         inputs=[
             p("name", "str", desc="Name of the load case."),
-            p("category", "str", desc="PERMANENT | VARIABLE | SNOW | WIND."),
+            p("category", "str", desc="EN 1990 action category; pick from the drop-down. PERMANENT, A-H (imposed), SNOW, SNOW_HIGH, WIND, THERMAL."),
             p("self_weight", "bool", desc="Apply self-weight automatically."),
             p("id", "int", desc="Optional fixed ID. Empty = numbered consecutively."),
         ],
@@ -229,22 +237,54 @@ COMPONENTS = [
         outputs=[o("load", "Line load for TektonApplyLoads")],
     ),
     dict(
+        folder="tekton_surface_load",
+        uid=28,
+        name="Tekton Surface Load",
+        nickname="TSLoad",
+        sub=SUB_AUTHOR,
+        description=(
+            "Pressure on plates, in kN/m2. Like Member Load the assignment goes through the "
+            "element GUID, because which surfaces a plate becomes is decided during "
+            "idealisation. The load belongs to the plate, not to its mesh: how finely a "
+            "backend tessellates is its own business, and the pressure survives a change of "
+            "mesh density unchanged."
+        ),
+        inputs=[
+            p("plates", access="list", desc="Plates (COMPAS Timber) or their GUIDs."),
+            p("pressure", "vector", desc="Area load [kN/m2]. Negative z is downward."),
+            p("load_case", desc="Load case from TektonLoadCase."),
+            p("projected", "bool", desc="The value is per m2 of plan area rather than of the sloped surface - how snow is given. Default False."),
+        ],
+        outputs=[o("load", "Area load for TektonApplyLoads")],
+    ),
+    dict(
         folder="tekton_combination",
         uid=7,
         name="Tekton Load Combination",
         nickname="TComb",
         sub=SUB_AUTHOR,
         description=(
-            "Load combination from load cases and partial safety factors. "
-            "Later: an EC0 generator instead of doing this by hand."
+            "Load combinations, generated or by hand. With 'generate' on, the EN 1990 "
+            "combinations for the wired load cases are built: ULS 6.10 with every variable "
+            "action leading once and the others entering by psi_0, plus SLS characteristic "
+            "(6.14b) and quasi-permanent (6.16b) for deflection and creep. The psi factors "
+            "come from the action category on each load case. Without 'generate', give "
+            "factors parallel to load_cases and it builds that one combination. "
+            "The factors are EN 1990 recommended values, NOT checked by an engineer and "
+            "not a national annex - see docs/discussion/work-packages.md."
         ),
         inputs=[
-            p("name", "str", desc="Name, e.g. 'ULS 1'."),
+            p("name", "str", desc="Name, e.g. 'ULS 1'. Only for a manual combination; generated ones name themselves."),
             p("load_cases", access="list", desc="Load cases."),
-            p("factors", "float", access="list", desc="Factors, parallel to load_cases."),
-            p("combination_type", "str", desc="ULS | SLS. Default ULS."),
+            p("factors", "float", access="list", desc="Factors, parallel to load_cases. Ignored when 'generate' is on."),
+            p("combination_type", "str", desc="ULS | SLS, for a manual combination. Default ULS."),
+            p("generate", "bool", desc="Build the EN 1990 combinations from the load cases' action categories instead of taking 'factors'."),
+            p("favourable", "bool", desc="Treat permanent actions as favourable (gamma_G = 1.0). For uplift, where self-weight helps and must not be inflated."),
         ],
-        outputs=[o("combination", "Combination for TektonApplyLoads")],
+        outputs=[
+            o("combination", "Combination(s) for TektonApplyLoads"),
+            o("report", "What was generated, with the clause each combination came from"),
+        ],
     ),
     dict(
         folder="tekton_joint_policy",
@@ -319,7 +359,8 @@ COMPONENTS = [
             p("structural", desc="StructuralModel from TektonTranslate.", optional=False),
             p("points", "point", access="list", desc="Support locations. Empty = use the level below."),
             p("level", "float", desc="Alternative: every node at this z (document units)."),
-            p("support_type", "str", desc="'pinned' (default) | 'fixed' | 'roller'."),
+            p("support_type", "str", desc="Support type; pick from the drop-down. pinned, fixed, roller, roller_x/y, sliding, hinge_x/y/z, vertical_only, horizontal_only, free."),
+            p("stiffness", "float", access="list", desc="Optional: six values ux, uy, uz, rx, ry, rz overriding the type. A number is a spring stiffness in kN/m or kNm/rad; use a large number for held, 0 for free."),
             p("tolerance", "float", desc="Match radius in document units. Default 1.0."),
         ],
         outputs=[
