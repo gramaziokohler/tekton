@@ -1,11 +1,22 @@
 from compas_dlubal.dlubal.client import DlubalClient
+from compas_dlubal.dlubal.result_parsing import design_ratio_summary
 from compas_dlubal.dlubal.result_parsing import member_lengths_from_model
 from compas_dlubal.dlubal.result_parsing import parse_member_deformations
+from compas_dlubal.dlubal.result_parsing import parse_member_design_ratios
 from compas_dlubal.dlubal.result_parsing import parse_member_internal_forces
 from compas_dlubal.dlubal.result_parsing import parse_node_deformations
 from compas_dlubal.dlubal.result_parsing import parse_support_forces
 from compas_dlubal.dlubal.result_parsing import parse_surface_results
 from compas_timber_fea.core.model import StructuralResultSet
+
+
+#: What to do when the add-on produced nothing - the one setting the API
+#: cannot make (verified 2026-09-18, dlubal.api 2.13.8).
+DESIGN_RESULTS_HINT = (
+    "No timber design results. RFEM needs the combination wizard's standard group set to "
+    "'EN 1990 | Basis + Holz' (Basisangaben > Normen > Lastkombinations-Assistent); the API "
+    "cannot set it. Set it once in the GUI, then run again."
+)
 
 
 class DlubalResultReader:
@@ -36,13 +47,21 @@ class DlubalResultReader:
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
             return self._inspect(conn)
 
-    def read(self, load_cases=None, calculate=True, structural_model=None):
+    def read(self, load_cases=None, calculate=True, structural_model=None, design=False):
         """Calculate and read results for the requested load cases.
 
         Returns {load_case_id: StructuralResultSet} with member internal
         forces, nodal deformations and support reactions. When
         ``structural_model`` is given, member result positions are normalised
         to the 0..1 parameter along each member.
+
+        With ``design=True`` the timber design add-on's ratio table is read
+        as well (``DlubalImporter(design=True)`` sets the add-on up) and
+        merged into every result set as ``metadata["utilization"]`` per
+        station. The ratio belongs to the add-on's design combination, not
+        to the load case - the result-set metadata says which one
+        (``metadata["design"]``). A missing ratio table is reported there
+        too, not raised: the static results are still worth returning.
         """
         load_cases = load_cases or [1]
         member_lengths = member_lengths_from_model(structural_model) if structural_model else {}
@@ -58,7 +77,58 @@ class DlubalResultReader:
                 result_sets[load_case_id] = self._read_load_case(
                     conn, load_case_id, member_lengths, calculation_method
                 )
+            if design:
+                self._read_design_ratios(conn, result_sets, member_lengths)
             return result_sets
+
+    def _read_design_ratios(self, conn, result_sets, member_lengths):
+        """Merge the timber design ratio table into every result set."""
+        api = conn.api
+        try:
+            table = api.results.ResultsType.TIMBER_DESIGN_MEMBERS_DESIGN_RATIOS_BY_LOCATION
+            result = conn.application.get_results(table)
+            frame = result.data
+        except Exception as error:
+            note = {
+                "source": "rfem timber design",
+                "error": f"{type(error).__name__}: {error}",
+                "hint": DESIGN_RESULTS_HINT,
+            }
+            for result_set in result_sets.values():
+                result_set.metadata["design"] = note
+            return
+
+        summary = design_ratio_summary(frame)
+        summary["source"] = "rfem timber design"
+        summary["columns"] = [str(c) for c in frame.columns]
+        summary["rows"] = int(len(frame))
+        summary["combinations"] = self._load_combinations(conn)
+        for load_case_id, result_set in result_sets.items():
+            result_set.member_results = parse_member_design_ratios(
+                frame, load_case_id, member_lengths, result_set.member_results)
+            result_set.metadata["design"] = dict(summary)
+
+    @staticmethod
+    def _load_combinations(conn):
+        """{"CO1": {"name": "1.35 * LF1", "factors": {1: 1.35}}, ...} - what the design ratios were computed for.
+
+        Best effort: the ratio table only names the combination, and a
+        reader of the report needs to know that "CO1" is 1.35 x self-weight
+        before comparing it with a load-case ratio.
+        """
+        api = conn.api
+        out = {}
+        try:
+            ids = conn.application.get_object_id_list(object_type=api.OBJECT_TYPE_LOAD_COMBINATION)
+            for object_id in getattr(ids, "object_id", []) or []:
+                combination = conn.application.get_object(api.loading.LoadCombination(no=object_id.no))
+                out["CO{}".format(object_id.no)] = {
+                    "name": combination.name,
+                    "factors": {int(row.load_case): float(row.factor) for row in combination.items.rows},
+                }
+        except Exception:  # informational only
+            pass
+        return out
 
     def _read_load_case(self, conn, load_case_id, member_lengths, calculation_method):
         api = conn.api

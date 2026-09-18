@@ -108,6 +108,25 @@ def test_displacement_travels_as_plain_tuple(translated):
     assert case["envelope"]["displacement"] == (0.0, 0.0, -0.012)
 
 
+def test_utilization_travels_with_its_governing_check(translated):
+    """A backend design ratio (WP1) reaches the beam; the envelope names the check behind the maximum."""
+    timber_model, structural_model, beam = translated
+    _fill_results(structural_model, beam.guid)
+    rows = next(iter(structural_model.results[1].member_results.values()))
+    rows[0].metadata.update({"utilization": 0.10, "governing_check": "Zug 6.1.2"})
+    rows[1].metadata.update({"utilization": 0.45, "governing_check": "Doppelbiegung und Druck 6.2.4"})
+
+    attach_results_to_timber(structural_model, timber_model)
+
+    case = beam.attributes[ANALYSIS_KEY]["load_cases"][1]
+    ratios = [values["utilization"] for _t, values in case["samples"] if "utilization" in values]
+    assert 0.45 in ratios and 0.10 in ratios
+    assert case["envelope"]["utilization"] == 0.45
+    assert case["envelope"]["governing_check"] == "Doppelbiegung und Druck 6.2.4"
+    # Stations without a ratio do not invent one.
+    assert any("utilization" not in values for _t, values in case["samples"])
+
+
 def test_beams_without_results_stay_untouched(translated):
     timber_model, structural_model, beam = translated
     post = next(b for b in timber_model.beams if b is not beam)

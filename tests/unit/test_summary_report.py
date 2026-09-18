@@ -199,3 +199,42 @@ def test_headline_numbers_report_the_worst_member():
     assert numbers["max_utilization"] > 0
     assert numbers["max_utilization_member"] == 1
     assert numbers["governing_check"]
+
+
+# --- the backend's own ratios (WP1) -------------------------------------------
+
+def make_model_with_backend_ratios():
+    model = make_model()
+    result_set = model.results[1]
+    result_set.member_results[1][0].metadata.update({"utilization": 0.41, "governing_check": "Querkraft 6.1.7"})
+    result_set.member_results[1][1].metadata.update({"utilization": 0.83, "governing_check": "Doppelbiegung 6.1.6"})
+    result_set.metadata["design"] = {
+        "source": "rfem timber design",
+        "loadings": ["LK1"],
+        "combinations": {"CO1": {"name": "1.5 * LF1", "factors": {1: 1.5}}},
+    }
+    return model
+
+
+def test_report_shows_backend_utilisation_with_its_combination():
+    model = make_model_with_backend_ratios()
+    report = build_report(model)
+    assert "Utilisation (rfem timber design, loading LK1)" in report
+    assert "0.830  member 1 (Doppelbiegung 6.1.6, t=0.50)" in report
+    assert "CO1        1.5 x LC1" in report
+    assert "Utilisation   not computed" in report  # our own checks were not run - still said
+
+
+def test_report_compares_own_checks_with_the_backend():
+    model = make_model_with_backend_ratios()
+    checks = check_model(model, DesignAssumptions())
+    report = build_report(model, checks, DesignAssumptions())
+    assert "Utilisation (own EC5 checks)" in report
+    assert "vs backend  max deviation" in report
+
+
+def test_headline_numbers_carry_the_backend_ratio_separately():
+    numbers = headline_numbers(make_model_with_backend_ratios())
+    assert numbers["max_utilization"] is None
+    assert numbers["max_utilization_backend"] == pytest.approx(0.83)
+    assert numbers["max_utilization_backend_member"] == 1

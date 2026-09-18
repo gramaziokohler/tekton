@@ -179,6 +179,12 @@ def _beam_samples(members, result_set, points, start, length):
             # A plain tuple, not a Vector: beam.attributes must stay JSON-plain.
             if result.displacement is not None:
                 values["displacement"] = tuple(float(c) for c in result.displacement)
+            # Utilisation is a backend design result (WP1: RFEM's add-on); it
+            # travels in the metadata and only appears where it was read.
+            if result.metadata.get("utilization") is not None:
+                values["utilization"] = float(result.metadata["utilization"])
+                if result.metadata.get("governing_check"):
+                    values["governing_check"] = str(result.metadata["governing_check"])
             samples.append((round(t, 6), values))
     samples.sort(key=lambda item: item[0])
     return samples
@@ -207,9 +213,13 @@ def _envelope(samples):
     envelope = {}
     for _t, values in samples:
         for key, value in values.items():
+            if isinstance(value, str):
+                continue  # labels travel with the number they belong to, below
             current = envelope.get(key)
             if current is None or _magnitude(value) > _magnitude(current):
                 envelope[key] = value
+                if key == "utilization" and values.get("governing_check"):
+                    envelope["governing_check"] = values["governing_check"]
     return envelope
 
 

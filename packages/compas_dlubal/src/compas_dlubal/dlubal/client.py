@@ -1,8 +1,20 @@
+import os
 from typing import Optional
+
+
+def default_port():
+    """The gRPC port RFEM/RSTAB listens on: DLUBAL_API_PORT, else the API's default 9000.
+
+    RFEM can be configured to another port (Options > Program Options > API);
+    a machine seen listening on 9001 (2026-09-18) is why this is overridable.
+    """
+    raw = os.environ.get("DLUBAL_API_PORT")
+    return int(raw) if raw else None
+
 
 class DlubalClient:
     """Verwaltet die Verbindung zur Dlubal API (RFEM/RSTAB)"""
-    def __init__(self, app_type: str = "rfem", api_key: Optional[str] = None):
+    def __init__(self, app_type: str = "rfem", api_key: Optional[str] = None, port: Optional[int] = None):
         if app_type.lower() == "rstab":
             from dlubal.api import rstab as api
         else:
@@ -11,10 +23,14 @@ class DlubalClient:
         self.api = api
         self.app_type = app_type
         self.api_key = api_key
+        self.port = port or default_port()
         self._connection = None
 
     def __enter__(self):
-        self._app_context = self.api.Application(api_key_value=self.api_key)
+        kwargs = {"api_key_value": self.api_key}
+        if self.port:
+            kwargs["port"] = self.port
+        self._app_context = self.api.Application(**kwargs)
         self.application = self._app_context.__enter__()
         return self
 

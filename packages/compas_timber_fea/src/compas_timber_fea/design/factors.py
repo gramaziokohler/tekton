@@ -191,6 +191,11 @@ class DesignAssumptions:
     load_duration: str = None
     #: Overrides the material-derived value when set.
     gamma_M: float = None
+    #: Apply the size factor k_h (3.2(3), 3.3(3)) to the bending strength.
+    #: EC5 says "may"; RFEM's timber design leaves it off by default, and
+    #: omitting it is the safe side (k_h only ever raises the strength).
+    #: Off by default so the ratio matches a certified result as delivered.
+    size_factor: bool = False
     #: Which checks were deliberately not run. Printed in every report.
     not_verified: tuple = (
         "buckling (6.3.2)",
@@ -225,6 +230,7 @@ class DesignAssumptions:
             "gamma_M:            {}".format(
                 self.gamma_M if self.gamma_M else "per material (1.3 solid / 1.25 glulam)"
             ),
+            "Size factor k_h:    {}".format("applied to f_m" if self.size_factor else "not applied"),
         ]
         if self.inferred_durations:
             inferred = ", ".join(

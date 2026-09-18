@@ -35,6 +35,7 @@ backend: str  # type: ignore
 api_key: str  # type: ignore
 repo: str  # type: ignore
 filepath: str  # type: ignore
+design: bool  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
@@ -110,17 +111,18 @@ class BackendConfig(object):
     single item.
     """
 
-    def __init__(self, backend, repo, api_key, filepath):
+    def __init__(self, backend, repo, api_key, filepath, design=False):
         self.backend = backend
         self.repo = repo
         self.api_key = api_key
         self.filepath = filepath
+        self.design = design
 
     def __repr__(self):
         return "Backend({}, repo={})".format(self.backend, self.repo)
 
 
-backend = BackendConfig(kind, root, api_key or None, filepath or None)
+backend = BackendConfig(kind, root, api_key or None, filepath or None, bool(design))
 
 print("Backend: {}".format(kind))
 print("Repo: {}".format(root or "NOT FOUND"))
@@ -129,3 +131,8 @@ if kind == "saf" and not filepath:
     _warn("Backend 'saf' needs a filepath.")
 if kind == "opensees":
     print("OpenSees: beams only today, no licence, no key, solves in milliseconds.")
+if design:
+    if kind != "rfem":
+        _warn("'design' only works with the rfem backend - ignored for '{}'.".format(kind))
+    else:
+        print("Timber design: RFEM add-on on, utilisation read per station (see 'design' in the result metadata).")

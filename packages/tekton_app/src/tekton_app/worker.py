@@ -125,13 +125,17 @@ def run_opensees(model, load_cases, calculate):
     return model
 
 
-def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, delete_all):
-    """Modell nach RFEM/RSTAB schieben, rechnen, Ergebnisse zurueckholen."""
+def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, delete_all, design=False):
+    """Modell nach RFEM/RSTAB schieben, rechnen, Ergebnisse zurueckholen.
+
+    Mit ``design`` wird nach dem Push das Holzbemessungs-Add-on eingerichtet
+    und dessen Ausnutzung pro Station mitgelesen (``metadata["utilization"]``).
+    """
     from compas_dlubal.dlubal.importer import DlubalImporter
     from compas_dlubal.dlubal.result_reader import DlubalResultReader
 
     log("Verbinde mit {} …".format(app_type.upper()))
-    importer = DlubalImporter(app_type=app_type, api_key=api_key, delete_all=delete_all)
+    importer = DlubalImporter(app_type=app_type, api_key=api_key, delete_all=delete_all, design=design)
 
     started = time.time()
     if not importer.run(model, model_name=model_name):
@@ -150,8 +154,14 @@ def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, dele
 
     started = time.time()
     reader = DlubalResultReader(app_type=app_type, api_key=api_key)
-    model.results = reader.read(load_cases=cases, calculate=True, structural_model=model)
+    model.results = reader.read(load_cases=cases, calculate=True, structural_model=model, design=design)
     log("Berechnung abgeschlossen ({:.1f}s).".format(time.time() - started))
+    if design:
+        note = next(iter(model.results.values())).metadata.get("design", {}) if model.results else {}
+        if note.get("error"):
+            log("  Holzbemessung: keine Ergebnisse - {}".format(note.get("hint", note["error"])))
+        else:
+            log("  Holzbemessung: {} Zeilen fuer Kombination(en) {}".format(note.get("rows"), ", ".join(note.get("loadings", []))))
 
     for case_id, result_set in sorted(model.results.items()):
         metadata = getattr(result_set, "metadata", {}) or {}
@@ -178,6 +188,7 @@ def main(argv=None):
     parser.add_argument("--load-cases", help="Kommaliste, z.B. '1,3'. Leer = alle Lastfaelle des Modells")
     parser.add_argument("--no-calculate", action="store_true", help="Nur uebertragen, nicht rechnen")
     parser.add_argument("--delete-all", action="store_true", help="Backend-Modell vor dem Push leeren")
+    parser.add_argument("--design", action="store_true", help="rfem: Holzbemessungs-Add-on einrichten und Ausnutzung mitlesen")
 
     args = parser.parse_args(argv)
     unbuffer_stdout()
@@ -216,6 +227,7 @@ def main(argv=None):
             calculate=not args.no_calculate,
             api_key=api_key,
             delete_all=args.delete_all,
+            design=args.design and args.backend == "rfem",
         )
 
     if result_model is not None:

@@ -129,6 +129,7 @@ csv = ""
 max_displacement = None
 max_utilization = None
 worst_member = None
+backend_utilization = None
 ok = False
 
 if structural is None:
@@ -176,6 +177,7 @@ else:
             max_displacement = numbers["max_displacement"]
             max_utilization = numbers["max_utilization"]
             worst_member = numbers["max_utilization_member"]
+            backend_utilization = numbers["max_utilization_backend"]
 
             if numbers["members_over_1"]:
                 _warn(

@@ -158,10 +158,7 @@ else:
     from compas_timber_fea.results import samples_by_beam
 
     quantity = quantity or "displacement"
-    if quantity == "utilization":
-        _warn("Utilisation comes from RFEM's design add-on and is not wired up yet. Deflection is shown instead.")
-        quantity = "displacement"
-    elif quantity not in QUANTITIES:
+    if quantity not in QUANTITIES:
         _warn("Unknown quantity '{}'. Allowed: {}.".format(quantity, ", ".join(QUANTITIES)))
         quantity = "displacement"
 
@@ -190,8 +187,9 @@ else:
                         params.Add(t, path)
                         samples.Add(_magnitude(values[quantity]), path)
 
+            units = {"displacement": "m, magnitude", "utilization": "ratio, RFEM timber design add-on"}
             info = [
-                "Quantity: {} ({})".format(quantity, "m, magnitude" if quantity == "displacement" else "kN / kNm, signed"),
+                "Quantity: {} ({})".format(quantity, units.get(quantity, "kN / kNm, signed")),
                 "Load case: {} of {}".format(case_id, sorted(results)),
                 "Beams with results: {}".format(len(beam_ids)),
             ]
@@ -217,6 +215,15 @@ else:
                     info.append("Fresh: results match the connected model ({}).".format(current))
             if metadata.get("calculated_at"):
                 info.append("Calculated: {}".format(metadata["calculated_at"]))
+            if quantity == "utilization":
+                design = metadata.get("design") or {}
+                if design.get("error"):
+                    _warn("No utilisation in these results: {}".format(design.get("hint") or design["error"]))
+                elif design:
+                    info.append("Utilisation from design loading(s) {} - the ratio belongs to the combination, not to load case {}.".format(
+                        ", ".join(design.get("loadings", [])), case_id))
+                else:
+                    _warn("No utilisation in these results. Set 'design' on Tekton Backend (rfem only) and run again.")
 
 for line in info:
     print(line)

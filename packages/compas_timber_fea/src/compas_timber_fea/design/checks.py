@@ -144,7 +144,7 @@ def check_member(model, member, result, assumptions=None, load_case=None):
     check.gamma_M = gamma_M
 
     height = float(getattr(section, "height", 0.0) or 0.0)
-    k_h = k_h_bending(material, height)
+    k_h = k_h_bending(material, height) if assumptions.size_factor else 1.0
 
     area = properties["area"]
     W_y = properties["W_y"]
