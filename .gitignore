@@ -152,3 +152,8 @@ packages/tekton_gh/_componentizer/*.log
 # Internal working documents, kept out of version control on purpose
 docs/reviews/
 docs/concepts/
+
+# Local-only: editor workspace state and any real env file (the example is committed on purpose)
+*.code-workspace
+.env.*
+!.env.example
