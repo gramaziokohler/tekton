@@ -216,3 +216,15 @@ def test_full_hinge_on_coupling_keeps_the_coupling_type(member_mapper):
 
     assert member_mapper.map_hinges_for_members([coupling]) == []
     assert member_mapper.map_member(coupling).type == 22
+
+
+def test_plate_material_is_isotropic_with_the_neutral_stiffness():
+    """The library's orthotropic 2D variant (E90 across) made a one-way slab; the plate must carry E0 both ways."""
+    from compas_timber_fea.core.materials import Material
+
+    values = MemberMapper.plate_material_values(Material.resolve("C24"))
+    assert values["e_x"] == pytest.approx(11000e6)          # N/m2
+    assert values["e_y"] == values["e_x"]
+    assert values["nu_xy"] == 0.0 and values["nu_yx"] == 0.0
+    for key in ("g_xy", "g_xz", "g_yz"):
+        assert values[key] == pytest.approx(values["e_x"] / 2.0)

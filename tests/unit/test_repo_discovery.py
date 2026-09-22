@@ -137,7 +137,7 @@ def test_surrounding_whitespace_is_tolerated(isolated):
 def test_shell_escaping_is_not_silently_accepted(isolated):
     """A panel is not a shell: "Mobile\\ Documents" really means a backslash."""
     repo = make_repo(isolated / "shellish")
-    root, _ = discover_repo_root(repo.replace("/", "\\ /", 1))
+    root, _ = discover_repo_root(repo.replace(os.sep, "\\ " + os.sep, 1))  # Windows paths have no "/"
     assert root is None
 
 
