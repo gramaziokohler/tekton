@@ -386,10 +386,18 @@ the supported outline nodes - it reported "0 m" for a visibly sagging
 plate; it now counts the mesh samples too, and its equilibrium check sums
 plate pressures and plate self-weight, both of which are exact.
 
-**Still open.** The two Grasshopper components (category drop-down on
-`Load Case`, "generate EN 1990" on `Load Combination`), the RFEM mapper for
-combinations and design situations, and reading results per combination
-(`loading="CO1"`). The example definitions still carry self-weight only.
+**Done (2026-09-19), the canvas.** `Load Case` picks its category from the
+catalogue drop-down and prints the psi factors, gamma and duration class it
+implies; `Load Combination` grew a `generate` switch that builds the EN 1990
+set from the wired load cases, and a `favourable` switch for uplift
+(gamma_G = 1.0). `Tekton Surface Load` is new - pressure on plates in kN/m2,
+assigned through the plate GUID like a member load, with `projected` for
+snow on a pitch. `Apply Loads` resolves it, and `Display` draws it as an
+arrow grid over the plate.
+
+**Still open.** The RFEM mapper for combinations and design situations, and
+reading results per combination (`loading="CO1"`) - both need a Windows
+session. The example definitions still carry self-weight only.
 
 ---
 
@@ -564,10 +572,14 @@ spanning x and spanning y (q·a²/8 in the span direction, nothing across,
 to 3 %) and against RFEM's centre moment (−4.8 %). Transverse shear is not
 reported; its sign was not calibrated.
 
-Still open from the scope: membrane forces and moments per plate (the
-element reports them in its own axes, and without working orthotropy that
-convention is not yet pinned down), line supports, and the cross-backend
-calibration against recorded RFEM plate numbers.
+**Closed (2026-09-22) by the Windows session.** Membrane forces and moments
+per plate are read, and the cross-backend calibration exists: against a
+recorded RFEM plate, OpenSees matches deflection to 6 %, the centre moments
+to 10 %, and the reaction sum to 0.1 %. Fixtures
+`plate_rfem_calibration.json` / `plate_structural.json`, recorded by
+`tests/record_plate_rfem.py`.
+
+Still open from the scope: line supports for plates.
 
 ---
 

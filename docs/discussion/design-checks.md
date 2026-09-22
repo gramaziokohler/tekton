@@ -139,6 +139,35 @@ maximum deviation between them. Without WP3 our checks run per load case
 and RFEM's for its combination, so on the sticks model that line reads
 26 % (= 1.35 - 1); it is a labelled caveat, not a discrepancy.
 
+## Plates (2026-09-22)
+
+Since the shell results carry `m_x`, `m_y`, `n_x`, `n_y` per metre of width,
+the same checks run for plates - `design/plates.py`. The section is a strip
+one metre wide by the plate's thickness: `A = 1.0 * t`, `W = 1.0 * t^2 / 6`.
+
+| Check | Clause | Note |
+|---|---|---|
+| Bending, each direction | 6.1.6 | x and y are separate strips, so **no** `k_m` interaction - that belongs to two axes of one cross-section, which a plate is not |
+| Tension / compression in plane | 6.1.2 / 6.1.4 | from the membrane forces |
+| Bending + membrane | 6.2.3 / 6.2.4 | per direction, same interaction forms as the member checks |
+
+**The scope limit, and it is a real one.** These checks treat the plate as a
+homogeneous isotropic slab. For a solid deck that is right. For **CLT it is
+wrong**: the layers alternate direction, a proper check uses the net
+cross-section of the layers running in the direction considered, and the
+resistance differs between the two directions. Treating CLT as homogeneous
+is **unconservative in the weak direction**.
+
+Tekton carries no layup today - `StructuralThickness` names one material and
+one thickness (WP7's open half). So every plate result carries the note
+"homogeneous isotropic slab assumed", the report prints it next to the
+numbers rather than in a footnote, and these are screening values, not
+verification. The fix is a layup per EN 16351 plus net-section properties
+per direction.
+
+Also absent: plate buckling, transverse shear (the shell reports none),
+and rolling shear - the check that usually governs CLT.
+
 ## Open questions
 
 - **Buckling lengths: authored or computed?** A `Design Policy` component

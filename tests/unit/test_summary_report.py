@@ -238,3 +238,69 @@ def test_headline_numbers_carry_the_backend_ratio_separately():
     assert numbers["max_utilization"] is None
     assert numbers["max_utilization_backend"] == pytest.approx(0.83)
     assert numbers["max_utilization_backend_member"] == 1
+
+
+# --- plate results in the report ----------------------------------------
+
+def plate_result_set():
+    """A result set with two plates, so "per plate" can be told from "overall"."""
+    from compas_timber_fea.core.model import StructuralSurfaceResult
+
+    model = make_model()
+    result_set = model.results[1]
+    result_set.surface_results = {
+        1: [
+            StructuralSurfaceResult(surface_id=1, load_case_id=1, position=Point(0, 0, 0),
+                                    displacement=Vector(0, 0, -0.004), moment_x=3.0, moment_y=1.0),
+            StructuralSurfaceResult(surface_id=1, load_case_id=1, position=Point(1, 0, 0),
+                                    displacement=Vector(0, 0, -0.009), moment_x=-5.0, moment_y=2.0),
+        ],
+        2: [
+            StructuralSurfaceResult(surface_id=2, load_case_id=1, position=Point(0, 5, 0),
+                                    displacement=Vector(0, 0, -0.001), moment_x=0.5, membrane_force_x=12.0),
+        ],
+    }
+    return model
+
+
+def test_surface_extremes_are_reported_per_plate():
+    """One maximum over two plates would hide the smaller one."""
+    from tekton_gh.summary import surface_extremes
+
+    extremes = surface_extremes(plate_result_set().results[1])
+    assert set(extremes) == {1, 2}
+    assert extremes[1]["moment_x"]["value"] == pytest.approx(-5.0)
+    assert extremes[2]["moment_x"]["value"] == pytest.approx(0.5)
+
+
+def test_surface_extremes_keep_the_sign_of_the_worst_value():
+    """A hogging moment is not a sagging one; taking abs() would lose that."""
+    from tekton_gh.summary import surface_extremes
+
+    extremes = surface_extremes(plate_result_set().results[1])
+    assert extremes[1]["moment_x"]["value"] < 0
+
+
+def test_surface_extremes_record_the_worst_deflection():
+    from tekton_gh.summary import surface_extremes
+
+    extremes = surface_extremes(plate_result_set().results[1])
+    assert extremes[1]["displacement"]["value"] == pytest.approx(0.009)
+
+
+def test_the_report_lists_the_plates():
+    report = build_report(plate_result_set())
+    assert "Plates (extremes per plate" in report
+    assert "plate 1" in report and "plate 2" in report
+    assert "m_x" in report and "kNm/m" in report
+
+
+def test_a_model_without_plates_gets_no_plate_section():
+    assert "Plates (extremes" not in build_report(make_model())
+
+
+def test_plate_deflection_reaches_the_headline_numbers():
+    """The mesh samples are where a plate's deflection lives."""
+    from tekton_gh.summary import headline_numbers
+
+    assert headline_numbers(plate_result_set())["max_displacement"] == pytest.approx(0.012)

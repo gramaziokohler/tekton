@@ -140,6 +140,7 @@ else:
 
         from compas_timber_fea.design import DesignAssumptions
         from compas_timber_fea.design.checks import check_model
+        from compas_timber_fea.design.plates import check_plates
         from tekton_gh.summary import build_csv
         from tekton_gh.summary import build_report
         from tekton_gh.summary import headline_numbers
@@ -170,7 +171,13 @@ else:
             except Exception as error:  # noqa: BLE001 - a failed check must not kill the report
                 _warn("Design checks skipped: {}".format(error))
 
-            report = build_report(model, checks, assumptions)
+            plate_checks = None
+            try:
+                plate_checks = check_plates(model, assumptions)
+            except Exception as error:  # noqa: BLE001 - a failed plate check must not kill the report
+                _warn("Plate checks skipped: {}".format(error))
+
+            report = build_report(model, checks, assumptions, plate_checks_by_case=plate_checks)
             csv = build_csv(checks) if checks else ""
 
             numbers = headline_numbers(model, checks)

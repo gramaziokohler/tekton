@@ -235,6 +235,35 @@ def force_extremes(result_set):
     return extremes
 
 
+def surface_extremes(result_set):
+    """Extreme plate results, per plate.
+
+    Per plate rather than over the whole model, because that is the unit an
+    engineer sizes: a slab and a wall in the same model have nothing to say
+    to each other, and one maximum over both hides the smaller one.
+
+    The moments are per metre width (kNm/m) and the membrane forces kN/m,
+    both in the plate's own axes.
+    """
+    quantities = ("moment_x", "moment_y", "moment_xy",
+                  "membrane_force_x", "membrane_force_y", "membrane_force_xy")
+    out = {}
+    for surface_id, samples in (getattr(result_set, "surface_results", None) or {}).items():
+        worst = {}
+        deflection = 0.0
+        for sample in samples or []:
+            deflection = max(deflection, _magnitude(sample.displacement))
+            for quantity in quantities:
+                value = float(getattr(sample, quantity, 0.0) or 0.0)
+                current = worst.get(quantity)
+                if current is None or abs(value) > abs(current["value"]):
+                    worst[quantity] = {"value": value, "position": sample.position}
+        if worst or deflection:
+            worst["displacement"] = {"value": deflection, "position": None}
+            out[surface_id] = worst
+    return out
+
+
 def _format_number(value, digits=3):
     if value is None:
         return "n/a"
@@ -245,7 +274,8 @@ def _format_number(value, digits=3):
     return "{:.{d}f}".format(value, d=digits)
 
 
-def build_report(model, checks_by_case=None, assumptions=None, title="Tekton analysis summary", worst_count=10):
+def build_report(model, checks_by_case=None, assumptions=None, title="Tekton analysis summary", worst_count=10,
+                 plate_checks_by_case=None):
     """Build the text report.
 
     Parameters
@@ -383,6 +413,26 @@ def build_report(model, checks_by_case=None, assumptions=None, title="Tekton ana
                     )
                 )
 
+        plates = surface_extremes(result_set)
+        if plates:
+            lines.append("  Plates (extremes per plate, plate axes)")
+            plate_labels = (
+                ("displacement", "w   ", "m"),
+                ("moment_x", "m_x ", "kNm/m"),
+                ("moment_y", "m_y ", "kNm/m"),
+                ("moment_xy", "m_xy", "kNm/m"),
+                ("membrane_force_x", "n_x ", "kN/m"),
+                ("membrane_force_y", "n_y ", "kN/m"),
+            )
+            for surface_id in sorted(plates):
+                lines.append("    plate {}".format(surface_id))
+                for key, label, unit in plate_labels:
+                    entry = plates[surface_id].get(key)
+                    if entry is None or entry["value"] == 0:
+                        continue
+                    lines.append("      {} {:>12} {}".format(
+                        label, _format_number(entry["value"], 4), unit))
+
         backend = backend_utilization_summary(result_set)
         if backend:
             top = backend["worst"][0]
@@ -399,6 +449,29 @@ def build_report(model, checks_by_case=None, assumptions=None, title="Tekton ana
                 lines.append("      {:>6}  {:.3f}  {:<45} t={:.2f}  {}".format(
                     entry["member_id"], entry["ratio"], entry["check"][:45], entry["position"],
                     "" if entry["ratio"] <= 1.0 else "EXCEEDED"))
+
+        plate_case_checks = (plate_checks_by_case or {}).get(case_id)
+        if plate_case_checks:
+            from compas_timber_fea.design.plates import worst_per_plate
+
+            worst_plates = worst_per_plate(plate_case_checks)
+            lines.append("  Plate utilisation (own EC5 checks)")
+            for entry in worst_plates[:worst_count]:
+                governing = entry.governing
+                lines.append(
+                    "    plate {:>3}  {:.3f}  {:<22} {:<7} {}".format(
+                        entry.surface_id,
+                        entry.ratio,
+                        governing.name if governing else "-",
+                        governing.clause if governing else "-",
+                        "" if entry.passes else "EXCEEDED",
+                    )
+                )
+            # The layup caveat decides whether these numbers can be trusted,
+            # so it goes next to them and not into a footnote.
+            caveats = {note for entry in worst_plates for note in entry.notes if "CLT" in note}
+            for note in sorted(caveats):
+                lines.append("    note: {}".format(note))
 
         case_checks = (checks_by_case or {}).get(case_id)
         if case_checks is None:
