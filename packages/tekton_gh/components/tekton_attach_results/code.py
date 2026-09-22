@@ -115,6 +115,7 @@ if model is None or structural is None:
 else:
     _setup()
     from compas_timber_fea.results import ANALYSIS_KEY, attach_results_to_timber
+    from compas_timber_fea.results import attach_plate_results_to_timber
 
     results = getattr(structural, "results", {}) or {}
     if not results:
@@ -133,8 +134,26 @@ else:
         written = attach_results_to_timber(structural, model, result_sets=selected) if selected else {}
         attached = len(written)
 
+        # Plates carry their own results: samples as points, not as a
+        # parameter, because a plate has no axis to run along (WP5b).
+        plate_checks = None
+        try:
+            from compas_timber_fea.design import DesignAssumptions
+            from compas_timber_fea.design.plates import check_plates
+
+            plate_checks = check_plates(structural, DesignAssumptions())
+        except Exception as error:  # noqa: BLE001 - utilisation is a bonus, forces are not
+            _warn("Plate utilisation skipped: {}".format(error))
+
+        plates_written = attach_plate_results_to_timber(
+            structural, model, result_sets=selected, plate_checks=plate_checks) if selected else {}
+
         beams = list(model.beams)
-        print("Results attached to {} of {} elements (load cases {}).".format(attached, len(beams), sorted(selected)))
+        plates = list(getattr(model, "plates", []) or [])
+        print("Results attached to {} of {} beams (load cases {}).".format(attached, len(beams), sorted(selected)))
+        if plates:
+            print("Results attached to {} of {} plates.".format(len(plates_written), len(plates)))
+        attached += len(plates_written)
         if written:
             sample = next(iter(written.values()))
             case = next(iter(sample["load_cases"].values()))

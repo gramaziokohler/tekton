@@ -583,7 +583,7 @@ Still open from the scope: line supports for plates.
 
 ---
 
-## WP5b — Results back onto the plates
+## WP5b — Results back onto the plates (done, 2026-09-22)
 
 **Why.** A plate is calculated, drawn and now checked - but the numbers stop
 at the neutral model. `Attach Results` walks `model.beams` only; the word
@@ -631,6 +631,21 @@ holds the samples and the envelope; a rebuilt TimberModel still has them;
 the numbers match what `Summary` prints for the same plate.
 
 **Size.** A day, plus half a day for `To Timber`.
+
+**Done (2026-09-22).** `attach_plate_results_to_timber` in `results.py`
+writes `plate.attributes["analysis"]` in the same shape beams get, so
+anything reading a beam's analysis reads a plate's. Samples are
+`(point, values)` with m_x, m_y, m_xy, n_x, n_y, n_xy, the displacement as a
+plain tuple, and the utilisation from `design/plates.py` where it was
+computed; the envelope keeps the largest of each with its sign and names the
+governing check. `Attach Results` reports beams and plates separately;
+`To Timber` carries plate results through the rebuild. Verified on the
+4-plate model end to end - translate, solve, JSON round-trip, rebuild: 4 of
+4 plates with 90 samples and an unchanged envelope. 15 tests.
+
+The provenance records `"axes": "plate axes"`, because WP0b established that
+OpenSees does not transport the material axes - the caveat travels with the
+numbers rather than living only in a document.
 
 ---
 

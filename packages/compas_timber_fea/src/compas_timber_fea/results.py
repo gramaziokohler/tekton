@@ -204,6 +204,137 @@ def _param_from_start(point, start, length):
     return min(max(distance / length, 0.0), 1.0)
 
 
+def attach_plate_results_to_timber(structural_model, timber_model, result_sets=None,
+                                   plate_checks=None):
+    """Write per-plate samples and envelopes into ``plate.attributes["analysis"]``.
+
+    The same shape beams get, so anything that reads a beam's analysis can
+    read a plate's: ``{"provenance": ..., "load_cases": {id: {"samples",
+    "envelope"}}}``.
+
+    **Samples are points, not UV.** A beam sample is positioned by one
+    parameter along its axis; the obvious analogue for a plate would be a UV
+    pair, and it is the wrong choice. A UV needs a parametrisation of the
+    surface that the neutral model does not carry, and it changes the moment
+    someone reorders the outline - the results would silently move. A point
+    in space survives a reordered outline, a remesh at a different target
+    length, and a change of backend, because none of those move the plate.
+
+    Parameters
+    ----------
+    structural_model : StructuralModel
+    timber_model : TimberModel
+    result_sets : dict, optional
+        Defaults to ``structural_model.results``.
+    plate_checks : dict, optional
+        ``{load_case_id: [PlateCheck]}`` from ``design.plates.check_plates``;
+        the utilisation is written alongside the forces where it was
+        computed, the way the backend's own ratio is for beams.
+
+    Returns
+    -------
+    dict
+        ``{plate guid: analysis dict}`` for the plates that received results.
+    """
+    result_sets = result_sets if result_sets is not None else structural_model.results
+    if not result_sets:
+        return {}
+
+    plates_by_guid = {str(plate.guid): plate for plate in getattr(timber_model, "plates", []) or []}
+    if not plates_by_guid:
+        return {}
+
+    surfaces_by_source = {}
+    for surface in getattr(structural_model, "surfaces", []) or []:
+        if surface.source_element_id:
+            surfaces_by_source.setdefault(str(surface.source_element_id), []).append(surface)
+
+    provenance = {
+        "source": "tekton",
+        "attached_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "source_units": structural_model.source_units,
+        "load_cases": sorted(result_sets.keys()),
+        # WP0b: OpenSees does not transport the material axes, so a plate
+        # result is direction-agnostic. The caveat travels with the numbers.
+        "axes": "plate axes; see design-checks.md for the layup caveat",
+    }
+
+    attached = {}
+    for guid, surfaces in surfaces_by_source.items():
+        plate = plates_by_guid.get(guid)
+        if plate is None:
+            continue
+
+        per_case = {}
+        for load_case_id, result_set in result_sets.items():
+            ratios = _plate_ratios(plate_checks, load_case_id)
+            samples = _plate_samples(surfaces, result_set, ratios)
+            if samples:
+                per_case[load_case_id] = {
+                    "samples": samples,
+                    "envelope": _envelope(samples),
+                }
+
+        if per_case:
+            analysis = {"provenance": dict(provenance), "load_cases": per_case}
+            plate.attributes[ANALYSIS_KEY] = analysis
+            attached[guid] = analysis
+
+    return attached
+
+
+def _plate_ratios(plate_checks, load_case_id):
+    """Worst utilisation per (surface id, rounded point), for sample lookup."""
+    if not plate_checks:
+        return {}
+    out = {}
+    for check in plate_checks.get(load_case_id, []) or []:
+        if check.position is None:
+            continue
+        key = (check.surface_id, _point_key(check.position))
+        current = out.get(key)
+        if current is None or check.ratio > current[0]:
+            governing = check.governing
+            out[key] = (check.ratio, governing.name if governing else "")
+    return out
+
+
+def _point_key(point):
+    return tuple(round(float(c), 6) for c in point)
+
+
+def _plate_samples(surfaces, result_set, ratios):
+    """Collect (point, values) samples for one plate from all its surfaces."""
+    samples = []
+    for surface in surfaces:
+        surface_results = (getattr(result_set, "surface_results", None) or {}).get(surface.id)
+        if not surface_results:
+            continue
+        for result in surface_results:
+            if result.position is None:
+                continue
+            point = _point_key(result.position)
+            values = {
+                "m_x": result.moment_x,
+                "m_y": result.moment_y,
+                "m_xy": result.moment_xy,
+                "n_x": result.membrane_force_x,
+                "n_y": result.membrane_force_y,
+                "n_xy": result.membrane_force_xy,
+            }
+            if result.displacement is not None:
+                values["displacement"] = tuple(float(c) for c in result.displacement)
+            found = ratios.get((surface.id, point))
+            if found:
+                values["utilization"] = float(found[0])
+                if found[1]:
+                    values["governing_check"] = found[1]
+            samples.append((point, values))
+    # Sorted so two runs of the same model produce the same list.
+    samples.sort(key=lambda item: item[0])
+    return samples
+
+
 def _envelope(samples):
     """Per-quantity maxima (by absolute value, sign kept) over all samples.
 

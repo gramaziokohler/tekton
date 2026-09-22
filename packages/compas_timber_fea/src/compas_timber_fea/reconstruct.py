@@ -28,7 +28,6 @@ per end). The rebuilt beam is therefore the blank, not the trimmed piece.
 
 from uuid import UUID
 
-from compas.geometry import Frame
 from compas.geometry import Line
 from compas.geometry import Point
 from compas.geometry import Polyline
@@ -36,6 +35,7 @@ from compas.geometry import Vector
 from compas.geometry import cross_vectors
 
 from compas_timber_fea.core.units import scale_to_meters
+from compas_timber_fea.results import attach_plate_results_to_timber
 from compas_timber_fea.results import attach_results_to_timber
 from compas_timber_fea.results import chain_endpoints
 
@@ -82,6 +82,9 @@ def structural_to_timber(structural_model, attach_results=True):
     if attach_results and structural_model.results:
         attached = attach_results_to_timber(structural_model, model)
         report.append(f"results attached to {len(attached)} of {len(beams)} beams")
+        if plates:
+            attached_plates = attach_plate_results_to_timber(structural_model, model)
+            report.append(f"results attached to {len(attached_plates)} of {len(plates)} plates")
 
     return model, report
 
