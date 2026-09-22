@@ -3,7 +3,9 @@ import warnings
 from compas_timber_fea.core.preflight import preflight
 
 from compas_dlubal.dlubal.client import DlubalClient
+from compas_dlubal.dlubal.design_setup import create_or_update
 from compas_dlubal.dlubal.design_setup import disable_timber_design
+from compas_dlubal.dlubal.design_setup import set_classification
 from compas_dlubal.dlubal.design_setup import setup_timber_design
 from compas_dlubal.dlubal.mappers.mapper_nodes import NodeMapper
 from compas_dlubal.dlubal.mappers.mapper_members import MemberMapper
@@ -96,6 +98,11 @@ class DlubalImporter:
             if self.delete_all:
                 conn.delete_all_objects()
 
+            # Design situations exist only with the "load case classification
+            # and combination wizard" add-on; authored combinations need it.
+            if structural_model.load_combinations:
+                set_classification(conn)
+
             # Collect node coordinates for the MemberMapper
             nodes_cache = {n.id: n.point for n in structural_model.nodes}
 
@@ -161,6 +168,11 @@ class DlubalImporter:
             for member_load in structural_model.member_loads:
                 objects.extend(load_mapper.map_member_load(member_load))
 
+            # A combination needs its design situation to exist first - and
+            # activating the classification add-on creates no. 1 by itself,
+            # so these go one by one, created or updated, ahead of the list.
+            for situation in load_mapper.map_design_situations(structural_model.load_combinations):
+                create_or_update(conn.application, situation)
             for combination in structural_model.load_combinations:
                 objects.append(load_mapper.map_load_combination(combination))
 

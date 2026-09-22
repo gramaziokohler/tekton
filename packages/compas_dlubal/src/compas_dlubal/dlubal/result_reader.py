@@ -1,5 +1,6 @@
 from compas_dlubal.dlubal.client import DlubalClient
 from compas_dlubal.dlubal.result_parsing import design_ratio_summary
+from compas_dlubal.dlubal.result_parsing import split_design_ratios_by_loading
 from compas_dlubal.dlubal.result_parsing import member_lengths_from_model
 from compas_dlubal.dlubal.result_parsing import parse_member_deformations
 from compas_dlubal.dlubal.result_parsing import parse_member_design_ratios
@@ -8,6 +9,7 @@ from compas_dlubal.dlubal.result_parsing import parse_node_deformations
 from compas_dlubal.dlubal.result_parsing import parse_support_forces
 from compas_dlubal.dlubal.result_parsing import parse_surface_results
 from compas_timber_fea.core.model import StructuralResultSet
+from compas_timber_fea.core.superposition import COMBINATION_ID_BASE
 
 
 #: What to do when the add-on produced nothing - the one setting the API
@@ -47,13 +49,20 @@ class DlubalResultReader:
         with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
             return self._inspect(conn)
 
-    def read(self, load_cases=None, calculate=True, structural_model=None, design=False):
-        """Calculate and read results for the requested load cases.
+    def read(self, load_cases=None, calculate=True, structural_model=None, design=False, combinations=None):
+        """Calculate and read results for the requested load cases and combinations.
 
-        Returns {load_case_id: StructuralResultSet} with member internal
+        Returns {result_id: StructuralResultSet} with member internal
         forces, nodal deformations and support reactions. When
         ``structural_model`` is given, member result positions are normalised
         to the 0..1 parameter along each member.
+
+        ``combinations`` are the neutral LoadCombination objects (or their
+        ids) the importer pushed; RFEM solves each as loading ``CO<id>`` and
+        the result set gets id ``COMBINATION_ID_BASE + id`` - the same id
+        ``core.superposition`` would give it, so Summary, Visualize and the
+        design checks treat an RFEM-solved combination exactly like an
+        assembled one. ``metadata["source"]`` tells them apart.
 
         With ``design=True`` the timber design add-on's ratio table is read
         as well (``DlubalImporter(design=True)`` sets the add-on up) and
@@ -74,9 +83,20 @@ class DlubalResultReader:
 
             result_sets = {}
             for load_case_id in load_cases:
-                result_sets[load_case_id] = self._read_load_case(
-                    conn, load_case_id, member_lengths, calculation_method
-                )
+                result_sets[load_case_id] = self._read_loading(
+                    conn, "LC", load_case_id, load_case_id, "Load Case {}".format(load_case_id),
+                    member_lengths, calculation_method)
+            for combination in combinations or []:
+                number = int(getattr(combination, "id", combination))
+                name = getattr(combination, "name", "") or "Combination {}".format(number)
+                result_id = COMBINATION_ID_BASE + number
+                result_sets[result_id] = self._read_loading(
+                    conn, "CO", number, result_id, name, member_lengths, calculation_method)
+                result_sets[result_id].metadata["combination"] = {
+                    "id": number,
+                    "factors": {int(k): float(v) for k, v in (getattr(combination, "factors", {}) or {}).items()},
+                    "combination_type": getattr(combination, "combination_type", ""),
+                }
             if design:
                 self._read_design_ratios(conn, result_sets, member_lengths)
             return result_sets
@@ -103,9 +123,32 @@ class DlubalResultReader:
         summary["columns"] = [str(c) for c in frame.columns]
         summary["rows"] = int(len(frame))
         summary["combinations"] = self._load_combinations(conn)
-        for load_case_id, result_set in result_sets.items():
+
+        # The ratio belongs to a combination. When that combination was read
+        # as a result set of its own (authored combinations), it goes there
+        # and nowhere else; otherwise (the wizard's own combination) every
+        # set gets it, with the metadata saying what it was computed for.
+        parts = split_design_ratios_by_loading(frame)
+        targets = {COMBINATION_ID_BASE + number: part for number, part in parts.items()
+                   if COMBINATION_ID_BASE + number in result_sets}
+        if targets:
+            for result_id, part in targets.items():
+                result_set = result_sets[result_id]
+                result_set.member_results = parse_member_design_ratios(
+                    part, result_id, member_lengths, result_set.member_results)
+                note = dict(summary)
+                note["loadings"] = design_ratio_summary(part)["loadings"]
+                result_set.metadata["design"] = note
+            aside = {"source": summary["source"], "note": "ratios are on the combination result sets",
+                     "combinations": summary["combinations"]}
+            for result_id, result_set in result_sets.items():
+                if result_id not in targets:
+                    result_set.metadata["design"] = dict(aside)
+            return
+
+        for result_id, result_set in result_sets.items():
             result_set.member_results = parse_member_design_ratios(
-                frame, load_case_id, member_lengths, result_set.member_results)
+                frame, result_id, member_lengths, result_set.member_results)
             result_set.metadata["design"] = dict(summary)
 
     @staticmethod
@@ -130,19 +173,20 @@ class DlubalResultReader:
             pass
         return out
 
-    def _read_load_case(self, conn, load_case_id, member_lengths, calculation_method):
+    def _read_loading(self, conn, kind, number, result_id, name, member_lengths, calculation_method):
+        """One loading - a load case (``kind="LC"``) or a combination (``"CO"``) - into a result set."""
         api = conn.api
         application = conn.application
-        loading = api.ObjectId(no=load_case_id, object_type=api.OBJECT_TYPE_LOAD_CASE)
+        object_type = api.OBJECT_TYPE_LOAD_CASE if kind == "LC" else api.OBJECT_TYPE_LOAD_COMBINATION
 
         # A failed calculation does not raise - RFEM records it in the
         # errors-and-warnings table and the result queries come back empty.
         # Read that table first, so the message is the solver's, not ours.
-        problems = self._solver_problems(conn, load_case_id)
+        problems = self._solver_problems(conn, number, object_type)
         if problems:
             raise RuntimeError(
-                "RFEM calculation failed for load case {}:\n  {}".format(
-                    load_case_id, "\n  ".join(problems)))
+                "RFEM calculation failed for {}{}:\n  {}".format(
+                    kind, number, "\n  ".join(problems)))
 
         # get_results is the raw database query. get_result_table is the
         # pre-processed table "as displayed in the desktop application" and
@@ -160,7 +204,7 @@ class DlubalResultReader:
         if getattr(self, "_has_surfaces", True):
             tables["surface_deformations"] = results_type.STATIC_ANALYSIS_SURFACES_GLOBAL_DEFORMATIONS_MESH_NODES
             tables["surface_forces"] = results_type.STATIC_ANALYSIS_SURFACES_BASIC_INTERNAL_FORCES_MESH_NODES
-        loading_label = "LC{}".format(load_case_id)
+        loading_label = "{}{}".format(kind, number)
 
         frames = {}
         metadata = {
@@ -182,34 +226,35 @@ class DlubalResultReader:
 
         member_results = {}
         if "member_forces" in frames:
-            member_results = parse_member_internal_forces(frames["member_forces"], load_case_id, member_lengths)
+            member_results = parse_member_internal_forces(frames["member_forces"], result_id, member_lengths)
         if "member_deformations" in frames:
-            member_results = parse_member_deformations(frames["member_deformations"], load_case_id, member_lengths, member_results)
+            member_results = parse_member_deformations(frames["member_deformations"], result_id, member_lengths, member_results)
 
         node_results = {}
         if "node_deformations" in frames:
-            node_results = parse_node_deformations(frames["node_deformations"], load_case_id)
+            node_results = parse_node_deformations(frames["node_deformations"], result_id)
         if "support_forces" in frames:
-            node_results = parse_support_forces(frames["support_forces"], load_case_id, node_results)
+            node_results = parse_support_forces(frames["support_forces"], result_id, node_results)
 
         surface_results = {}
         if "surface_deformations" in frames or "surface_forces" in frames:
-            surface_results = parse_surface_results(frames.get("surface_deformations"), frames.get("surface_forces"), load_case_id)
+            surface_results = parse_surface_results(frames.get("surface_deformations"), frames.get("surface_forces"), result_id)
 
+        metadata["loading"] = loading_label
         return StructuralResultSet(
-            load_case_id=load_case_id,
-            name=f"Load Case {load_case_id}",
+            load_case_id=result_id,
+            name=name,
             node_results=node_results,
             member_results=member_results,
             surface_results=surface_results,
             metadata=metadata,
         )
 
-    def _solver_problems(self, conn, load_case_id):
-        """RFEM's errors-and-warnings entries for a load case, formatted; [] when there are none."""
+    def _solver_problems(self, conn, load_case_id, object_type=None):
+        """RFEM's errors-and-warnings entries for a loading, formatted; [] when there are none."""
         try:
             api = conn.api
-            loading = api.ObjectId(no=load_case_id, object_type=api.OBJECT_TYPE_LOAD_CASE)
+            loading = api.ObjectId(no=load_case_id, object_type=object_type or api.OBJECT_TYPE_LOAD_CASE)
             errors = conn.application.get_result_table(
                 table=api.results.ERRORS_AND_WARNINGS_TABLE, loading=loading)
         except Exception:  # no table at all is fine - nothing went wrong

@@ -27,7 +27,37 @@ ACTION_CATEGORY_NAMES = {
     "VARIABLE": "ACTION_CATEGORY_IMPOSED_ACTION_Q",
     "SNOW": "ACTION_CATEGORY_SNOW_ACTION_FSN",
     "WIND": "ACTION_CATEGORY_WIND_QW",
+    # The EN 1990 catalogue keys (core/load_catalogue.py). RFEM derives the
+    # load duration - and so k_mod in the timber design - from these, so an
+    # imposed load pushed without its category is designed as permanent.
+    "A": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_A_DOMESTIC_RESIDENTIAL_AREAS_QI_A",
+    "B": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_B_OFFICE_AREAS_QI_B",
+    "C": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_C_CONGREGATION_AREAS_QI_C",
+    "D": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_D_SHOPPING_AREAS_QI_D",
+    "E": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_E_STORAGE_AREAS_QI_E",
+    "F": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_F_ROOFS_ACCESSIBLE_ONLY_PRIVATELY_QI_F",
+    "G": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_G1_ROOFS_SLOPE_LESS_THAN_20_Q_G1",
+    "H": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_H_ROOFS_QI_H",
+    "SNOW_HIGH": "ACTION_CATEGORY_SNOW_ACTION_FSN",
+    "THERMAL": "ACTION_CATEGORY_ACTIONS_DUE_TO_CLIMATE_CHANGES_IN_TEMPERATURE_AND_AIR_PRESSURE_QC",
 }
+
+
+#: Neutral combination types -> (RFEM design situation number, type enum name, label).
+#: RFEM will not solve a load combination without a design situation, and the
+#: timber design add-on designs only what sits in a ULS one. One situation
+#: per type, numbered so a wizard-made situation (design_setup.py, no. 1)
+#: and an authored ULS share the number and therefore the add-on's attention.
+DESIGN_SITUATIONS = {
+    "ULS": (1, "DESIGN_SITUATION_TYPE_STR_PERMANENT_AND_TRANSIENT_6_10", "ULS persistent/transient (6.10)"),
+    "SLS_CHARACTERISTIC": (2, "DESIGN_SITUATION_TYPE_SLS_CHARACTERISTIC", "SLS characteristic (6.14b)"),
+    "SLS_QUASI_PERMANENT": (3, "DESIGN_SITUATION_TYPE_SLS_QUASI_PERMANENT", "SLS quasi-permanent (6.16b)"),
+}
+
+
+def design_situation_for(combination_type):
+    """(number, enum name, label) for a neutral combination type; unknown types count as ULS."""
+    return DESIGN_SITUATIONS.get((combination_type or "ULS").upper(), DESIGN_SITUATIONS["ULS"])
 
 
 class LoadMapper:
@@ -143,8 +173,30 @@ class LoadMapper:
 
     # -- combinations -------------------------------------------------------
 
+    def map_design_situations(self, combinations):
+        """One DesignSituation per combination type in use, in number order.
+
+        Returned before the combinations that reference them; nothing when
+        the model has no combinations (the wizard route in design_setup.py
+        makes its own).
+        """
+        wanted = {}
+        for combination in combinations:
+            number, enum_name, label = design_situation_for(getattr(combination, "combination_type", "ULS"))
+            wanted[number] = (enum_name, label)
+        objects = []
+        for number in sorted(wanted):
+            enum_name, label = wanted[number]
+            objects.append(self.Loc.DesignSituation(
+                no=number,
+                name=label,
+                design_situation_type=self._enum(self.Loc.DesignSituation, "design_situation_type", enum_name),
+                active_for_timber_design=(number == 1),
+            ))
+        return objects
+
     def map_load_combination(self, combination):
-        """Map a neutral load combination to a Dlubal LoadCombination."""
+        """Map a neutral load combination to a Dlubal LoadCombination in its design situation."""
         items_type = self.Loc.LoadCombination.ItemsTable
         row_type = _message_class(items_type.DESCRIPTOR.fields_by_name["rows"].message_type)
 
@@ -156,10 +208,14 @@ class LoadMapper:
             )
             for index, (load_case_id, factor) in enumerate(sorted(combination.factors.items()))
         ]
+        situation, _, _ = design_situation_for(getattr(combination, "combination_type", "ULS"))
 
         return self.Loc.LoadCombination(
             no=combination.id,
+            user_defined_name_enabled=True,
             name=combination.name,
+            design_situation=situation,
+            to_solve=True,
             items=items_type(rows=rows),
         )
 
