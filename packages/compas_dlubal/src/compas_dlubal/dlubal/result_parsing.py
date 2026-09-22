@@ -285,6 +285,22 @@ def parse_member_design_ratios(dataframe, load_case_id, member_lengths=None, mem
     return results
 
 
+def split_design_ratios_by_loading(dataframe):
+    """{combination number: sub-frame} from the ratio table's loading labels.
+
+    The label is language-dependent ("CO1" / "LK1"); the number is not.
+    Rows whose label carries no number are dropped.
+    """
+    column = _resolve(dataframe, DESIGN_RATIO_COLUMNS["loading"], "loading", required=False)
+    if column is None:
+        return {}
+    numbers = dataframe[column].astype(str).str.extract(r"(\d+)")[0]
+    out = {}
+    for value in numbers.dropna().unique():
+        out[int(value)] = dataframe[numbers == value]
+    return out
+
+
 def design_ratio_summary(dataframe):
     """What the ratio table covers: its design loadings and situations, for the result-set metadata."""
     out = {"loadings": [], "design_situations": []}

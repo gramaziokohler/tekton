@@ -154,7 +154,12 @@ def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, dele
 
     started = time.time()
     reader = DlubalResultReader(app_type=app_type, api_key=api_key)
-    model.results = reader.read(load_cases=cases, calculate=True, structural_model=model, design=design)
+    combinations = list(model.load_combinations or [])
+    if combinations:
+        log("  plus {} Kombination(en), von RFEM geloest: {}".format(
+            len(combinations), ", ".join("CO{}".format(c.id) for c in combinations)))
+    model.results = reader.read(load_cases=cases, calculate=True, structural_model=model, design=design,
+                                combinations=combinations)
     log("Berechnung abgeschlossen ({:.1f}s).".format(time.time() - started))
     if design:
         note = next(iter(model.results.values())).metadata.get("design", {}) if model.results else {}

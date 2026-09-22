@@ -113,3 +113,23 @@ def test_unknown_action_category_does_not_crash(mapper):
     case = mapper.map_load_cases([StructuralLoadCase(id=1, name="X", action_category="SEISMIC")])[1]
 
     assert case.no == 1
+
+
+def test_combinations_get_one_design_situation_per_type(mapper):
+    """RFEM refuses to solve a combination outside a design situation; the add-on designs only ULS ones."""
+    combinations = [
+        LoadCombination(id=1, name="ULS-1", factors={1: 1.35}, combination_type="ULS"),
+        LoadCombination(id=2, name="ULS-2", factors={1: 1.35, 2: 1.5}, combination_type="ULS"),
+        LoadCombination(id=3, name="SLS", factors={1: 1.0, 2: 1.0}, combination_type="SLS_CHARACTERISTIC"),
+    ]
+    situations = mapper.map_design_situations(combinations)
+
+    assert [s.no for s in situations] == [1, 2]
+    assert situations[0].active_for_timber_design and not situations[1].active_for_timber_design
+    assert mapper.map_load_combination(combinations[1]).design_situation == 1
+    assert mapper.map_load_combination(combinations[2]).design_situation == 2
+    assert mapper.map_load_combination(combinations[2]).to_solve
+
+
+def test_no_combinations_means_no_design_situations(mapper):
+    assert mapper.map_design_situations([]) == []

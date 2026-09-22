@@ -22,7 +22,7 @@ objects, because every run re-pushes the structure but not the base data.
 from dlubal.api import common
 
 
-def _create_or_update(application, obj):
+def create_or_update(application, obj):
     """create_object, or update_object when RFEM says the number is taken."""
     try:
         application.create_object(obj)
@@ -68,7 +68,7 @@ def setup_timber_design(conn, structural_model, service_class=1, stability=False
     base.addons.combination_wizard_and_classification_active = True
     base.standards.timber_design_standard = BaseData.Standards.TimberDesignStandard.Value(
         "TIMBER_DESIGN_STANDARD_NATIONAL_ANNEX_AND_EDITION_EN_1995_CEN_2014_05_STANDARD")
-    base.combinations_settings.combination_wizard_active = True
+    base.combinations_settings.combination_wizard_active = not bool(getattr(structural_model, "load_combinations", None))
     base.combinations_settings.result_combinations_active = False
     app.set_base_data(base_data=base)
     base = app.get_base_data()
@@ -80,12 +80,12 @@ def setup_timber_design(conn, structural_model, service_class=1, stability=False
 
     # 2. service class and ULS configuration (RFEM made no. 1 of each on activation)
     ServiceClass = api.timber_design.TimberServiceClass
-    report["service_class_object"] = _create_or_update(app, ServiceClass(
+    report["service_class_object"] = create_or_update(app, ServiceClass(
         no=1, name="Service class {}".format(service_class), members=timber_members,
         service_class=getattr(ServiceClass.ServiceClass, "SERVICE_CLASS_{}".format(int(service_class)))))
 
     UlsConfiguration = api.timber_design_objects.TimberDesignUlsConfiguration
-    report["uls_configuration"] = _create_or_update(app, UlsConfiguration(no=1, name="ULS", assigned_to_all_members=True))
+    report["uls_configuration"] = create_or_update(app, UlsConfiguration(no=1, name="ULS", assigned_to_all_members=True))
     # The stability switch lives in the EC5 settings tree, which only exists
     # once RFEM has made the object - so read it back and update.
     existing = app.get_object(UlsConfiguration(no=1))
@@ -93,19 +93,23 @@ def setup_timber_design(conn, structural_model, service_class=1, stability=False
     common.tree_table.set_values_by_key(tree=tree, key="perform_stability_analysis", values=[bool(stability)])
     app.update_object(UlsConfiguration(no=1, settings_ec5=tree))
 
-    # 3. combination wizard -> load combinations
-    Wizard = api.loading.CombinationWizard
-    report["combination_wizard"] = _create_or_update(app, Wizard(
-        no=wizard_no, name="Tekton design", static_analysis_settings=analysis_settings_no,
-        generate_combinations=Wizard.GenerateCombinations.GENERATE_COMBINATIONS_LOAD_COMBINATIONS))
-
-    # 4. ULS design situation on that wizard, then the combinations
+    # 3. + 4. combinations. Authored ones (WP3) arrived with the push, in
+    # their own design situations (mapper_loads.DESIGN_SITUATIONS, ULS = 1);
+    # without them the wizard makes RFEM's default 1.35 G from the action
+    # categories, in a ULS design situation of its own.
     DesignSituation = api.loading.DesignSituation
-    report["design_situation"] = _create_or_update(app, DesignSituation(
-        no=design_situation_no, name="ULS persistent/transient (6.10)",
-        design_situation_type=DesignSituation.DesignSituationType.DESIGN_SITUATION_TYPE_STR_PERMANENT_AND_TRANSIENT_6_10,
-        combination_wizard=wizard_no, active_for_timber_design=True))
-    app.generate_combinations()
+    authored = list(getattr(structural_model, "load_combinations", []) or [])
+    report["combinations"] = "authored ({})".format(len(authored)) if authored else "combination wizard"
+    if not authored:
+        Wizard = api.loading.CombinationWizard
+        report["combination_wizard"] = create_or_update(app, Wizard(
+            no=wizard_no, name="Tekton design", static_analysis_settings=analysis_settings_no,
+            generate_combinations=Wizard.GenerateCombinations.GENERATE_COMBINATIONS_LOAD_COMBINATIONS))
+        report["design_situation"] = create_or_update(app, DesignSituation(
+            no=design_situation_no, name="ULS persistent/transient (6.10)",
+            design_situation_type=DesignSituation.DesignSituationType.DESIGN_SITUATION_TYPE_STR_PERMANENT_AND_TRANSIENT_6_10,
+            combination_wizard=wizard_no, active_for_timber_design=True))
+        app.generate_combinations()
 
     situation = app.get_object(DesignSituation(no=design_situation_no))
     report["design_situation_active_for_timber"] = bool(situation.active_for_timber_design)
@@ -133,9 +137,30 @@ def disable_timber_design(conn):
     """
     app = conn.application
     base = app.get_base_data()
-    if not (base.addons.timber_design_active or base.addons.combination_wizard_and_classification_active):
+    if not base.addons.timber_design_active:
         return False
     base.addons.timber_design_active = False
-    base.addons.combination_wizard_and_classification_active = False
+    app.set_base_data(base_data=base)
+    return True
+
+
+def set_classification(conn):
+    """Switch the "load case classification and combination wizard" add-on on, automatic generation off.
+
+    Authored combinations (WP3) need design situations, which exist only
+    with this add-on. It is never switched off again: doing so resets the
+    wizard's standard group, i.e. the one GUI setting the timber design
+    depends on (seen 2026-09-19 - "EN 1990 | Basis + Holz" came back as
+    plain "EN 1990" after an off/on). One read, one write when something
+    changes.
+    """
+    app = conn.application
+    base = app.get_base_data()
+    addons, settings = base.addons, base.combinations_settings
+    if addons.combination_wizard_and_classification_active and not settings.combination_wizard_active             and not settings.result_combinations_active:
+        return False
+    addons.combination_wizard_and_classification_active = True
+    settings.combination_wizard_active = False
+    settings.result_combinations_active = False
     app.set_base_data(base_data=base)
     return True
