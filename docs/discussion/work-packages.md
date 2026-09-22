@@ -583,15 +583,66 @@ Still open from the scope: line supports for plates.
 
 ---
 
-## WP5 — Plates, second half
+## WP5b — Results back onto the plates
 
-**Why.** Surfaces push, calculate, draw. The numbers do not reach the
-plates, the connections are not what the timber says.
+**Why.** A plate is calculated, drawn and now checked - but the numbers stop
+at the neutral model. `Attach Results` walks `model.beams` only; the word
+"surface" does not appear in `results.py`. So a designer can colour a plate
+through `Visualize` but cannot ask the plate itself what it carries, and
+`To Timber` rebuilds a plate without its results. That is the last place
+where plates are second-class next to beams.
+
+**The design decision, made up front.** Beam samples are positioned by a
+single parameter `t` along the *physical* beam axis - a beam is split into
+several members when it is idealised, and the attachment stitches them back
+together so `t` runs 0..1 once rather than once per member.
+
+A plate needs something else. The obvious guess is UV, and it is the wrong
+one: a UV needs a parametrisation of the plate surface that the neutral
+model does not carry, and that changes the moment someone reorders the
+outline - the results would silently land somewhere else. `StructuralSurfaceResult`
+already holds a real 3D `position`, so a sample is a point in space.
+That survives a reordered outline, a remesh at a different target length,
+and a different backend, because none of them move the plate itself.
 
 **Scope.**
-- `Results`/`Attach Results` for surfaces: envelope per plate (max
-  deflection, max m_x/m_y, max n), samples as (point, values), written to
-  `plate.attributes["analysis"]`.
+- `results.py` grows a plate path: samples as (point, values) plus an
+  envelope per plate, written to `plate.attributes["analysis"]` in the same
+  shape beams use, so anything reading beam results can read plates.
+- Values per sample: `w`, `m_x`, `m_y`, `m_xy`, `n_x`, `n_y`, `n_xy`, and
+  the utilisation from `design/plates.py` where it was computed.
+- Envelope per plate: the extreme of each, with the point it sits at -
+  which is what a designer reads first.
+- `Attach Results` counts plates as well as beams and says so.
+- `To Timber` carries the plate results back, as it already does for beams.
+- The samples stay in the plate's own axes, and the note about them
+  (WP0b: OpenSees does not transport material axes) travels with them.
+
+**Depends on.** Nothing. The plate checks (2026-09-22) and the plate
+extremes in `Summary` are already there; this is the step that puts the same
+numbers on the timber element.
+
+**Deliverables.** Plate path in `results.py` + tests on a recorded result
+model; `Attach Results` and `To Timber` extended; the plate example shows a
+plate carrying its own envelope.
+
+**Acceptance.** Plate example: after a run, `plate.attributes["analysis"]`
+holds the samples and the envelope; a rebuilt TimberModel still has them;
+the numbers match what `Summary` prints for the same plate.
+
+**Size.** A day, plus half a day for `To Timber`.
+
+---
+
+## WP5 — Plates, second half
+
+**Why.** Surfaces push, calculate, draw and check. What is still missing is
+the timber side: the connections are not what the timber says, and a
+subdivided plate does not come back whole.
+
+**Scope.** (The results half moved out to WP5b, which states the sampling
+decision it turns on; what remains here is the timber-side idealisation.)
+
 - Wall-to-slab as a line connection with a policy (hinged/continuous/
   spring), not a rigid shared node. Blocked by the upstream frame bug in
   `compas_timber.structural` (mid-surface frame puts the normal in Y);
