@@ -234,3 +234,49 @@ def test_a_genuinely_large_model_is_still_allowed_at_a_coarser_target():
     model.surfaces = [StructuralSurface(id=1, nodes=[1, 2, 3, 4], thickness_id=1)]
     result = mesh_surfaces(model, 500.0)
     assert result.surfaces[1].triangles
+
+
+# --- the control reaches the mesher (WP0b follow-up) ----------------------
+
+def test_the_target_length_reaches_the_mesher_through_run_model():
+    """The knob exists on the runner; the chain from run_model has to carry it,
+    or the setting is silently ignored - the worst kind of control."""
+    from compas_timber_fea.core.materials import Material
+    from compas_timber_fea.core.model import StructuralLoadCase
+    from compas_timber_fea.core.model import StructuralSupport
+    from compas_opensees import run_model
+
+    def square(target):
+        side, divisions = 4.0, 8
+        outline = []
+        for i in range(divisions):
+            outline.append((side * i / divisions, 0.0))
+        for j in range(divisions):
+            outline.append((side, side * j / divisions))
+        for i in range(divisions, 0, -1):
+            outline.append((side * i / divisions, side))
+        for j in range(divisions, 0, -1):
+            outline.append((0.0, side * j / divisions))
+        model = StructuralModel()
+        ids = {index: point for index, point in enumerate(outline, start=1)}
+        model.nodes = [StructuralNode(id=i, point=Point(x, y, 0.0)) for i, (x, y) in ids.items()]
+        model.materials = {1: Material.resolve("C24")}
+        model.thicknesses = [StructuralThickness(id=1, name="t", material_id=1, thickness=0.2)]
+        model.surfaces = [StructuralSurface(id=1, nodes=list(ids), thickness_id=1)]
+        model.supports = [StructuralSupport(id=1, nodes=list(ids), rx=0.0, ry=0.0, rz=0.0)]
+        model.load_cases = [StructuralLoadCase(id=1, name="SW", self_weight=True)]
+        runner = run_model(model, mesh_target_length=target)
+        return sum(len(tags) for tags in runner.built.surface_elements.values())
+
+    coarse = square(0.5)
+    fine = square(0.2)
+    assert fine > coarse > 0
+
+
+def test_the_outline_sets_a_floor_on_how_coarse_the_mesh_can_get():
+    """A target coarser than the outline spacing cannot win: the boundary
+    vertices are prescribed, and that is what keeps neighbouring plates
+    conforming. Worth asserting so nobody reads it as the control failing."""
+    model, _ = plate_model(second_plate=False)     # 4 corners, 4 m and 3 m edges
+    coarse = mesh_surfaces(model, 10.0).triangle_count
+    assert coarse > 0

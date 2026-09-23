@@ -434,6 +434,72 @@ class TimberToStructural:
         model.nodes.append(StructuralNode(id=new_id, point=point))
         return new_id
 
+    def _mid_surface_offset(self, plate):
+        """Vector from outline_a to the mid-surface, in source units.
+
+        Derived from the two outlines rather than from the frame normal: a
+        plate may be built either way round, and the outlines are what the
+        analysis surface was derived from.
+        """
+        geometry = getattr(plate, "plate_geometry", None)
+        outline_a = getattr(geometry, "outline_a", None)
+        outline_b = getattr(geometry, "outline_b", None)
+        if not outline_a or not outline_b:
+            return (0.0, 0.0, 0.0)
+        try:
+            a, b = outline_a[0], outline_b[0]
+            return ((b[0] - a[0]) / 2.0, (b[1] - a[1]) / 2.0, (b[2] - a[2]) / 2.0)
+        except (TypeError, IndexError):
+            return (0.0, 0.0, 0.0)
+
+    def _opening_rings(self, model, plate):
+        """Openings of a plate as closed rings of node ids.
+
+        Read through ``plate_geometry.openings`` - the single accessor the
+        plate study asks for, because the plate may move them into
+        FreeContour features later and every other route would break.
+
+        The ring vertices become model nodes like any other: an opening edge
+        is a real boundary that a mesher has to honour and that a neighbouring
+        plate could one day share. Points that coincide with existing nodes
+        are reused, so an opening touching the outline stays connected.
+        """
+        if plate is None:
+            return []
+        geometry = getattr(plate, "plate_geometry", None)
+        openings = getattr(geometry, "openings", None) or []
+        # The openings live on outline_a, the analysis surface is the middle
+        # one - the plate study calls this out (no mid-plane is stored, it has
+        # to be derived by t/2). Without the shift the opening sits half a
+        # thickness off the surface it is supposed to cut, and gmsh either
+        # ignores it or fails.
+        offset = self._mid_surface_offset(plate)
+
+        rings = []
+        for opening in openings:
+            ring = []
+            seen = []
+            for point in opening:
+                shifted = Point(point[0] + offset[0], point[1] + offset[1], point[2] + offset[2])
+                scaled = self._scaled_point(shifted)
+                # A closed polyline repeats its first point; one node is enough.
+                if seen and scaled.distance_to_point(seen[-1]) < 1e-9:
+                    continue
+                if seen and scaled.distance_to_point(seen[0]) < 1e-9:
+                    continue
+                seen.append(scaled)
+                ring.append(self._find_or_create_node(model, scaled))
+            if len(ring) < 3:
+                self.report.append(
+                    "plate {}: an opening with fewer than 3 distinct vertices was ignored".format(
+                        source_id(plate)))
+                continue
+            rings.append(ring)
+        if rings:
+            self.report.append("{} opening(s) carried over from plate {}".format(
+                len(rings), source_id(plate)))
+        return rings
+
     def _add_plate_surfaces(self, model, structural_graph):
         surface_id_counter = 1
         for surface_data in structural_graph.surfaces:
@@ -460,6 +526,7 @@ class TimberToStructural:
                 StructuralSurface(
                     id=surface_id_counter,
                     nodes=node_ids,
+                    openings=self._opening_rings(model, parent_plate),
                     thickness_id=thickness_obj.id,
                     span_direction=self._span_direction(surface),
                     source_element_id=source_id(parent_plate) if parent_plate is not None else None,

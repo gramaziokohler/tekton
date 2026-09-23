@@ -1,12 +1,14 @@
 # tekton_gh — Grasshopper components
 
-*Status: 2026-09-16 — the roundtrip is real for beams and plates:
-Grasshopper → worker → RFEM 6 → internal forces, deformations and reactions
-back onto the canvas, deformed and coloured. Since 2026-09-16 there is a
-second backend, **OpenSees** (`backend = opensees` on `Tekton Backend`): beams
-only, no licence, no API key, solves the smoke test in 0.1 s - calibrated
-against RFEM on the same model. What is still missing is listed under "What
-is not real yet". Concept: [`docs/concepts/gh-addon.md`](../../docs/concepts/gh-addon.md).*
+*Status: 2026-09-23 — the roundtrip is real for beams and plates, through
+two backends. **OpenSees** (`backend = opensees`) needs no licence and no API
+key and solves the smoke test in 0.1 s; **RFEM 6** is the one to reach for
+when the answer has to be defensible, and the only one with the timber
+design add-on. Both are calibrated against each other, for beams and for
+plates. Forces, deformations, reactions and utilisation come back onto the
+canvas, deformed and coloured, with `Tekton Summary` writing the one-page
+report. What is still missing is listed under "What is not real yet".
+Concept: [`docs/concepts/gh-addon.md`](../../docs/concepts/gh-addon.md).*
 
 ## Why two processes
 
@@ -34,6 +36,12 @@ works.
 
 ## Setup
 
+**The short way:** from the repository root, `python3 install.py --fix`. It
+does steps 1 and 3 below, checks the rest, and names what it cannot do
+itself. `--fix --build` also builds and installs the components, provided
+Rhino is running. The steps below are what it does, and what to reach for
+when something is off.
+
 **1. Create the Rhino venv.** Tekton needs `compas_timber` from the branch
 `structural_graph_plates` — `compas_timber.structural` exists only there. The
 official COMPAS Timber plugin ships an older version that is *not* enough.
@@ -55,8 +63,9 @@ export TEKTON_REPO="/path/to/tekton"
 
 **3a. Backends.** `rfem` / `rstab` need the desktop application running and
 the API key below. `opensees` needs nothing: it is pip-installed with the
-repo venv (Python 3.12) and runs in the worker process — beams only today,
-plates go to RFEM. `saf` writes an xlsx.
+repo venv (Python 3.12) and runs in the worker process. Beams and plates;
+plate meshing is done in the adapter with gmsh and its target edge length is
+the `mesh_size` input. `saf` writes an xlsx.
 
 **3b. API key.** The Dlubal API refuses without one, also for a local RFEM.
 Three ways in, in order of preference: leave `api_key` on `Tekton Backend`
@@ -202,13 +211,20 @@ goes wrong. `Tekton Upgrade`: after a Tekton update, one button press brings
 every Tekton component in your definition to the current version — see
 "Updating a definition" below.
 
-**1 | Author** — what used to be possible only in Python: `Material`,
-`Support`, `Load Case`, `Point Load`, `Member Load`, `Load Combination`,
-`Joint Policy`, `Plate Policy`.
+**1 | Author** — what used to be possible only in Python: `Material` (a grade,
+optionally assigned to specific elements), `Material Library` (pick a grade
+from a drop-down), `Support` (twelve named types, from pinned to
+`horizontal_only`, plus explicit six-value stiffness), `Load Case` (with its
+EN 1990 action category, which carries the psi factors and the duration class
+that sets `k_mod`), `Point Load`, `Member Load`, `Surface Load` (pressure on
+plates, kN/m²), `Load Combination` (manual, or `generate` for the EN 1990
+set), `Joint Policy`, `Plate Policy`.
 
 **2 | Translate** — `Translate` (TimberModel → StructuralModel, with an
-assumptions report), `Apply Loads` (loads onto the translated model),
-`Preflight` (supports? connected? plausible?).
+assumptions report), `Support Nodes` (supports straight onto analysis nodes —
+what plates need, since they carry no support attribute), `Apply Loads`
+(loads onto the translated model), `Preflight` (supports? connected?
+plausible?).
 
 **3 | Run** — `Backend` (selection + connection), `Run` (push, calculate,
 results back — **by button only**).
@@ -233,6 +249,13 @@ with a label, loads as arrows scaled by value, moments as rings, reactions in
 blue once results exist; `geometry` toggles the member geometry - beam
 sections and plate slabs - drawn semi-transparent by the component itself.
 Logic in `tekton_gh.model_view`, pure and tested).
+
+`Summary` (the one-page report: max and mean deflection with the node it sits
+on, reactions against the applied load as an equilibrium check, extreme
+section forces, utilisation from the EN 1995 checks and from RFEM's add-on
+where both exist, extremes per plate — plus every assumption the numbers
+stand on and every check that was *not* run. Outputs the text, a CSV with one
+row per member, and the headline numbers separately).
 
 **5 | IO** — `Save Model` / `Load Model` (JSON; also the handover format),
 `To Timber` (rebuilds the TimberModel from a StructuralModel — beams exact
@@ -264,23 +287,29 @@ TimberModel ─→ Support ─→ Translate ─→ Preflight ─→ Run ─→ R
 
 | What | State | Blocked by / next step |
 |---|---|---|
-| **Utilisation** | `quantity="utilization"` exists on Visualize and returns 0 | RFEM timber design add-on: add-on activation + its result table via `get_results` |
+| **Stability** | buckling (6.3.2) and lateral-torsional buckling (6.3.3) are not verified; every report says so | the neutral model carries no buckling length — WP1c adds it, plus a `Design Policy` component |
+| **CLT layups** | a plate is checked as a homogeneous isotropic slab, which is unconservative across the layers; the caveat rides on every result | a layup per EN 16351 on the material, and net-section properties per direction |
+| **Rolling shear** | not checked at all — and it is usually what governs a CLT panel | comes with the layup |
 | **Joint policy from fasteners** | policy decides rigid/pinned per joint type or instance; nothing derives it from screw count/direction | a rule on the joint's fastener data — the hook (`by_type`, `by_instance`) is there |
 | **Hinge side on couplings** | the hinge goes to the end where a beam terminates; for crossings (X-lap) the side is arbitrary — the 4 cm lever arm lands on one beam | split the connector at the joint face if that asymmetry ever matters |
-| **Material overrides** | material is a name string, one grade for the whole model | material dataclass (`discussion/materials.md`) |
-| **Support types** | supports are pinned unless authored via `Tekton Support Nodes` | neutral model |
-| **Plate results in the containers** | read per mesh node (deformation, n/m/v), drawn by Visualize; not yet on the plates (`Attach Results` is beam-only) | extend `results.py` to surfaces |
+| **Line supports for plates** | plates are supported node by node | `StructuralLineSupport` → RFEM `LineSupport`; needs a Windows session |
+| **Openings on the RFEM side** | the neutral model and the OpenSees mesher carry them; the Dlubal mapper does not | map to RFEM's opening object; needs a Windows session |
+| **Tension-only members, prestress** | not representable | both make the model non-linear, which superposition of combinations relies on not being — needs its own decision |
 | **Engineer's edits in RFEM** | every run does `delete_all` and rebuilds | BackendMap / incremental update (`discussion/roundtrip.md`) |
 
-Done: worker CLI, result reader against live tables (forces, member and
-nodal deformations, reactions, surface deformations and internal forces per
-mesh node), plate roundtrip (`examples/tekton_test_plates.ghx`), calculation-failure detection, unit contract
-kN ↔ N enforced at the Dlubal boundary, one-sided coupling hinges, deformed
-and coloured visualisation, results back on the beams
-(`beam.attributes["analysis"]`: per load case 11 samples at the beam
-parameter with N/Vy/Vz/Mt/My/Mz + displacement, envelope, provenance — 84/84
-beams on the smoke test), API key from `.env`, span direction on surfaces,
-icons.
+Done: worker CLI; result readers for both backends; **OpenSees for beams and
+plates**, licence-free and in milliseconds, calibrated against RFEM
+(deflection 6 %, centre moments 10 %, reactions 0.1 %); plate meshing with
+gmsh, conforming along shared edges, with openings and a `mesh_size` control;
+**utilisation twice over** — computed here from EN 1995 and read from RFEM's
+design add-on, so each can catch the other; EN 1990 load categories and
+generated combinations, superposed rather than re-solved; area loads on
+plates; twelve named support types, authored and translated; a grade per
+element; `Tekton Summary` with its report, CSV and equilibrium check; results
+back on beams (by parameter `t`) and on plates (by point);
+calculation-failure detection; the kN ↔ N unit contract at the Dlubal
+boundary; one-sided coupling hinges; deformed and coloured visualisation;
+API key from `.env`; icons.
 
 ## Pitfalls
 

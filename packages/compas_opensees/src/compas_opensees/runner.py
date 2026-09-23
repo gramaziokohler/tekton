@@ -105,9 +105,15 @@ class OpenSeesRunner:
             return "?"
 
 
-def run_model(structural_model, load_cases=None, stations=9, ops=None):
-    """Convenience: solve and attach the results to the model; returns the runner (for its log)."""
-    runner = OpenSeesRunner(structural_model, stations=stations, ops=ops)
+def run_model(structural_model, load_cases=None, stations=9, ops=None, mesh_target_length=None):
+    """Convenience: solve and attach the results to the model; returns the runner (for its log).
+
+    ``mesh_target_length`` is the target edge length for plate meshing, in
+    metres; ``None`` uses :data:`compas_opensees.meshing.DEFAULT_TARGET_LENGTH`.
+    It is a mesh hint, not part of the model - see meshing.py.
+    """
+    runner = OpenSeesRunner(structural_model, stations=stations, ops=ops,
+                            mesh_target_length=mesh_target_length)
     structural_model.results = runner.run(load_cases)
     return runner
 

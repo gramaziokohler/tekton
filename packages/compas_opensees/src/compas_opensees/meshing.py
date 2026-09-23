@@ -160,11 +160,12 @@ def mesh_surfaces(model, target_length=DEFAULT_TARGET_LENGTH):
         curve_tags = {}      # undirected edge -> gmsh curve tag
         surface_faces = {}   # surface id -> gmsh surface tag
 
-        for surface in model.surfaces:
+        def ring(node_ids):
+            """gmsh curve loop for a closed ring of neutral node ids."""
             loop = []
-            outline = list(surface.nodes)
-            for a, b in zip(outline, outline[1:] + outline[:1]):
-                if a == b:
+            ids = list(node_ids)
+            for a, b in zip(ids, ids[1:] + ids[:1]):
+                if a == b or a not in points or b not in points:
                     continue
                 for node_id in (a, b):
                     if node_id not in point_tags:
@@ -182,11 +183,28 @@ def mesh_surfaces(model, target_length=DEFAULT_TARGET_LENGTH):
                         geo.mesh.setTransfiniteCurve(curve_tags[key], segments + 1)
                 # Sign tells gmsh the direction the loop traverses the curve.
                 loop.append(curve_tags[key] if (a, b) == key else -curve_tags[key])
+            return loop
+
+        for surface in model.surfaces:
+            loop = ring(surface.nodes)
             if len(loop) < 3:
                 result.warnings.append(
                     "surface {} has fewer than 3 distinct edges - skipped".format(surface.id))
                 continue
-            face = geo.addPlaneSurface([geo.addCurveLoop(loop)])
+            # An opening is a second loop on the same face: gmsh subtracts
+            # every loop after the first. The ring has to be closed and lie
+            # inside the outline; a degenerate one is reported rather than
+            # silently swallowing the plate.
+            loops = [geo.addCurveLoop(loop)]
+            for index, opening in enumerate(getattr(surface, "openings", None) or []):
+                hole = ring(opening)
+                if len(hole) < 3:
+                    result.warnings.append(
+                        "surface {}: opening {} has fewer than 3 distinct edges - ignored".format(
+                            surface.id, index))
+                    continue
+                loops.append(geo.addCurveLoop(hole))
+            face = geo.addPlaneSurface(loops)
             surface_faces[surface.id] = face
 
         geo.synchronize()

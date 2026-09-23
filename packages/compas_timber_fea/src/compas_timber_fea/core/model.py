@@ -26,6 +26,13 @@ class StructuralSurface:
     id: int
     nodes: List[int]
     thickness_id: int
+    # Closed rings of node ids that are *not* part of the surface - windows,
+    # doors, service penetrations. First-class rather than a boolean result:
+    # an opening changes how a plate spans, and every serious target format
+    # carries it as its own loop (RFEM opening object, IFC inner boundary,
+    # SAF opening). Subtracting it into the outline would destroy that and
+    # the plate's identity with it.
+    openings: List[List[int]] = field(default_factory=list)
     # Direction of the strong axis, in global coordinates. Timber panels (CLT,
     # sheathing) are markedly stiffer along the grain of their face layers, so
     # a surface without this is only meaningful if it is genuinely isotropic.

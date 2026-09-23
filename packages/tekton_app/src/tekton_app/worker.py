@@ -107,8 +107,14 @@ def run_saf(model, out_path, model_name):
     return None
 
 
-def run_opensees(model, load_cases, calculate):
-    """Modell mit OpenSees rechnen - im Prozess, ohne Lizenz, ohne Key."""
+def run_opensees(model, load_cases, calculate, mesh_target_length=None):
+    """Modell mit OpenSees rechnen - im Prozess, ohne Lizenz, ohne Key.
+
+    ``mesh_target_length`` steuert die Zielkantenlaenge der Plattenvernetzung
+    in Metern. Sie ist ein Hinweis an den Vernetzer, kein Modellwert: eine
+    feinere Vorgabe kostet Rechenzeit und aendert das Ergebnis nur, solange
+    es noch nicht konvergiert ist.
+    """
     from compas_opensees import run_model
 
     if not calculate:
@@ -116,7 +122,7 @@ def run_opensees(model, load_cases, calculate):
         return model
 
     started = time.time()
-    runner = run_model(model, load_cases=load_cases)
+    runner = run_model(model, load_cases=load_cases, mesh_target_length=mesh_target_length)
     for line in runner.log:
         log("  " + line)
     log("Berechnung abgeschlossen ({:.2f}s).".format(time.time() - started))
@@ -194,6 +200,8 @@ def main(argv=None):
     parser.add_argument("--no-calculate", action="store_true", help="Nur uebertragen, nicht rechnen")
     parser.add_argument("--delete-all", action="store_true", help="Backend-Modell vor dem Push leeren")
     parser.add_argument("--design", action="store_true", help="rfem: Holzbemessungs-Add-on einrichten und Ausnutzung mitlesen")
+    parser.add_argument("--mesh-size", type=float, default=None,
+                        help="opensees: Zielkantenlaenge der Plattenvernetzung in Metern (Default 0.5)")
 
     args = parser.parse_args(argv)
     unbuffer_stdout()
@@ -222,7 +230,8 @@ def main(argv=None):
     if args.backend == "saf":
         result_model = run_saf(model, args.out, args.model_name)
     elif args.backend == "opensees":
-        result_model = run_opensees(model, parse_load_cases(args.load_cases), not args.no_calculate)
+        result_model = run_opensees(model, parse_load_cases(args.load_cases), not args.no_calculate,
+                                    mesh_target_length=args.mesh_size)
     else:
         result_model = run_dlubal(
             model,

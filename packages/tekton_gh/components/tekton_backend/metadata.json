@@ -79,6 +79,20 @@
                 "typeHintID": "bool",
                 "reverse": false,
                 "simplify": false
+            },
+            {
+                "name": "mesh_size",
+                "nickname": "mesh_size",
+                "description": "opensees: target edge length for plate meshing, in metres. Default 0.5. Smaller is finer, slower and closer to converged; shared edges between plates are subdivided from the same value on both sides, so conformity holds at any setting. Ignored for other backends.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
             }
         ],
         "outputParameters": [

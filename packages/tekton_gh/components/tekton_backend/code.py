@@ -36,6 +36,7 @@ api_key: str  # type: ignore
 repo: str  # type: ignore
 filepath: str  # type: ignore
 design: bool  # type: ignore
+mesh_size: float  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
@@ -111,18 +112,20 @@ class BackendConfig(object):
     single item.
     """
 
-    def __init__(self, backend, repo, api_key, filepath, design=False):
+    def __init__(self, backend, repo, api_key, filepath, design=False, mesh_size=None):
         self.backend = backend
         self.repo = repo
         self.api_key = api_key
         self.filepath = filepath
         self.design = design
+        self.mesh_size = mesh_size
 
     def __repr__(self):
         return "Backend({}, repo={})".format(self.backend, self.repo)
 
 
-backend = BackendConfig(kind, root, api_key or None, filepath or None, bool(design))
+backend = BackendConfig(kind, root, api_key or None, filepath or None, bool(design),
+                       float(mesh_size) if mesh_size else None)
 
 print("Backend: {}".format(kind))
 print("Repo: {}".format(root or "NOT FOUND"))
@@ -130,7 +133,15 @@ print("API key: {}".format(key_source))
 if kind == "saf" and not filepath:
     _warn("Backend 'saf' needs a filepath.")
 if kind == "opensees":
-    print("OpenSees: beams only today, no licence, no key, solves in milliseconds.")
+    print("OpenSees: beams and plates, no licence, no key, solves in milliseconds.")
+    if mesh_size:
+        print("Plate mesh: {} m target edge length.".format(mesh_size))
+        if float(mesh_size) <= 0:
+            _warn("'mesh_size' must be positive - ignored.")
+    else:
+        print("Plate mesh: 0.5 m target edge length (default). Smaller = finer and slower.")
+elif mesh_size:
+    _warn("'mesh_size' only applies to the opensees backend - ignored for '{}'.".format(kind))
 if design:
     if kind != "rfem":
         _warn("'design' only works with the rfem backend - ignored for '{}'.".format(kind))

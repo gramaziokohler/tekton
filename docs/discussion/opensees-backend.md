@@ -233,6 +233,31 @@ is a mesh *hint* and not part of the model. And gmsh is a 60 MB dependency
 that initialises global state — same discipline as openseespy: one model per
 process, `finalize()` in a `finally`.
 
+## Controlling the plate mesh (2026-09-22)
+
+The mesher had a target edge length from the start, but nothing reached it:
+`OpenSeesRunner` took `mesh_target_length` and `run_model`, the worker, the
+worker wrapper and the components all dropped it, so every run used the 0.5 m
+default. A control that exists but cannot be set is worse than none - it
+reads as if it worked.
+
+The chain is now connected end to end: `Tekton Backend` has a `mesh_size`
+input (opensees only, ignored elsewhere with a warning) → `Tekton Run` →
+`run_backend` → `--mesh-size` on the worker → `run_model` → the builder.
+
+Two things worth knowing when setting it:
+
+- **Finer is slower and eventually pointless.** On the calibration plate,
+  0.5 m gives 294 shells in 0.02 s and 0.25 m gives 1158 in 0.10 s, for a
+  deflection that moves from 0.000115 m to 0.000116 m - under a percent,
+  because that mesh was already converged. The WP0b convergence study
+  (-3.3 % at 0.5 m, -0.8 % at 0.25 m against Navier) is the guide.
+- **The outline sets a floor.** A target coarser than the spacing of the
+  outline vertices cannot win: the boundary is prescribed, which is exactly
+  what keeps neighbouring plates conforming. On the calibration plate the
+  outline is already at 0.364 m, so 1.0 m and 0.5 m produce the same mesh.
+  That is the conformity guarantee doing its job, not the control failing.
+
 ## Risks
 
 - **Silent failures are the norm, not the exception.** Unsupported element

@@ -103,6 +103,9 @@ else:
             api_key=api_key,
             calculate=True if calculate is None else bool(calculate),
             design=bool(_cfg("design", False)) and kind == "rfem",
+            # Plate mesh density, opensees only. It changes how long a run
+            # takes and how close it is to converged - see meshing.py.
+            mesh_size=_cfg("mesh_size", None) if kind == "opensees" else None,
             # The backend's filepath is the SAF target - without it the xlsx
             # lands in the temp folder. For rfem/rstab the result model goes
             # to a temp file the component reads back; a SAF path left over

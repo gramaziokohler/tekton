@@ -6,6 +6,35 @@ The full design study is `../reviews/plattengraph_design_2026-08-27.md` (German,
 detailed, adversarially reviewed). This is the short English version of what
 was found and decided.
 
+## Openings (2026-09-22)
+
+`StructuralSurface.openings` holds closed rings of node ids next to
+`nodes` - first-class, not subtracted into the outline. Every serious
+target format carries them that way (RFEM opening object, IFC inner
+boundary, SAF opening), and subtracting would destroy the plate's identity
+and with it the mapping of results back onto it.
+
+The ring vertices are ordinary model nodes, reusing an existing node where
+they coincide with one. So an opening edge is the same kind of boundary an
+outline edge is, and a future opening shared between two plates needs no new
+mechanism.
+
+The chain: `plate.plate_geometry.openings` (the single accessor the design
+study asks for, because the plate may move them into FreeContour features)
+→ translator → `StructuralSurface.openings` → gmsh as a second curve loop on
+the same face → cut out of the mesh.
+
+**One correction the numbers forced.** The openings live on `outline_a`, but
+the analysis surface is the middle one - the design study notes that no
+mid-plane is stored and it has to be derived by t/2. Without that shift the
+opening sits half a thickness off the plate it is meant to cut, and the
+meshed area came out 15.072 m² instead of 15.000 for a 4x4 plate with a 1x1
+hole. The translator now derives the offset from the two outlines rather
+than from the frame normal, because a plate can be built either way round.
+
+Not yet: openings on the RFEM side, and an opening crossing a plate edge.
+
+
 ## How a plate is represented: one surface, untessellated
 
 **One planar mid-plane surface per plate.** Outer polyline ring + separate
