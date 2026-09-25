@@ -13,7 +13,7 @@ Grasshopper, a desktop app, a command line, or plain Python.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/_images/architecture/tekton-system-map-dark.svg">
-  <img alt="Tekton system map. COMPAS Timber authors the TimberModel and builds the StructuralGraph that idealises the geometry. Tekton reads that graph from Grasshopper, the desktop app or a script, always through the same translator, and hands the neutral StructuralModel to a backend adapter. Results hop back across the top until they land on the beams. Only Grasshopper's Run button takes the detour through a JSON file and a worker subprocess." src="docs/_images/architecture/tekton-system-map.svg">
+  <img alt="Tekton system map. COMPAS Timber authors the TimberModel and builds the StructuralGraph that idealises the geometry. Tekton reads that graph from Grasshopper, the desktop app or a script, always through the same translator, and hands the neutral StructuralModel to a backend adapter: OpenSees by default and without a licence, RFEM/RSTAB or SAF where they are available. Results hop back across the top until they land on the beams. Only Grasshopper's Run button takes the detour through a JSON file and a worker subprocess." src="docs/_images/architecture/tekton-system-map.svg">
 </picture>
 
 Read it left to right; the round trip runs right to left along the top. Click
@@ -46,7 +46,7 @@ tekton/
 │   ├── compas_saf/          # SAF export (xlsx)
 │   ├── tekton_app/          # GUI, `tekton` CLI, worker subprocess
 │   └── tekton_gh/           # Grasshopper components + componentizer
-├── docs/                    # Sphinx sources, architecture.html, diagrams
+├── docs/                    # architecture.html, the diagrams
 └── tests/
     ├── unit/                # automated, offline (run in CI)
     └── *.py                 # manual scripts against a live RFEM
@@ -312,9 +312,10 @@ repository at present.
 
 ## Documentation
 
-There is no published site yet — the Sphinx sources under `docs/` are still
-scaffolding, and `gramaziokohler.github.io/tekton` returns a 404. What exists
-is written down and current:
+There is no published site. The Sphinx scaffolding that came with the project
+template was removed in 2026-09 — it had never been filled in, could not be
+built, and produced a failing workflow on every push. What exists is written
+down and current:
 
 | Where | What |
 | --- | --- |

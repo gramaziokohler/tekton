@@ -1,21 +1,25 @@
-<!-- Thank you for your pull request!  -->
-<!-- Please start by describing your change in a few sentences. -->
-<!-- You can erase any parts of this template not applicable to your Pull Request. -->
+<!-- Describe the change in a few sentences: what it does, and why. -->
+<!-- Erase whatever does not apply. -->
 
-### What type of change is this?
+### What kind of change is this?
 
-- [ ] Bug fix in a **backwards-compatible** manner.
-- [ ] New feature in a **backwards-compatible** manner.
-- [ ] Breaking change: bug fix or new feature that involve incompatible API changes.
-- [ ] Other (e.g. doc update, configuration, etc)
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change (the neutral model, a component's inputs, or a file format changes shape)
+- [ ] Other (docs, configuration, tooling)
 
-### Checklist
+### Before merging
 
-_Put an `x` in the boxes that apply. You can also fill these out after creating the PR. If you're unsure about any of them, don't hesitate to ask. We're here to help! This is simply a reminder of what we are going to look for before merging your code._
+- [ ] `uv run pytest` is green.
+- [ ] `uv run ruff check .` is clean.
+- [ ] New behaviour has a test that would fail without the change.
+- [ ] `CHANGELOG.md` has a line under `Unreleased` (if the change is worth remembering).
 
-- [ ] I added a line to the `CHANGELOG.md` file in the `Unreleased` section under the most fitting heading (e.g. `Added`, `Changed`, `Removed`).
-- [ ] I ran all tests on my computer and it's all green (i.e. `invoke test`).
-- [ ] I ran lint on my computer and there are no errors (i.e. `invoke lint`).
-- [ ] I added new functions/classes and made them available on a second-level import, e.g. `compas.datastructures.Mesh`.
-- [ ] I have added tests that prove my fix is effective or that my feature works.
-- [ ] I have added necessary documentation (if appropriate)
+### If this touches analysis results
+
+Numbers coming out of a solver are the part of this project that can be wrong
+without anything failing. If your change affects them, say here how you know
+they are right — a closed-form comparison, a cross-check against another
+backend, or a recorded fixture.
+
+- [ ] Not applicable.

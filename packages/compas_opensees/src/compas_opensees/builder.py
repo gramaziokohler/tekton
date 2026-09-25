@@ -52,6 +52,77 @@ GHOST_TAG_BASE = 1_000_000
 INF = float("inf")
 
 
+def line_support_stiffnesses(model, support_id):
+    """Per-node stiffness for a line support, by tributary length.
+
+    The neutral model stores kN/m per metre of line, because that is what a
+    line support *is* and what RFEM takes. OpenSees only has nodal springs,
+    so the per-metre value has to be multiplied by the length each node is
+    responsible for: half the segment on either side, which leaves an end
+    node with half of one segment.
+
+    The invariant this exists for: the sum over the chain is the per-metre
+    value times the total length, whatever the node spacing. Refining the
+    mesh must not stiffen the support.
+
+    ``inf`` passes through untouched - infinitely rigid per metre is
+    infinitely rigid per node, and multiplying it by a length would be
+    meaningless. ``0.0`` likewise stays free.
+
+    Parameters
+    ----------
+    model : :class:`StructuralModel`
+    support_id : int
+
+    Returns
+    -------
+    dict
+        ``{node id: {"ux": k, ... "rz": k}}`` in nodal units (kN/m, kNm/rad).
+
+    Raises
+    ------
+    ValueError
+        If the chain has fewer than two nodes, references a node that does
+        not exist, or has zero length - none of which can be distributed
+        over, and all of which would otherwise divide by zero or silently
+        produce a support that holds nothing.
+    """
+    support = next((s for s in model.line_supports if s.id == support_id), None)
+    if support is None:
+        raise ValueError("no line support with id {}".format(support_id))
+    if len(support.nodes or []) < 2:
+        raise ValueError("line support {} has fewer than two nodes".format(support_id))
+
+    points = {node.id: node.point for node in model.nodes}
+    missing = [n for n in support.nodes if n not in points]
+    if missing:
+        raise ValueError("line support {} references unknown nodes {}".format(support_id, missing))
+
+    chain = [points[n] for n in support.nodes]
+    segments = [chain[i].distance_to_point(chain[i + 1]) for i in range(len(chain) - 1)]
+    total = sum(segments)
+    if total < 1e-9:
+        raise ValueError("line support {} has zero length".format(support_id))
+
+    tributary = {}
+    for index, node_id in enumerate(support.nodes):
+        before = segments[index - 1] if index > 0 else 0.0
+        after = segments[index] if index < len(segments) else 0.0
+        tributary[node_id] = (before + after) / 2.0
+
+    per_metre = {
+        "ux": support.ux, "uy": support.uy, "uz": support.uz,
+        "rx": support.rx, "ry": support.ry, "rz": support.rz,
+    }
+    return {
+        node_id: {
+            dof: value if value in (0.0, INF) else value * length
+            for dof, value in per_metre.items()
+        }
+        for node_id, length in tributary.items()
+    }
+
+
 class BuiltModel:
     """What the analysis and the reader need to know about the built model."""
 
@@ -119,6 +190,7 @@ class ModelBuilder:
         if mesh is not None:
             self._mesh_nodes(mesh)
         self._supports()
+        self._line_supports()
         self._members()
         if mesh is not None:
             self._surfaces(mesh)
@@ -147,6 +219,37 @@ class ModelBuilder:
                 if node_id not in self.built.node_tags:
                     self.built.warnings.append("support {} on unknown node {}".format(support.id, node_id))
                     continue
+                if any(fixed):
+                    self.ops.fix(int(node_id), *fixed)
+                    self.built.free_dofs -= sum(fixed)
+                if springs:
+                    self._support_springs(node_id, springs)
+                self.built.support_nodes.append(node_id)
+
+    def _line_supports(self):
+        """A line support, distributed over its chain.
+
+        OpenSees has no line support. The neutral values are kN/m per metre,
+        so each node gets the per-metre stiffness times its tributary length:
+        half a segment on each side, one segment for an end node. Splitting
+        evenly instead would stiffen the ends and make the answer depend on
+        the mesh density.
+        """
+        for support in self.model.line_supports:
+            try:
+                per_node = line_support_stiffnesses(self.model, support.id)
+            except ValueError as error:
+                self.built.warnings.append("line support {}: {}".format(support.id, error))
+                continue
+
+            for node_id, values in per_node.items():
+                if node_id not in self.built.node_tags:
+                    self.built.warnings.append(
+                        "line support {} on unknown node {}".format(support.id, node_id))
+                    continue
+                ordered = [values[dof] for dof in ("ux", "uy", "uz", "rx", "ry", "rz")]
+                fixed = [1 if v == INF else 0 for v in ordered]
+                springs = [(i, v) for i, v in enumerate(ordered) if v not in (0.0, INF)]
                 if any(fixed):
                     self.ops.fix(int(node_id), *fixed)
                     self.built.free_dofs -= sum(fixed)

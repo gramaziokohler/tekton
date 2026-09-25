@@ -146,6 +146,43 @@ class StructuralSupport:
     rz: float = float('inf')
 
 @dataclass
+class StructuralLineSupport:
+    """A support along an edge - a wall foot, a slab bearing on a wall.
+
+    Separate from :class:`StructuralSupport` because the stiffnesses mean
+    something different: a nodal spring is kN/m, a line spring is **kN/m per
+    metre of length** (kN/m2). Putting both in one class behind a flag would
+    make six fields whose unit depends on another field - the same silent
+    ambiguity that once let two timber grades share one section.
+
+    The line is a chain of node ids, in order. Sharing the node ids with the
+    surface outline is what makes the support conform to the mesh: the plate
+    and its support meet on the same nodes by construction rather than by
+    coordinate luck.
+
+    How a backend realises it is its own business. OpenSees has no line
+    support, so the adapter distributes the stiffness over the chain by
+    tributary length; RFEM has a native LineSupport object and takes the
+    per-metre values directly.
+    """
+    id: int
+    #: Node ids along the line, in order. Two or more.
+    nodes: List[int]
+    name: str = "Line support"
+    #: Translational stiffness in kN/m2 (kN/m per metre of line). inf = rigid.
+    ux: float = float('inf')
+    uy: float = float('inf')
+    uz: float = float('inf')
+    #: Rotational stiffness in kNm/m per radian. inf = rigid.
+    rx: float = float('inf')
+    ry: float = float('inf')
+    rz: float = float('inf')
+    #: Which plate edge this came from, for traceability and for the
+    #: engineer's report.
+    source_element_id: Optional[str] = None
+    source_edge_index: Optional[int] = None
+
+@dataclass
 class StructuralLoadCase:
     id: int
     name: str
@@ -192,6 +229,7 @@ class StructuralModel:
     members: List[StructuralMember] = field(default_factory=list)
     sections: List[StructuralSection] = field(default_factory=list)
     supports: List[StructuralSupport] = field(default_factory=list)
+    line_supports: List[StructuralLineSupport] = field(default_factory=list)
     # Values are Material objects carrying real physical properties (see
     # core/materials.py); plain grade-name strings from older serialized
     # models still load and are upgraded by consumers via Material.resolve.

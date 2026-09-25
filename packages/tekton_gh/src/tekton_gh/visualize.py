@@ -86,7 +86,6 @@ def surface_stations(structural_model, result_set, surface, quantity="displaceme
     surface results the corners move with the nodal deformations, which is
     enough to see the plate go along with its neighbours, not to see it bend.
     """
-    node_results = (result_set.node_results or {}) if result_set else {}
     samples = ((result_set.surface_results or {}).get(surface.id) or []) if result_set else []
     stations = []
     for sample in samples:

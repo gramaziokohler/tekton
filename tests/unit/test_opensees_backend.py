@@ -16,7 +16,6 @@ the whole module is skipped without it.
 """
 
 import json
-import math
 import os
 
 import pytest

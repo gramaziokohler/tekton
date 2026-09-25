@@ -63,16 +63,40 @@ def _check_emptiness(model, report):
 
 
 def _check_supports(model, node_ids, report):
-    if not model.supports:
+    line_supports = getattr(model, "line_supports", None) or []
+    if not model.supports and not line_supports:
         report.errors.append(
             "model has no supports - calculating it would solve a mechanism. "
-            "Mark support_points on beams, or add supports in the target software before running."
+            "Mark support_points on beams, support a plate edge, or add supports "
+            "in the target software before running."
         )
         return
     for support in model.supports:
         missing = [n for n in support.nodes if n not in node_ids]
         if missing:
             report.errors.append(f"support {support.id} references missing node(s) {missing}")
+
+    for support in line_supports:
+        nodes = support.nodes or []
+        if len(nodes) < 2:
+            # One node is a point support written in the wrong place: the
+            # per-metre stiffnesses have no length to act over.
+            report.errors.append(
+                f"line support {support.id} has {len(nodes)} node(s) - a line needs at least two"
+            )
+            continue
+        missing = [n for n in nodes if n not in node_ids]
+        if missing:
+            report.errors.append(f"line support {support.id} references missing node(s) {missing}")
+            continue
+        points = {node.id: node.point for node in model.nodes}
+        length = sum(
+            points[a].distance_to_point(points[b]) for a, b in zip(nodes, nodes[1:])
+        )
+        if length < 1e-9:
+            report.errors.append(
+                f"line support {support.id} has zero length - its nodes are all in one place"
+            )
 
 
 def _check_references(model, node_ids, section_ids, thickness_ids, report):

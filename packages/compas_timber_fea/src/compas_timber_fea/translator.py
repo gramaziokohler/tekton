@@ -18,6 +18,7 @@ from .core.model import StructuralMember
 from .core.model import StructuralModel
 from .core.model import StructuralNode
 from .core.model import StructuralSection
+from .core.model import StructuralLineSupport
 from .core.model import StructuralSupport
 from .core.model import StructuralThickness
 from .core.model import StructuralSurface
@@ -238,6 +239,7 @@ class TimberToStructural:
 
         # Lager nur aus explizit markierten Support-Punkten im TimberModel ableiten.
         self._add_support_nodes(model, structural_graph)
+        self._add_line_supports(model, timber_model)
 
         # 4. Loads (Static Cases - Default for now)
         self._add_load_cases(model)
@@ -635,3 +637,124 @@ class TimberToStructural:
                     **dofs
                 )
             )
+
+    def _add_line_supports(self, model, timber_model):
+        """Turn supported plate edges into line supports.
+
+        Two ways to declare one, because they fail differently:
+
+        * ``supported_edges`` - a list of edge indices on the plate. Exact,
+          survives remeshing, and is what an edge *is* in the plate's own
+          representation.
+        * ``support_lines`` - curves, matched against plate edges by
+          tolerance. The familiar Grasshopper gesture, and the same
+          machinery as the support points, with the same failure mode: a
+          line that matches nothing is reported rather than silently lost.
+
+        Both end up as a chain of node ids on the surface outline, which is
+        what makes the support conform to the mesh by construction.
+        """
+        from compas_timber_fea.core.support_types import stiffnesses
+
+        plates = list(getattr(timber_model, "plates", None) or [])
+        if not plates:
+            return
+
+        surfaces_by_source = {}
+        for surface in model.surfaces:
+            if surface.source_element_id:
+                surfaces_by_source.setdefault(str(surface.source_element_id), []).append(surface)
+
+        points = {node.id: node.point for node in model.nodes}
+        next_id = 1
+        unmatched = 0
+
+        for plate in plates:
+            attributes = getattr(plate, "attributes", None) or {}
+            declared = self._declared_edges(plate, attributes)
+            if not declared:
+                continue
+
+            for surface in surfaces_by_source.get(str(plate.guid), []):
+                ring = surface.nodes or []
+                for edge_index, support_type in sorted(declared.items()):
+                    if edge_index >= len(ring):
+                        unmatched += 1
+                        continue
+                    chain = [ring[edge_index], ring[(edge_index + 1) % len(ring)]]
+                    if any(n not in points for n in chain):
+                        unmatched += 1
+                        continue
+                    if points[chain[0]].distance_to_point(points[chain[1]]) < 1e-9:
+                        # A degenerate edge has no length for a per-metre
+                        # stiffness to act over.
+                        unmatched += 1
+                        continue
+                    try:
+                        dofs = stiffnesses(support_type)
+                    except ValueError as error:
+                        self.report.append(
+                            "{} Falling back to pinned for a plate edge.".format(error))
+                        dofs = stiffnesses("pinned")
+                        support_type = "pinned"
+                    model.line_supports.append(
+                        StructuralLineSupport(
+                            id=next_id,
+                            nodes=chain,
+                            name="Supported edge ({})".format(support_type.replace("_", " ")),
+                            source_element_id=str(plate.guid),
+                            source_edge_index=edge_index,
+                            **dofs
+                        )
+                    )
+                    next_id += 1
+
+        if unmatched:
+            self.report.append(
+                "{} declared plate edge(s) matched no surface edge and were ignored".format(unmatched))
+        if model.line_supports:
+            self.report.append("{} line support(s) from supported plate edges".format(len(model.line_supports)))
+
+    def _declared_edges(self, plate, attributes):
+        """{edge index: support type} from either way of declaring it."""
+        declared = {}
+
+        # by index - exact
+        for entry in attributes.get("supported_edges") or []:
+            if isinstance(entry, (list, tuple)) and len(entry) >= 2:
+                declared[int(entry[0])] = str(entry[1])
+            else:
+                declared[int(entry)] = "pinned"
+
+        # by curve - matched against the plate's own outline
+        lines = attributes.get("support_lines") or []
+        if lines:
+            declared.update(self._edges_near(plate, lines))
+        return declared
+
+    def _edges_near(self, plate, lines, tol=1e-3):
+        """Match declared curves onto plate edge indices by midpoint."""
+        outline = getattr(plate, "outline_a", None)
+        if outline is None:
+            return {}
+        corners = list(outline)
+        found = {}
+        for line in lines:
+            support_type = "pinned"
+            if isinstance(line, (list, tuple)) and len(line) == 3 and not hasattr(line[0], "__len__"):
+                continue
+            try:
+                start, end = line[0], line[1]
+                if len(line) > 2 and isinstance(line[2], str):
+                    support_type = line[2]
+            except (TypeError, IndexError):
+                continue
+            mid = ((start[0] + end[0]) / 2.0, (start[1] + end[1]) / 2.0, (start[2] + end[2]) / 2.0)
+            for index in range(len(corners) - 1):
+                a, b = corners[index], corners[index + 1]
+                edge_mid = ((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0, (a[2] + b[2]) / 2.0)
+                distance = sum((mid[i] - edge_mid[i]) ** 2 for i in range(3)) ** 0.5
+                if distance < tol:
+                    found[index] = support_type
+                    break
+        return found

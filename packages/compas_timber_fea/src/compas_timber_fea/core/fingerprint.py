@@ -91,6 +91,9 @@ def fingerprint_payload(model):
         "thicknesses": _ordered(_thickness(thickness) for thickness in getattr(model, "thicknesses", None) or []),
         "materials": _ordered(_material(material) for material in (getattr(model, "materials", None) or {}).values()),
         "supports": _ordered(_support(support, nodes) for support in getattr(model, "supports", None) or []),
+        "line_supports": _ordered(
+            _line_support(support, nodes) for support in getattr(model, "line_supports", None) or []
+        ),
         "load_cases": _ordered(_load_case(case) for case in getattr(model, "load_cases", None) or []),
         "load_combinations": _ordered(
             _combination(combination) for combination in getattr(model, "load_combinations", None) or []
@@ -268,6 +271,24 @@ def _material(material):
 def _support(support, nodes):
     return [
         _ordered(_at(node_id, nodes) for node_id in support.nodes or []),
+        _num(support.ux),
+        _num(support.uy),
+        _num(support.uz),
+        _num(support.rx),
+        _num(support.ry),
+        _num(support.rz),
+    ]
+
+
+def _line_support(support, nodes):
+    """A line support, addressed by the geometry of its chain.
+
+    Order is kept rather than sorted: reversing a chain does not change the
+    support, but the tributary lengths are computed from consecutive pairs,
+    so the sequence is content.
+    """
+    return [
+        [_at(node_id, nodes) for node_id in support.nodes or []],
         _num(support.ux),
         _num(support.uy),
         _num(support.uz),
