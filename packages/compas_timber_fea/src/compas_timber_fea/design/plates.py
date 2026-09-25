@@ -3,8 +3,7 @@
 .. warning::
 
    **Not checked by a structural engineer** - the same caveat as the member
-   checks, see the warning section in ``docs/discussion/work-packages.md``.
-   For plates it bites harder, because of the scope limit below.
+   checks. For plates it bites harder, because of the scope limit below.
 
 What a shell gives us is forces *per metre of width*: bending moments
 ``m_x``, ``m_y``, the twisting moment ``m_xy``, and membrane forces ``n_x``,

@@ -2,7 +2,7 @@
 
 What the add-on needs before ``calculate_all`` produces a ratio table -
 found the hard way in the live session of 2026-09-18 (RFEM 6.13, dlubal.api
-2.13.8) and written up in ``docs/discussion/roundtrip.md``:
+2.13.8):
 
 1. the add-on flag and the EN 1995 standard in the base data;
 2. a service class and a ULS configuration assigned to the timber members -

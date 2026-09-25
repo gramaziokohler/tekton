@@ -22,7 +22,6 @@ anyway. Until then `run_backend` raises a WorkerError with instructions for
 doing the same step by hand.
 """
 
-import json
 import os
 import subprocess
 import sys
@@ -172,28 +171,15 @@ def run_backend(
 
 
 def model_fingerprint(structural_model):
-    """Short hash over the structurally relevant model data.
+    """Short hash over everything in the model that changes the answer.
 
-    What for: Grasshopper holds on to old outputs. Results on the canvas can
-    describe a model that changed long ago - the most dangerous failure mode
-    of this workflow (see ``discussion/roundtrip.md``). The fingerprint is
-    written alongside every calculation and checked by the result components
-    against the current model: if it differs, they warn 'results stale'.
-
-    TODO(scaffold): Should move into the neutral layer once the provenance
-    structure from roundtrip.md exists - this is only the GH-side placeholder,
-    so the components already have the right shape.
+    Kept here as the name the components already import; the implementation
+    lives in the neutral layer (:mod:`compas_timber_fea.core.fingerprint`), so
+    the CLI and the OpenSees path get the same stamp as Grasshopper.
     """
-    import hashlib
+    from compas_timber_fea.core.fingerprint import model_fingerprint as _fingerprint
 
-    payload = {
-        "nodes": [[n.id, list(n.point)] for n in structural_model.nodes],
-        "members": [[m.id, m.node_start, m.node_end, m.section_id] for m in structural_model.members],
-        "surfaces": [[s.id, list(s.nodes), s.thickness_id] for s in structural_model.surfaces],
-        "supports": [[s.id, list(s.nodes)] for s in structural_model.supports],
-    }
-    blob = json.dumps(payload, sort_keys=True).encode("utf-8")
-    return hashlib.sha1(blob).hexdigest()[:12]
+    return _fingerprint(structural_model)
 
 
 def python_version_note():

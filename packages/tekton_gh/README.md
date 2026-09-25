@@ -295,7 +295,7 @@ TimberModel ─→ Support ─→ Translate ─→ Preflight ─→ Run ─→ R
 | **Line supports for plates** | plates are supported node by node | `StructuralLineSupport` → RFEM `LineSupport`; needs a Windows session |
 | **Openings on the RFEM side** | the neutral model and the OpenSees mesher carry them; the Dlubal mapper does not | map to RFEM's opening object; needs a Windows session |
 | **Tension-only members, prestress** | not representable | both make the model non-linear, which superposition of combinations relies on not being — needs its own decision |
-| **Engineer's edits in RFEM** | every run does `delete_all` and rebuilds | BackendMap / incremental update (`discussion/roundtrip.md`) |
+| **Engineer's edits in RFEM** | every run does `delete_all` and rebuilds | BackendMap / incremental update |
 
 Done: worker CLI; result readers for both backends; **OpenSees for beams and
 plates**, licence-free and in milliseconds, calibrated against RFEM

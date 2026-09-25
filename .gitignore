@@ -149,9 +149,13 @@ structural_model_export.xlsx
 packages/tekton_gh/_componentizer/ghuser_build/
 packages/tekton_gh/_componentizer/*.log
 
-# Internal working documents, kept out of version control on purpose
+# Internal working documents, kept out of version control on purpose.
+# These are the working notes - what was decided and why, the open questions,
+# the work packages. They are written for us, not for anyone reading the
+# repository, and they are deliberately franker than published documentation.
 docs/reviews/
 docs/concepts/
+docs/discussion/
 
 # Local-only: editor workspace state and any real env file (the example is committed on purpose)
 *.code-workspace

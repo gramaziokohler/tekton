@@ -256,8 +256,9 @@ from RFEM's timber design add-on. Having both is how a wrong one gets caught.
 > one produces entirely plausible numbers, and the tests assert against the
 > same transcriptions, so they cannot catch it either. They are also the base
 > Eurocode recommendations, not a national annex. Use the design numbers for
-> orientation while designing, not for verification. See
-> [`docs/discussion/design-checks.md`](docs/discussion/design-checks.md).
+> orientation while designing, not for verification. Every table in
+> `compas_timber_fea.design` names the clause it came from, and every report
+> repeats this warning.
 
 Still open, in rough order of value:
 
@@ -274,8 +275,8 @@ Still open, in rough order of value:
   the model non-linear, which superposition of load combinations relies on
   not being.
 
-The work packages, with what each one is blocked on, are in
-[`docs/discussion/work-packages.md`](docs/discussion/work-packages.md).
+The work packages, with what each one is blocked on, are kept as internal
+working notes rather than in the repository.
 
 ## Tests
 
@@ -304,20 +305,6 @@ compas_timber = { path = "../compas_timber", editable = true }
 
 Then run `uv sync` again. Revert the override before committing.
 
-### iCloud Drive
-
-If the repository lives in iCloud Drive, the workspace packages can suddenly
-become unimportable (`ModuleNotFoundError: compas_timber_fea`). iCloud sets
-the macOS *hidden* flag on synced files, and Python ≥ 3.12 skips hidden `.pth`
-files in site-packages, which is how editable installs are wired up.
-
-```bash
-chflags nohidden .venv/lib/python3.12/site-packages/*.pth
-```
-
-Durable fix: keep the venv outside iCloud, for example
-`export UV_PROJECT_ENVIRONMENT=~/.venvs/tekton` before `uv sync`.
-
 ### Building a standalone executable
 
 Building one requires a PyInstaller spec file, which is not part of the
@@ -325,8 +312,19 @@ repository at present.
 
 ## Documentation
 
-Online documentation, with a tutorial and an API reference:
-[gramaziokohler.github.io/tekton](https://gramaziokohler.github.io/tekton).
+There is no published site yet — the Sphinx sources under `docs/` are still
+scaffolding, and `gramaziokohler.github.io/tekton` returns a 404. What exists
+is written down and current:
+
+| Where | What |
+| --- | --- |
+| this README | the whole picture, installation, the four ways to drive Tekton |
+| [`packages/tekton_gh/README.md`](packages/tekton_gh/README.md) | the Grasshopper side: every component, the two-process split, the pitfalls |
+| [`docs/architecture.html`](docs/architecture.html) | the diagrams and the notes behind them |
+| the docstrings | each module states what it does, and the standard clause behind it where one applies |
+
+Design decisions, open questions and the work packages are kept as internal
+working notes outside the repository.
 
 ## Issue tracker
 

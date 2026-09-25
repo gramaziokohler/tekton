@@ -29,6 +29,11 @@ from .core.model import StructuralSurfaceConnection
 #: a millimetre, which must not produce duplicate sections or thicknesses.
 DIMENSION_TOLERANCE = 1e-5
 
+#: A plate's outer contour and its openings are both `FreeContour` features;
+#: `tool_position` is what separates them - the side the cutter runs on.
+#: "left" is the outline, "right" an opening.
+OPENING_TOOL_POSITION = "right"
+
 
 def _dimension_key(*values):
     """Round dimensions so float noise does not create duplicate entries."""
@@ -441,9 +446,8 @@ class TimberToStructural:
         plate may be built either way round, and the outlines are what the
         analysis surface was derived from.
         """
-        geometry = getattr(plate, "plate_geometry", None)
-        outline_a = getattr(geometry, "outline_a", None)
-        outline_b = getattr(geometry, "outline_b", None)
+        outline_a = getattr(plate, "outline_a", None)
+        outline_b = getattr(plate, "outline_b", None)
         if not outline_a or not outline_b:
             return (0.0, 0.0, 0.0)
         try:
@@ -455,9 +459,12 @@ class TimberToStructural:
     def _opening_rings(self, model, plate):
         """Openings of a plate as closed rings of node ids.
 
-        Read through ``plate_geometry.openings`` - the single accessor the
-        plate study asks for, because the plate may move them into
-        FreeContour features later and every other route would break.
+        Openings are `FreeContour` features on the plate. A plate carries one
+        such feature for its outer contour too, and the two are told apart by
+        `tool_position` - which side of the line the cutter runs on: "left"
+        is the outline, "right" an opening. That is a fabrication property
+        doing double duty as topology, so it is worth naming here rather than
+        leaving as a magic string in the middle of a loop.
 
         The ring vertices become model nodes like any other: an opening edge
         is a real boundary that a mesher has to honour and that a neighbouring
@@ -466,9 +473,16 @@ class TimberToStructural:
         """
         if plate is None:
             return []
-        geometry = getattr(plate, "plate_geometry", None)
-        openings = getattr(geometry, "openings", None) or []
-        # The openings live on outline_a, the analysis surface is the middle
+        openings = []
+        for feature in getattr(plate, "features", None) or []:
+            if getattr(feature, "tool_position", None) != OPENING_TOOL_POSITION:
+                continue
+            contour = getattr(feature, "contour_param_object", None)
+            polyline = getattr(contour, "polyline", None)
+            if polyline is not None:
+                openings.append(polyline)
+
+        # The contours lie on outline_a, the analysis surface is the middle
         # one - the plate study calls this out (no mid-plane is stored, it has
         # to be derived by t/2). Without the shift the opening sits half a
         # thickness off the surface it is supposed to cut, and gmsh either

@@ -1,8 +1,7 @@
 """Spike: does OpenSees express what the neutral model needs?
 
 Manual script - needs ``pip install openseespy`` (not a Tekton dependency).
-Findings are written up in docs/discussion/opensees-backend.md; this script is
-the evidence. Every check prints the OpenSees number next to a closed-form
+This script is the evidence for the findings. Every check prints the OpenSees number next to a closed-form
 reference, so a regression in either is visible at a glance.
 
 Units: kN and m, like the neutral model, so E goes in as MPa * 1000 (kN/m2).

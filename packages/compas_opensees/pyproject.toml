@@ -17,8 +17,7 @@ dependencies = [
     # so plates are meshed here in the adapter. gmsh rather than compas_cgal
     # because `setTransfiniteCurve` lets a shared edge's node count be
     # prescribed - the only way two plates provably meet on the same nodes.
-    # Measured in tests/spike_meshers.py, written up in
-    # docs/discussion/opensees-backend.md.
+    # Measured in tests/spike_meshers.py.
     "gmsh >= 4.13",
 ]
 

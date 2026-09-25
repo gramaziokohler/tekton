@@ -1,8 +1,7 @@
 """OpenSees backend: the neutral StructuralModel solved with openseespy.
 
 Beams first. Everything the adapter emits was proven in
-``tests/spike_opensees.py`` against closed-form solutions; the findings and
-the mapping table live in ``docs/discussion/opensees-backend.md``.
+``tests/spike_opensees.py`` against closed-form solutions.
 """
 
 from compas_opensees.runner import OpenSeesRunner  # noqa: F401

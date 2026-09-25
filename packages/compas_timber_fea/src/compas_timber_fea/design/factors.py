@@ -10,8 +10,7 @@
    it either. Until an engineer has signed these off, Tekton's design numbers
    are for orientation during design, not for verification. The values are the
    recommended ones from the base Eurocode; CH, DE and AT national annexes
-   deviate. See the warning section in
-   ``docs/discussion/work-packages.md``.
+   deviate.
 
 Everything in this module is a *choice*, not a result: service class and
 load duration are properties of the building and the action, not of the

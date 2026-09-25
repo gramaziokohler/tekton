@@ -9,7 +9,6 @@ results back onto it.
 
 import pytest
 
-from compas.geometry import Frame
 from compas.geometry import Point
 from compas.geometry import Polyline
 
@@ -42,7 +41,6 @@ def neutral_plate(openings=None):
 
 def timber_plate(with_opening=True):
     """The same plate as a real compas_timber Plate."""
-    frame = Frame([0, 0, 0], [1, 0, 0], [0, 1, 0])
     outline_a = Polyline([Point(0, 0, 0), Point(SIDE, 0, 0), Point(SIDE, SIDE, 0),
                           Point(0, SIDE, 0), Point(0, 0, 0)])
     outline_b = Polyline([Point(0, 0, THICKNESS), Point(SIDE, 0, THICKNESS),
@@ -52,8 +50,7 @@ def timber_plate(with_opening=True):
     if with_opening:
         openings = [Polyline([Point(1.5, 1.5, 0), Point(2.5, 1.5, 0), Point(2.5, 2.5, 0),
                               Point(1.5, 2.5, 0), Point(1.5, 1.5, 0)])]
-    plate = Plate(frame, SIDE, SIDE, THICKNESS,
-                  local_outline_a=outline_a, local_outline_b=outline_b, openings=openings)
+    plate = Plate.from_outlines(outline_a, outline_b, openings=openings)
     model = TimberModel()
     model.add_element(plate)
     return model

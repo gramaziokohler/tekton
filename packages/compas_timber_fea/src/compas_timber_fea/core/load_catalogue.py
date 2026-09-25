@@ -9,8 +9,7 @@
    same transcribed numbers and would not catch it. The values are the
    recommended ones from the base Eurocode - national annexes deviate. Until
    an engineer has reviewed them, use the generated combinations for
-   orientation, not for verification. See the warning section in
-   ``docs/discussion/work-packages.md``.
+   orientation, not for verification.
 
 Utilisation for self-weight alone is not a design value. What turns load
 cases into one is the combination rule of EN 1990 6.4.3: every variable
@@ -26,8 +25,7 @@ tabulated against.
 
 National annexes differ. The values here are the recommended ones; where a
 country deviates, that belongs in an override rather than a silent edit of
-this table - see `docs/discussion/design-checks.md` for the same argument
-about gamma_M.
+this table. The same argument applies to gamma_M.
 """
 
 from dataclasses import dataclass

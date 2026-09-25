@@ -1,8 +1,7 @@
 """Spike: which mesher can give OpenSees conforming plate edges (2026-09-16).
 
 Run with a venv that has compas_cgal, gmsh and libigl - NOT the repo venv;
-this is a decision record, not a dependency. Findings are written up in
-`docs/discussion/opensees-backend.md` under "Meshing for plates".
+this is a decision record, not a dependency.
 
 Result: gmsh, because `setTransfiniteCurve` lets a shared edge's node count be
 prescribed. compas_cgal refines the boundary on its own and therefore cannot

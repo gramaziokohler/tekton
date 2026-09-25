@@ -7,12 +7,11 @@ for the OpenSees backend, offline, in CI, and as a second opinion against
 which a certified result can be compared.
 
 What is *not* here: buckling and lateral-torsional buckling. They need a
-buckling length, and the neutral model does not carry one - see WP1c in
-``docs/discussion/work-packages.md``. Every report states that they were
-not verified; an unverified check must never look like a passed one.
+buckling length, and the neutral model does not carry one. Every report
+states that they were not verified; an unverified check must never look like a passed one.
 
-Clause numbers refer to EN 1995-1-1 (Eurocode 5). The assumptions behind
-the design values are in ``docs/discussion/design-checks.md``.
+Clause numbers refer to EN 1995-1-1 (Eurocode 5). Each table below names
+the clause its values came from.
 """
 
 from .factors import DesignAssumptions

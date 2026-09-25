@@ -271,7 +271,7 @@ COMPONENTS = [
             "come from the action category on each load case. Without 'generate', give "
             "factors parallel to load_cases and it builds that one combination. "
             "The factors are EN 1990 recommended values, NOT checked by an engineer and "
-            "not a national annex - see docs/discussion/work-packages.md."
+            "not a national annex."
         ),
         inputs=[
             p("name", "str", desc="Name, e.g. 'ULS 1'. Only for a manual combination; generated ones name themselves."),

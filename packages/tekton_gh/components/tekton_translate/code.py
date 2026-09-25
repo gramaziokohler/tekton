@@ -132,7 +132,7 @@ else:
 
     # TODO(scaffold): material is only a name string today, which RFEM
     # resolves against its own library. Once the Material dataclass with presets
-    # exists (discussion/materials.md), pass the object through here and write
+    # exists, pass the object through here and write
     # the properties into the neutral model.
     material_name = material if isinstance(material, str) else (getattr(material, "name", None) or "C24")
 
