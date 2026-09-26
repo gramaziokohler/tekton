@@ -91,7 +91,9 @@ def surface_stations(structural_model, result_set, surface, quantity="displaceme
     for sample in samples:
         if sample.position is None:
             continue
-        stations.append(Station(0.0, Point(*sample.position), sample.displacement, surface_quantity_of(sample, quantity)))
+        stations.append(Station(0.0, Point(*sample.position), sample.displacement,
+                                surface_quantity_of(sample, quantity),
+                                getattr(sample, "metadata", None)))
     if stations:
         return stations
     corners = surface_corner_stations(structural_model, result_set, surface)
@@ -136,15 +138,21 @@ def colour_rgb(value, low=0.0, high=1.0):
 
 
 class Station(object):
-    """One sample point along a member: parameter, undeformed point, displacement, value."""
+    """One sample point along a member: parameter, undeformed point, displacement, value.
 
-    __slots__ = ("t", "point", "displacement", "value")
+    ``metadata`` carries the sample's own metadata through - for a surface
+    sample that is the backend's ``node_tag``, which is what lets a viewer
+    rebuild the solver's mesh instead of re-triangulating the points.
+    """
 
-    def __init__(self, t, point, displacement, value):
+    __slots__ = ("t", "point", "displacement", "value", "metadata")
+
+    def __init__(self, t, point, displacement, value, metadata=None):
         self.t = t
         self.point = point
         self.displacement = displacement
         self.value = value
+        self.metadata = metadata or {}
 
     def deformed(self, exaggeration=1.0, scale=1.0):
         """Deformed point: (point + displacement * exaggeration) * scale.

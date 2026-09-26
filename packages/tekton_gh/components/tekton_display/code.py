@@ -257,9 +257,38 @@ class TektonDisplay(Grasshopper.Kernel.GH_ScriptInstance):
                         m.Faces.AddFace(3, 2, 1, 0)
                         m.Faces.AddFace(n, n + 1, n + 2, n + 3)
                     else:
-                        for i in range(1, n - 1):
-                            m.Faces.AddFace(0, i + 1, i)
-                            m.Faces.AddFace(n, n + i, n + i + 1)
+                        # Cap the two faces by triangulating the outline. A
+                        # fan from corner 0 only works while the outline is
+                        # convex; a faceted shell is full of plates that step
+                        # inwards (38 of 46 on the hypar example), and there
+                        # the fan spills straight across the notch.
+                        cap = None
+                        try:
+                            boundary = rg.Polyline([p - half for p in pts] + [pts[0] - half])
+                            cap = rg.Mesh.CreateFromClosedPolyline(boundary)
+                        except Exception:
+                            cap = None
+                        if cap is not None and cap.Faces.Count:
+                            # CreateFromClosedPolyline reorders its vertices,
+                            # so map each one back onto ours by position.
+                            index_of = {}
+                            for c in range(cap.Vertices.Count):
+                                cv = cap.Vertices[c]
+                                best, best_d = 0, None
+                                for i in range(n):
+                                    d = (pts[i] - half).DistanceTo(rg.Point3d(cv.X, cv.Y, cv.Z))
+                                    if best_d is None or d < best_d:
+                                        best, best_d = i, d
+                                index_of[c] = best
+                            for c in range(cap.Faces.Count):
+                                f = cap.Faces[c]
+                                a, b2, c2 = index_of[f.A], index_of[f.B], index_of[f.C]
+                                m.Faces.AddFace(a, c2, b2)
+                                m.Faces.AddFace(n + a, n + b2, n + c2)
+                        else:
+                            for i in range(1, n - 1):
+                                m.Faces.AddFace(0, i + 1, i)
+                                m.Faces.AddFace(n, n + i, n + i + 1)
                     m.Normals.ComputeNormals()
                     return painted(m, colour)
                 if kind == "beam":

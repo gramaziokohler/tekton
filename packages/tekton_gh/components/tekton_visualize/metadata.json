@@ -143,6 +143,22 @@
                 "graft": false
             },
             {
+                "name": "facet_edges",
+                "nickname": "facet_edges",
+                "description": "Facet edges of the deformed plate meshes: the mesh edges that lie on a plate boundary, i.e. the folds the structure is made of. Wire to a Custom Preview and give them their own colour and weight.",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "mesh_edges",
+                "nickname": "mesh_edges",
+                "description": "Tessellation edges: the interior mesh edges of each plate, the mesher's discretisation. Draw these thin and faint, or not at all.",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
                 "name": "meshes",
                 "nickname": "meshes",
                 "description": "Sections swept along the deformed lines, vertex-coloured by quantity",

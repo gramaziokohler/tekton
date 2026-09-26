@@ -163,7 +163,17 @@ def read_case(ops, model, built, case, stations):
         node_results=node_results,
         member_results=member_results,
         surface_results=surface_results,
-        metadata={"source": "opensees", "stations": stations, "columns": {"member_forces": ["P", "Mz", "My", "T"], "shear": "interpolated from end forces"}},
+        # The plate mesh travels with the results, keyed by surface id, as
+        # triples of node tags into the samples' `node_tag`. A viewer that
+        # re-triangulates the sample points instead gets a 2D Delaunay of a
+        # projected cloud, which on a trimmed or concave plate produces
+        # slivers and degenerate triangles (measured on the hypar: 156
+        # zero-area triangles, 18% below quality 0.3, against none in the
+        # gmsh mesh it is supposed to be showing).
+        metadata={"source": "opensees", "stations": stations,
+                  "surface_triangles": {int(sid): [list(t) for t in tris]
+                                        for sid, tris in (getattr(built, "surface_triangles", {}) or {}).items()},
+                  "columns": {"member_forces": ["P", "Mz", "My", "T"], "shear": "interpolated from end forces"}},
     )
 
 

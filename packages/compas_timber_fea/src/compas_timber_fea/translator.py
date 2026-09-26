@@ -30,9 +30,19 @@ from .core.model import StructuralSurfaceConnection
 #: a millimetre, which must not produce duplicate sections or thicknesses.
 DIMENSION_TOLERANCE = 1e-5
 
-#: A plate's outer contour and its openings are both `FreeContour` features;
-#: `tool_position` is what separates them - the side the cutter runs on.
-#: "left" is the outline, "right" an opening.
+#: A plate's outer contour and its openings are both `FreeContour` features.
+#: What separates them is `counter_sink`, which compas_timber sets from the
+#: `interior` flag: the outline is built with interior=False, every opening
+#: with interior=True (see compas_timber.elements.plate.Plate.features).
+#: `tool_position` only records which side the cutter runs on, and that
+#: follows the contour's winding relative to the plate's reference side - for
+#: an outline built by `Plate.from_outline_thickness` it comes out "right"
+#: whichever way the outline is wound, so reading it as "opening" turns every
+#: plate's own boundary into a phantom hole.
+OPENING_COUNTER_SINK = True
+
+#: Kept for the older path: when a feature carries no `counter_sink` at all,
+#: the cutter side is the only hint left.
 OPENING_TOOL_POSITION = "right"
 
 
@@ -463,10 +473,10 @@ class TimberToStructural:
 
         Openings are `FreeContour` features on the plate. A plate carries one
         such feature for its outer contour too, and the two are told apart by
-        `tool_position` - which side of the line the cutter runs on: "left"
-        is the outline, "right" an opening. That is a fabrication property
+        `counter_sink` - compas_timber sets it from `interior`, false for the
+        outline and true for every opening. That is a fabrication property
         doing double duty as topology, so it is worth naming here rather than
-        leaving as a magic string in the middle of a loop.
+        leaving as a magic value in the middle of a loop.
 
         The ring vertices become model nodes like any other: an opening edge
         is a real boundary that a mesher has to honour and that a neighbouring
@@ -477,7 +487,12 @@ class TimberToStructural:
             return []
         openings = []
         for feature in getattr(plate, "features", None) or []:
-            if getattr(feature, "tool_position", None) != OPENING_TOOL_POSITION:
+            counter_sink = getattr(feature, "counter_sink", None)
+            if counter_sink is None:
+                # No flag on this feature - fall back to the cutter side.
+                if getattr(feature, "tool_position", None) != OPENING_TOOL_POSITION:
+                    continue
+            elif bool(counter_sink) != OPENING_COUNTER_SINK:
                 continue
             contour = getattr(feature, "contour_param_object", None)
             polyline = getattr(contour, "polyline", None)

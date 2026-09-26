@@ -179,3 +179,36 @@ def test_the_translated_plate_meshes_to_the_right_area():
     structural = TimberToStructural(source_units="m").translate(timber_plate())
     area = mesh_surfaces(structural, 0.5).surfaces[1].area
     assert area == pytest.approx(SIDE * SIDE - HOLE * HOLE, rel=1e-6)
+
+
+def test_a_plate_built_from_outline_and_thickness_has_no_opening():
+    """The outer contour is not a hole, whichever way the outline is wound.
+
+    `Plate.from_outline_thickness` builds the outer contour with
+    `interior=False`, but its `tool_position` comes out "right" - that value
+    records which side the cutter runs on, relative to the plate's own
+    reference side, and for this constructor it is "right" whichever way the
+    outline is wound. Reading it as "opening" turned every plate's own
+    boundary into a phantom hole: on a 46-facet shell that was 46 spurious
+    openings and ~250 junk nodes, and every plate would have been meshed
+    with its own outline punched out of it. `counter_sink` is the flag that
+    actually separates the two.
+    """
+    outline = Polyline([Point(0, 0, 0), Point(SIDE, 0, 0), Point(SIDE, SIDE, 0),
+                        Point(0, SIDE, 0), Point(0, 0, 0)])
+    plate = Plate.from_outline_thickness(outline, THICKNESS)
+    # Guard the premise: if compas_timber ever starts tagging the outer
+    # contour "left", this test stops proving anything without saying so.
+    contours = [f for f in (plate.features or []) if hasattr(f, "tool_position")]
+    assert contours, "the plate should carry its outer contour as a feature"
+    assert all(not f.counter_sink for f in contours)
+
+    model = TimberModel()
+    model.add_element(plate)
+    translator = TimberToStructural(source_units="m")
+    structural = translator.translate(model)
+
+    assert structural.surfaces[0].openings == []
+    assert not any("opening" in line for line in translator.report)
+    area = mesh_surfaces(structural, 0.5).surfaces[1].area
+    assert area == pytest.approx(SIDE * SIDE, rel=1e-6)

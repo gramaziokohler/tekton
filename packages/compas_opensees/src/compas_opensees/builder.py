@@ -142,6 +142,7 @@ class BuiltModel:
         self.warnings = []
         # --- surfaces (WP0b) ---
         self.surface_elements = {}     # surface id -> [element tags]
+        self.surface_triangles = {}    # surface id -> [(node tag, node tag, node tag)]
         self.surface_nodes = {}        # surface id -> [node tags of its mesh]
         self.surface_area = {}         # surface id -> m2
         self.surface_self_weight = {}  # surface id -> kN/m2 (positive magnitude)
@@ -404,6 +405,12 @@ class ModelBuilder:
                 tags.append(tag)
 
             self.built.surface_elements[surface.id] = tags
+            # Keep the connectivity, not just the element tags: it is what
+            # lets a viewer draw the mesh gmsh actually produced instead of
+            # re-triangulating the result points, which yields slivers.
+            self.built.surface_triangles[surface.id] = [
+                tuple(int(node) for node in triangle) for triangle in meshed.triangles
+            ]
             self.built.surface_nodes[surface.id] = list(meshed.node_tags)
             self.built.surface_area[surface.id] = meshed.area
             # kN/m2, positive magnitude - the analysis loop applies the sign.

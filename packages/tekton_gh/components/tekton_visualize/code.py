@@ -7,6 +7,13 @@ Three things come out, all from the same result set:
 - `meshes`: the rectangular sections swept along those polylines, with a
   vertex colour per station - the beams as they bend, coloured by `quantity`.
 - `colours`: one colour per member (its maximum), for the flat view.
+- `facet_edges` / `mesh_edges`: the plates' mesh edges, split. An edge with
+  one face behind it lies on a plate boundary and is a *facet* edge - a fold
+  the structure really has; an edge with two is the mesher's discretisation.
+  Wire `facet_edges` to a Custom Preview with a heavier weight and a colour
+  of its own, and a faceted shell reads as facets instead of as a field of
+  triangles. Both come off the deformed mesh, so they sit on the result
+  rather than beside it.
 
 Values above the upper bound go hard red instead of interpolating further: an
 exceedance should catch the eye, not fade out gently. Without `high` the
@@ -148,6 +155,8 @@ except Exception:
 
 geometry = []
 deformed = []
+facet_edges = []
+mesh_edges = []
 meshes = []
 colours = []
 values = []
@@ -244,18 +253,55 @@ else:
         o = [rg.Point3d(p.x * scale, p.y * scale, p.z * scale) for p in outline]
         plane = rg.Plane(o[0], o[1], o[2])
         flat = [rg.Point3d(s.point.x * scale, s.point.y * scale, s.point.z * scale) for s in stations]
+        boundary = rg.Polyline(o + o[:1])
         mesh_ = None
-        try:
-            mesh_ = rg.Mesh.CreateFromTessellation(flat, None, plane, False)
-        except Exception:
-            mesh_ = None
+        # Best case: the backend sent the mesh it actually solved. Rebuilding
+        # it beats any re-triangulation - a 2D Delaunay of the projected
+        # sample points has no reason to reproduce a good 3D mesh, and on a
+        # trimmed or concave plate it produces slivers and zero-area
+        # triangles (measured: 156 degenerate of 1058, against none in the
+        # gmsh mesh those same points came from).
+        triangles = ((getattr(result_set, "metadata", None) or {}).get("surface_triangles") or {}) if result_set else {}
+        connectivity = triangles.get(surface.id) or triangles.get(str(surface.id))
+        if connectivity:
+            index_of = {}
+            for position, station in enumerate(stations):
+                tag = (getattr(station, "metadata", None) or {}).get("node_tag")
+                if tag is not None:
+                    index_of[int(tag)] = position
+            if all(all(int(t) in index_of for t in tri) for tri in connectivity):
+                mesh_ = rg.Mesh()
+                for point in flat:
+                    mesh_.Vertices.Add(point)
+                for tri in connectivity:
+                    a, b, c = (index_of[int(t)] for t in tri)
+                    mesh_.Faces.AddFace(a, b, c)
+        if mesh_ is None:
+            # The outline has to be handed over as a constraint. Without it
+            # `CreateFromTessellation` only sees a cloud of points and
+            # returns its convex hull - a plate whose outline steps inwards
+            # (38 of 46 facets on the hypar example) then gets drawn with the
+            # notch filled in, as a spike across the boundary. The flag is
+            # `allowNewVertices`, not "allow concave"; it stays False so the
+            # vertices keep matching `stations` for the colours.
+            try:
+                mesh_ = rg.Mesh.CreateFromTessellation(flat, [boundary], plane, False)
+            except Exception:
+                mesh_ = None
         if mesh_ is None or mesh_.Vertices.Count != len(flat):
-            # Fallback: the outline as a fan; stations are then the corners.
-            mesh_ = rg.Mesh()
-            for p in o:
-                mesh_.Vertices.Add(p)
-            for i in range(1, len(o) - 1):
-                mesh_.Faces.AddFace(0, i, i + 1)
+            # Fallback: the corners alone, again constrained by the outline.
+            # A fan from corner 0 spills outside a concave outline.
+            mesh_ = None
+            try:
+                mesh_ = rg.Mesh.CreateFromTessellation(o, [boundary], plane, False)
+            except Exception:
+                mesh_ = None
+            if mesh_ is None or mesh_.Vertices.Count != len(o):
+                mesh_ = rg.Mesh()
+                for p in o:
+                    mesh_.Vertices.Add(p)
+                for i in range(1, len(o) - 1):
+                    mesh_.Faces.AddFace(0, i, i + 1)
             stations = surface_corner_stations(structural, result_set, surface) if len(stations) != len(o) else stations
         for i, s in enumerate(stations[:mesh_.Vertices.Count]):
             p = s.deformed(factor, scale)
@@ -267,6 +313,24 @@ else:
         meshes.append(mesh_)
         corners = [rg.Point3d(*st.deformed(factor, scale)) for st in surface_corner_stations(structural, result_set, surface)]
         deformed.append(rg.PolylineCurve(corners + corners[:1]))
+        # Split the plate's own mesh edges in two. Every plate is meshed on
+        # its own, so an edge with a single face behind it lies on the
+        # plate's boundary: that is a facet edge, a fold the structure really
+        # has. An edge with two faces is interior - the mesher's
+        # discretisation, which says nothing about the structure. Both are
+        # taken off the deformed mesh, so they sit on the result; a polyline
+        # redrawn through the plate's corners would not, because the mesh
+        # boundary runs through every edge node and those move on their own.
+        try:
+            topology = mesh_.TopologyEdges
+            for index in range(topology.Count):
+                line = topology.EdgeLine(index)
+                if len(topology.GetConnectedFaces(index)) == 1:
+                    facet_edges.append(rg.LineCurve(line))
+                else:
+                    mesh_edges.append(rg.LineCurve(line))
+        except Exception:
+            pass
 
     colours = [colour_ramp(value, lo, hi) for value in values]
 
