@@ -253,9 +253,10 @@ class TektonDisplay(Grasshopper.Kernel.GH_ScriptInstance):
                     for i in range(n):
                         j = (i + 1) % n
                         m.Faces.AddFace(i, j, n + j, n + i)
+                    cap_faces = []
                     if n == 4:
-                        m.Faces.AddFace(3, 2, 1, 0)
-                        m.Faces.AddFace(n, n + 1, n + 2, n + 3)
+                        cap_faces.append((m.Faces.AddFace(3, 2, 1, 0),
+                                          m.Faces.AddFace(n, n + 1, n + 2, n + 3)))
                     else:
                         # Cap the two faces by triangulating the outline. A
                         # fan from corner 0 only works while the outline is
@@ -280,15 +281,37 @@ class TektonDisplay(Grasshopper.Kernel.GH_ScriptInstance):
                                     if best_d is None or d < best_d:
                                         best, best_d = i, d
                                 index_of[c] = best
+                            bottom, top = [], []
                             for c in range(cap.Faces.Count):
                                 f = cap.Faces[c]
                                 a, b2, c2 = index_of[f.A], index_of[f.B], index_of[f.C]
-                                m.Faces.AddFace(a, c2, b2)
-                                m.Faces.AddFace(n + a, n + b2, n + c2)
+                                bottom.append(m.Faces.AddFace(a, c2, b2))
+                                top.append(m.Faces.AddFace(n + a, n + b2, n + c2))
+                            cap_faces.append((bottom, top))
                         else:
+                            bottom, top = [], []
                             for i in range(1, n - 1):
-                                m.Faces.AddFace(0, i + 1, i)
-                                m.Faces.AddFace(n, n + i, n + i + 1)
+                                bottom.append(m.Faces.AddFace(0, i + 1, i))
+                                top.append(m.Faces.AddFace(n, n + i, n + i + 1))
+                            cap_faces.append((bottom, top))
+                    # An n-gon caps cannot be one mesh face, so each is a fan
+                    # or a triangulation - and Rhino draws a wire along every
+                    # one of those internal edges, which reads as if the
+                    # plate were chopped up. Grouping them into an Ngon keeps
+                    # the geometry and hides the internal wires: the plate is
+                    # drawn as the one face it is.
+                    try:
+                        for bottom, top in cap_faces:
+                            if isinstance(bottom, int):
+                                continue  # a quad cap is already one face
+                            if len(bottom) > 1:
+                                m.Ngons.AddNgon(rg.MeshNgon.Create(
+                                    list(range(n)), list(bottom)))
+                            if len(top) > 1:
+                                m.Ngons.AddNgon(rg.MeshNgon.Create(
+                                    list(range(n, 2 * n)), list(top)))
+                    except Exception:
+                        pass
                     m.Normals.ComputeNormals()
                     return painted(m, colour)
                 if kind == "beam":
