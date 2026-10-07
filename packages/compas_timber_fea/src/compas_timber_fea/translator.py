@@ -110,10 +110,67 @@ class ThicknessLibrary:
         return self.thicknesses_map[key]
 
 
+#: Ids are derived from a source identity rather than from iteration order, so
+#: an untouched element keeps its numbers when the model around it is edited.
+#: The derivation is a hash, because the backends want a positive integer and
+#: the source identity is a GUID string.
+#:
+#: The space is 2^31, which is what RFEM accepts as an object number. With a
+#: few thousand objects the chance of a collision is around one in a million;
+#: :func:`_unique_id` resolves one deterministically rather than leaving two
+#: objects sharing a number.
+ID_SPACE = 2_147_483_647
+
+
+def stable_id(*parts):
+    """A positive, deterministic id for an identity made of `parts`.
+
+    Two rules, both learned the hard way:
+
+    * **Never include another element's identity.** An id built from a growing
+      set of neighbouring GUIDs flips as soon as a neighbour sorts differently,
+      and a persisted map then binds the wrong object. An id describes its own
+      element and nothing else.
+    * **Never include position in a list.** That is the bug this replaces:
+      ``node_index`` is ``enumerate(nodes())``, so inserting one beam shifted
+      every id after it.
+    """
+    import hashlib
+
+    key = "\x1f".join(str(part) for part in parts).encode("utf-8")
+    return int.from_bytes(hashlib.blake2b(key, digest_size=8).digest(), "big") % ID_SPACE + 1
+
+
+def _unique_id(taken, *parts):
+    """`stable_id` with collisions resolved, deterministically.
+
+    A collision is improbable but not impossible, and two objects sharing an
+    id would be a silent, data-dependent corruption. Rehashing with a counter
+    keeps the result a pure function of the identities involved - the same
+    model always produces the same ids, collision or not.
+    """
+    candidate = stable_id(*parts)
+    attempt = 0
+    while candidate in taken:
+        attempt += 1
+        candidate = stable_id(*parts, "collision", attempt)
+    taken.add(candidate)
+    return candidate
+
+
 def node_to_id(sg, node):
-    # dlubal apparantly doesn't do zero-based ids
-    # use stable node indices from the graph
-    return sg.node_index(node) + 1
+    """Neutral id of a graph node, derived from where the node *is*.
+
+    A node has no GUID of its own - it is created by the graph where geometry
+    meets, and its graph key is an insertion index. Its position, however, is
+    exactly what makes it that node: two beams share a node because they share
+    a point. So the identity is the rounded coordinate.
+
+    Rounded to a micrometre: far below anything a timber model means, far above
+    the float noise a unit conversion introduces.
+    """
+    point = sg.node_point(node)
+    return stable_id("node", round(point[0], 6), round(point[1], 6), round(point[2], 6))
 
 def source_id(source):
     return str(getattr(source, "guid", None) or getattr(source, "id", None) or getattr(source, "name", None) or source)
@@ -148,9 +205,16 @@ class TimberToStructural:
         self.load_cases = load_cases
         self.sections_library = SectionLibrary()
         self.thicknesses_library = ThicknessLibrary()
-        self._member_id_counter = 1
+        #: Member ids handed out during the current translate(), so a hash
+        #: collision can be resolved rather than silently sharing a number.
+        #: Reset per call - a translator reused for a second model must not
+        #: carry the first model's ids into it.
+        self._member_ids = set()
         #: Assumptions and anomalies recorded during the last translate().
         self.report = []
+
+    def _next_member_id(self, *parts):
+        return _unique_id(self._member_ids, "member", *parts)
 
     def _material_id_for(self, model, source):
         """Material id for one timber element, from its own grade if it has one.
@@ -224,6 +288,13 @@ class TimberToStructural:
         model = StructuralModel()
         model.source_units = self.source_units
         self.report = []
+        # Per-call state. A translator reused for a second model must not
+        # carry the first model's sections, thicknesses or ids into it - the
+        # libraries refuse a duplicate key, so the second translate() used to
+        # fail outright on the "Rigid" section.
+        self._member_ids = set()
+        self.sections_library = SectionLibrary()
+        self.thicknesses_library = ThicknessLibrary()
         self.sections_library.model_sections = model.sections  # Damit die SectionLibrary direkt in das Model schreibt
         self.thicknesses_library.model_thicknesses = model.thicknesses
 
@@ -357,19 +428,25 @@ class TimberToStructural:
             y_vector = Vector(*segment.frame.yaxis)
 
             beam = structural_graph.beam(n1, n2)
+            # A beam is split into several members at joints and supports, so
+            # the identity is the beam plus which piece of it this is. The
+            # piece is named by its two endpoints - geometry, not graph order,
+            # so it survives the beam's neighbours changing.
+            start_id = node_to_id(structural_graph, n1)
+            end_id = node_to_id(structural_graph, n2)
+            segment_key = "{}:{}".format(*sorted((start_id, end_id)))
             model.members.append(
                 StructuralMember(
-                    id=self._member_id_counter,
-                    node_start=node_to_id(structural_graph, n1),
-                    node_end=node_to_id(structural_graph, n2),
+                    id=self._next_member_id(source_id(beam), segment_key),
+                    node_start=start_id,
+                    node_end=end_id,
                     section_id=section.id,
                     orientation_vector=y_vector,
                     source_element_id=source_id(beam),
                     source_element_type="beam",
-                    source_segment_id=f"{source_id(beam)}:{source_id(n1)}-{source_id(n2)}",
+                    source_segment_id=f"{source_id(beam)}:{segment_key}",
                 )
             )
-            self._member_id_counter += 1
 
     def _add_connectors(self, model, structural_graph):
         """Turn connector edges into members whose end conditions the joint policy decides.
@@ -400,23 +477,28 @@ class TimberToStructural:
             # side is arbitrary and the second node takes the hinge.
             is_rigid = release.is_rigid()
             hinge_at_start = n1 in beam_ends and n2 not in beam_ends
+            # A connector has no source element of its own - it exists because
+            # two system lines do not meet. The pair of points it spans is what
+            # identifies it.
+            start_id = node_to_id(structural_graph, n1)
+            end_id = node_to_id(structural_graph, n2)
+            segment_key = "{}:{}".format(*sorted((start_id, end_id)))
             model.members.append(
                 StructuralMember(
-                    id=self._member_id_counter,
-                    node_start=node_to_id(structural_graph, n1),
-                    node_end=node_to_id(structural_graph, n2),
+                    id=self._next_member_id("connector", segment_key),
+                    node_start=start_id,
+                    node_end=end_id,
                     section_id=rigid_section.id,
                     is_rigid=is_rigid,
                     member_type="RIGID" if is_rigid else "COUPLING",
                     release_start=release if not is_rigid and hinge_at_start else None,
                     release_end=release if not is_rigid and not hinge_at_start else None,
                     source_element_type="connector",
-                    source_segment_id=f"{source_id(n1)}-{source_id(n2)}",
+                    source_segment_id=f"connector:{segment_key}",
                     source_joint_start=source_id(joint) if joint is not None else None,
                     source_joint_end=source_id(joint) if joint is not None else None,
                 )
             )
-            self._member_id_counter += 1  # TODO: this could be more neatly handled by the StructuralModel class itself.
 
         for description, count in sorted(decisions.items()):
             self.report.append(f"{count}x {description}")
