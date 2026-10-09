@@ -23,7 +23,7 @@ class MemberMapper:
         "C30": "C30 | EN 338:2016-04"
     }
 
-    def __init__(self, Core, nodes_cache=None, types_for_members=None):
+    def __init__(self, Core, nodes_cache=None, types_for_members=None, numbering=None):
         self.Core = Core
         # Wir brauchen Zugriff auf die Knotenkoordinaten für die Winkelberechnung
         self.nodes_cache = nodes_cache or {}
@@ -33,6 +33,10 @@ class MemberMapper:
         self._hinges_map = {}
         #: (member_id, "start"|"end") -> Dlubal hinge number
         self.hinge_numbers = {}
+        # Neutral ids are hashes over 2^31; RFEM holds 999,999 per category.
+        from compas_dlubal.dlubal.numbering import Numbering
+
+        self.numbering = numbering or Numbering()
 
     # ... (map_section and map_material remain similar)
 
@@ -74,10 +78,10 @@ class MemberMapper:
         if member.member_type == "RIGID":
             # Dlubal Type 2 is RIGID. 
             return self.Core.Member(
-                no=member.id,
+                no=self.numbering.member(member.id),
                 type=2, # TYPE_RIGID
-                node_start=member.node_start,
-                node_end=member.node_end
+                node_start=self.numbering.node(member.node_start),
+                node_end=self.numbering.node(member.node_end)
             )
         
         if member.member_type == "COUPLING":
@@ -92,10 +96,10 @@ class MemberMapper:
             # 2.5x softer than the neutral model says.
             if self._needs_explicit_hinge(member):
                 kwargs = dict(
-                    no=member.id,
+                    no=self.numbering.member(member.id),
                     type=2,  # TYPE_RIGID
-                    node_start=member.node_start,
-                    node_end=member.node_end,
+                    node_start=self.numbering.node(member.node_start),
+                    node_end=self.numbering.node(member.node_end),
                 )
                 if hinge_start is not None:
                     kwargs["member_hinge_start"] = hinge_start
@@ -118,10 +122,10 @@ class MemberMapper:
                 (True, True): 24,    # TYPE_COUPLING_HINGE_HINGE
             }[(hinged_start, hinged_end)]
             return self.Core.Member(
-                no=member.id,
+                no=self.numbering.member(member.id),
                 type=coupling_type,
-                node_start=member.node_start,
-                node_end=member.node_end
+                node_start=self.numbering.node(member.node_start),
+                node_end=self.numbering.node(member.node_end)
             )
 
 
@@ -133,11 +137,11 @@ class MemberMapper:
             beta = calculate_beta_from_vector(p1, p2, member.orientation_vector)
 
         kwargs = dict(
-            no=member.id,
-            node_start=member.node_start,
-            node_end=member.node_end,
-            cross_section_start=member.section_id,
-            cross_section_end=member.section_id,
+            no=self.numbering.member(member.id),
+            node_start=self.numbering.node(member.node_start),
+            node_end=self.numbering.node(member.node_end),
+            cross_section_start=self.numbering.section(member.section_id),
+            cross_section_end=self.numbering.section(member.section_id),
             is_rotated=bool(beta != 0.0),
             rotation_specification_type=0,
             rotation_angle=float(beta),

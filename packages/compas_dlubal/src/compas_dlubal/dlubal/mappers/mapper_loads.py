@@ -63,11 +63,16 @@ def design_situation_for(combination_type):
 class LoadMapper:
     """Maps neutral load cases, loads and combinations to Dlubal objects."""
 
-    def __init__(self, Loc, Loads=None):
+    def __init__(self, Loc, Loads=None, numbering=None):
         self.Loc = Loc
         # NodalLoad/MemberLoad live in a different proto module than LoadCase.
         self.Loads = Loads
         self._load_id_counter = 1
+        # Loads reference members, surfaces and nodes, all of which carry
+        # hash ids. Load cases have their own dense counter.
+        from compas_dlubal.dlubal.numbering import Numbering
+
+        self.numbering = numbering or Numbering()
 
     # -- load cases ---------------------------------------------------------
 
@@ -122,7 +127,7 @@ class LoadMapper:
 
         load = self.Loads.NodalLoad(
             no=self._next_id(),
-            nodes=[point_load.node_id],
+            nodes=[self.numbering.node(point_load.node_id)],
             load_case=point_load.load_case_id,
             load_type=load_type,
             components_force_x=force_to_dlubal(force.x),
@@ -161,12 +166,58 @@ class LoadMapper:
             loads.append(
                 self.Loads.MemberLoad(
                     no=self._next_id(),
-                    members=[member_load.member_id],
+                    members=[self.numbering.member(member_load.member_id)],
                     load_case=member_load.load_case_id,
                     load_type=load_type,
                     load_distribution=distribution,
                     load_direction=self._enum(self.Loads.MemberLoad, "load_direction", direction_name),
                     magnitude=force_to_dlubal(magnitude),
+                )
+            )
+        return loads
+
+    def map_surface_load(self, surface_load):
+        """Map a uniform pressure on a plate.
+
+        Same shape as the member load - RFEM applies a magnitude along one
+        direction, so a pressure with several components becomes one load
+        object per component.
+
+        The one thing RFEM can do that OpenSees cannot: `projected`. Snow is
+        given per square metre of *plan*, not of roof surface, and RFEM has a
+        direction enum for it. Ignoring the flag over-loads a flat roof and
+        under-loads a steep one.
+        """
+        if self.Loads is None:
+            raise AttributeError("LoadMapper needs the loads module to create surface loads")
+
+        load_type = self._enum(self.Loads.SurfaceLoad, "load_type", "LOAD_TYPE_FORCE")
+        distribution = self._enum(
+            self.Loads.SurfaceLoad, "load_distribution", "LOAD_DISTRIBUTION_UNIFORM")
+
+        pressure = vector_to_dlubal(surface_load.pressure)
+        extent = "PROJECTED_LENGTH" if getattr(surface_load, "projected", False) else "TRUE_LENGTH"
+        directions = (
+            (pressure.x, "LOAD_DIRECTION_GLOBAL_X_OR_USER_DEFINED_U_{}".format(extent)),
+            (pressure.y, "LOAD_DIRECTION_GLOBAL_Y_OR_USER_DEFINED_V_{}".format(extent)),
+            (pressure.z, "LOAD_DIRECTION_GLOBAL_Z_OR_USER_DEFINED_W_{}".format(extent)),
+        )
+
+        loads = []
+        for magnitude, direction_name in directions:
+            if not magnitude:
+                continue
+            loads.append(
+                self.Loads.SurfaceLoad(
+                    no=self._next_id(),
+                    surfaces=[self.numbering.surface(surface_load.surface_id)],
+                    load_case=surface_load.load_case_id,
+                    load_type=load_type,
+                    load_distribution=distribution,
+                    load_direction=self._enum(
+                        self.Loads.SurfaceLoad, "load_direction", direction_name),
+                    # kN/m2 -> N/m2, the same factor as every other force.
+                    uniform_magnitude=force_to_dlubal(magnitude),
                 )
             )
         return loads

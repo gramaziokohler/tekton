@@ -31,9 +31,13 @@ class DlubalResultReader:
     against a real RFEM response.
     """
 
-    def __init__(self, app_type="rfem", api_key=None):
+    def __init__(self, app_type="rfem", api_key=None, backend_map=None):
         self.app_type = app_type
         self.api_key = api_key
+        #: Translates RFEM's object numbers back to neutral ids. Without
+        #: one the two are taken to be the same, which is what every
+        #: result read before the BackendMap existed assumed.
+        self.backend_map = backend_map
 
     def calculate(self, skip_warnings=True):
         """Trigger calculation on the active Dlubal model.
@@ -135,7 +139,8 @@ class DlubalResultReader:
             for result_id, part in targets.items():
                 result_set = result_sets[result_id]
                 result_set.member_results = parse_member_design_ratios(
-                    part, result_id, member_lengths, result_set.member_results)
+                    part, result_id, member_lengths, result_set.member_results,
+                    backend_map=self.backend_map)
                 note = dict(summary)
                 note["loadings"] = design_ratio_summary(part)["loadings"]
                 result_set.metadata["design"] = note
@@ -148,7 +153,8 @@ class DlubalResultReader:
 
         for result_id, result_set in result_sets.items():
             result_set.member_results = parse_member_design_ratios(
-                frame, result_id, member_lengths, result_set.member_results)
+                frame, result_id, member_lengths, result_set.member_results,
+                backend_map=self.backend_map)
             result_set.metadata["design"] = dict(summary)
 
     @staticmethod
@@ -226,19 +232,19 @@ class DlubalResultReader:
 
         member_results = {}
         if "member_forces" in frames:
-            member_results = parse_member_internal_forces(frames["member_forces"], result_id, member_lengths)
+            member_results = parse_member_internal_forces(frames["member_forces"], result_id, member_lengths, backend_map=self.backend_map)
         if "member_deformations" in frames:
-            member_results = parse_member_deformations(frames["member_deformations"], result_id, member_lengths, member_results)
+            member_results = parse_member_deformations(frames["member_deformations"], result_id, member_lengths, member_results, backend_map=self.backend_map)
 
         node_results = {}
         if "node_deformations" in frames:
-            node_results = parse_node_deformations(frames["node_deformations"], result_id)
+            node_results = parse_node_deformations(frames["node_deformations"], result_id, backend_map=self.backend_map)
         if "support_forces" in frames:
-            node_results = parse_support_forces(frames["support_forces"], result_id, node_results)
+            node_results = parse_support_forces(frames["support_forces"], result_id, node_results, backend_map=self.backend_map)
 
         surface_results = {}
         if "surface_deformations" in frames or "surface_forces" in frames:
-            surface_results = parse_surface_results(frames.get("surface_deformations"), frames.get("surface_forces"), result_id)
+            surface_results = parse_surface_results(frames.get("surface_deformations"), frames.get("surface_forces"), result_id, backend_map=self.backend_map)
 
         metadata["loading"] = loading_label
         return StructuralResultSet(

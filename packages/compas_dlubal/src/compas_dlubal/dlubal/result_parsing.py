@@ -122,6 +122,23 @@ def _float(value, default=0.0):
     return default if math.isnan(number) else number
 
 
+def _neutral(backend_map, category, number):
+    """RFEM's object number -> the neutral id behind it.
+
+    Without a map the two are the same, which is what every result file
+    written before the BackendMap existed assumes, and what the OpenSees path
+    still does. With one, a number we did not allocate belongs to an object
+    the engineer added by hand: it returns None and the row is skipped, rather
+    than being attached to whichever of our objects happens to share the
+    number.
+    """
+    if number is None:
+        return None
+    if backend_map is None:
+        return number
+    return backend_map.neutral_for(category, number)
+
+
 def _int(value):
     try:
         return int(value)
@@ -129,7 +146,7 @@ def _int(value):
         return None
 
 
-def parse_member_internal_forces(dataframe, load_case_id, member_lengths=None):
+def parse_member_internal_forces(dataframe, load_case_id, member_lengths=None, backend_map=None):
     """DataFrame of the members-internal-forces table -> {member_id: [StructuralMemberResult]}.
 
     Positions come from the table in metres along the member; when
@@ -142,7 +159,7 @@ def parse_member_internal_forces(dataframe, load_case_id, member_lengths=None):
 
     results = {}
     for _, row in dataframe.iterrows():
-        member_id = _int(row[columns["member"]])
+        member_id = _neutral(backend_map, "member", _int(row[columns["member"]]))
         if member_id is None:
             continue  # summary/header rows
 
@@ -173,7 +190,7 @@ def parse_member_internal_forces(dataframe, load_case_id, member_lengths=None):
     return results
 
 
-def parse_member_deformations(dataframe, load_case_id, member_lengths=None, member_results=None):
+def parse_member_deformations(dataframe, load_case_id, member_lengths=None, member_results=None, backend_map=None):
     """DataFrame of the members-global-deformations table, merged into member results.
 
     RFEM reports deformations on the same station grid as the internal
@@ -188,7 +205,7 @@ def parse_member_deformations(dataframe, load_case_id, member_lengths=None, memb
     results = dict(member_results or {})
 
     for _, row in dataframe.iterrows():
-        member_id = _int(row[columns["member"]])
+        member_id = _neutral(backend_map, "member", _int(row[columns["member"]]))
         if member_id is None:
             continue
 
@@ -217,7 +234,7 @@ def parse_member_deformations(dataframe, load_case_id, member_lengths=None, memb
     return results
 
 
-def parse_member_design_ratios(dataframe, load_case_id, member_lengths=None, member_results=None):
+def parse_member_design_ratios(dataframe, load_case_id, member_lengths=None, member_results=None, backend_map=None):
     """Timber-design ratio table -> ``metadata["utilization"]`` on the member results.
 
     RFEM reports the ratios on the same station grid as the internal forces,
@@ -245,7 +262,7 @@ def parse_member_design_ratios(dataframe, load_case_id, member_lengths=None, mem
     results = dict(member_results or {})
 
     for _, row in dataframe.iterrows():
-        member_id = _int(row[columns["member"]])
+        member_id = _neutral(backend_map, "member", _int(row[columns["member"]]))
         if member_id is None:
             continue
         ratio = _float(row[columns["ratio"]], default=None)
@@ -313,7 +330,7 @@ def design_ratio_summary(dataframe):
     return out
 
 
-def parse_surface_results(deformations, forces, load_case_id):
+def parse_surface_results(deformations, forces, load_case_id, backend_map=None):
     """Surface deformation + basic internal force tables (per mesh node) -> {surface_id: [StructuralSurfaceResult]}.
 
     Either frame may be None. Rows are matched on (surface, mesh node); the
@@ -328,7 +345,7 @@ def parse_surface_results(deformations, forces, load_case_id):
             return
         columns = {key: _resolve(frame, names, key, required=key in ("surface", "mesh_node")) for key, names in SURFACE_COLUMNS.items()}
         for _, row in frame.iterrows():
-            surface_id = _int(row[columns["surface"]])
+            surface_id = _neutral(backend_map, "surface", _int(row[columns["surface"]]))
             node = _int(row[columns["mesh_node"]])
             if surface_id is None or node is None:
                 continue
@@ -368,7 +385,7 @@ def parse_surface_results(deformations, forces, load_case_id):
     return results
 
 
-def parse_node_deformations(dataframe, load_case_id):
+def parse_node_deformations(dataframe, load_case_id, backend_map=None):
     """DataFrame of the nodes-global-deformations table -> {node_id: StructuralNodeResult}.
 
     Global vectors are converted from Dlubal's Z-down space back to the
@@ -378,7 +395,7 @@ def parse_node_deformations(dataframe, load_case_id):
 
     results = {}
     for _, row in dataframe.iterrows():
-        node_id = _int(row[columns["node"]])
+        node_id = _neutral(backend_map, "node", _int(row[columns["node"]]))
         if node_id is None:
             continue
 
@@ -395,7 +412,7 @@ def parse_node_deformations(dataframe, load_case_id):
     return results
 
 
-def parse_support_forces(dataframe, load_case_id, node_results=None):
+def parse_support_forces(dataframe, load_case_id, node_results=None, backend_map=None):
     """DataFrame of the nodes-support-forces table, merged into node results.
 
     Returns {node_id: StructuralNodeResult}; existing entries from
@@ -405,7 +422,7 @@ def parse_support_forces(dataframe, load_case_id, node_results=None):
     results = dict(node_results or {})
 
     for _, row in dataframe.iterrows():
-        node_id = _int(row[columns["node"]])
+        node_id = _neutral(backend_map, "node", _int(row[columns["node"]]))
         if node_id is None:
             continue
 

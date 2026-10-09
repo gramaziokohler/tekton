@@ -10,11 +10,9 @@ name or enum fails here rather than in a live session on Windows.
 
 import pytest
 
-from compas.geometry import Point
 from compas.geometry import Vector
 
 from compas_timber_fea.core.model import StructuralLineSupport
-from compas_timber_fea.core.model import StructuralNode
 from compas_timber_fea.core.model import StructuralSurface
 from compas_timber_fea.core.model import StructuralSurfaceLoad
 
@@ -116,7 +114,8 @@ def test_surface_load_numbers_do_not_collide_with_other_loads(loads):
     surface = loads.map_surface_load(
         StructuralSurfaceLoad(id=1, surface_id=1, load_case_id=1, pressure=Vector(0, 0, -1)))
 
-    numbers = [p.no for p in list(point) + list(surface)]
+    # map_point_load returns one object, map_surface_load a list.
+    numbers = [point.no] + [p.no for p in surface]
     assert len(numbers) == len(set(numbers))
 
 

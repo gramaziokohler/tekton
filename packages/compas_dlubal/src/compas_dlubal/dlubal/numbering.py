@@ -34,6 +34,55 @@ def map_path_for(model_path, backend="rfem"):
     return "{}.{}.json".format(root, backend)
 
 
+class Numbering:
+    """Translates neutral ids into RFEM object numbers, for the mappers.
+
+    A thin wrapper rather than passing the map around raw: every mapper needs
+    the same four or five lookups, and a mapper that forgets one writes a
+    reference to an object number that does not exist. Centralising it means
+    there is one place to check.
+
+    With `backend_map=None` it is the identity, which is what the tests of
+    individual mappers use and what any caller that does not care about
+    incremental pushes gets.
+    """
+
+    def __init__(self, backend_map=None):
+        self.map = backend_map
+
+    def _at(self, category, neutral_id):
+        if self.map is None or neutral_id is None:
+            return neutral_id
+        return self.map.number_for(category, neutral_id)
+
+    def node(self, neutral_id):
+        return self._at("node", neutral_id)
+
+    def nodes(self, neutral_ids):
+        return [self.node(i) for i in neutral_ids or []]
+
+    def member(self, neutral_id):
+        return self._at("member", neutral_id)
+
+    def surface(self, neutral_id):
+        return self._at("surface", neutral_id)
+
+    def support(self, neutral_id):
+        return self._at("support", neutral_id)
+
+    def line_support(self, neutral_id):
+        return self._at("line_support", neutral_id)
+
+    def section(self, neutral_id):
+        return self._at("section", neutral_id)
+
+    def thickness(self, neutral_id):
+        return self._at("thickness", neutral_id)
+
+    def material(self, neutral_id):
+        return self._at("material", neutral_id)
+
+
 def number_model(model, backend_map):
     """Allocate a backend number for every object in `model`.
 

@@ -18,7 +18,7 @@ from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper
 class DlubalImporter:
     """Orchestrates the export from the neutral structural model to Dlubal via gRPC."""
     
-    def __init__(self, app_type="rfem", api_key=None, delete_all=False, design=False, service_class=1, mesh_size=None, **legacy):
+    def __init__(self, app_type="rfem", api_key=None, delete_all=False, design=False, service_class=1, mesh_size=None, map_path=None, **legacy):
         """
         Parameters
         ----------
@@ -47,6 +47,11 @@ class DlubalImporter:
         self.design = design
         self.service_class = service_class
         self.mesh_size = mesh_size
+        #: Where the neutral-id -> RFEM-number map is kept between sessions.
+        #: Without one the numbering still works, it just starts fresh every
+        #: push - which is fine while delete_all is the default.
+        self.map_path = map_path
+        self.backend_map = self._load_map()
         #: Filled by run() when design is on: what the add-on setup did.
         self.design_report = None
 
@@ -58,6 +63,16 @@ class DlubalImporter:
                 DeprecationWarning,
                 stacklevel=2,
             )
+
+    def _load_map(self):
+        """The numbering from a previous push, or a fresh one."""
+        from compas_dlubal.dlubal.backend_map_io import load_map
+
+        return load_map(self.map_path, self.app_type)
+
+    def _save_map(self):
+        if self.map_path:
+            self.backend_map.save(self.map_path)
 
     def _remove_zero_length_members(self, structural_model, tol=1e-6):
         nodes_by_id = {node.id: node for node in structural_model.nodes}
@@ -106,17 +121,33 @@ class DlubalImporter:
             # Collect node coordinates for the MemberMapper
             nodes_cache = {n.id: n.point for n in structural_model.nodes}
 
+            # Neutral ids are hashes over 2^31 (stable across edits); RFEM
+            # holds 999,999 objects per category. The numbering allocates
+            # dense numbers and remembers them, which is also what lets a
+            # later push update the engineer's objects instead of replacing
+            # them. Every mapper translates through the same one.
+            from compas_dlubal.dlubal.numbering import Numbering
+            from compas_dlubal.dlubal.numbering import number_model
+
+            number_model(structural_model, self.backend_map)
+            numbering = Numbering(self.backend_map)
+
             # Initialize Mappers (Software-specific)
-            node_mapper = NodeMapper(conn.api.structure_core)
+            node_mapper = NodeMapper(conn.api.structure_core, numbering=numbering)
             member_mapper = MemberMapper(
                 conn.api.structure_core,
                 nodes_cache=nodes_cache,
                 types_for_members=conn.api.types_for_members,
+                numbering=numbering,
             )
-            support_mapper = SupportMapper(conn.api.types_for_nodes)
-            load_mapper = LoadMapper(conn.api.loading, Loads=conn.api.loads)
+            support_mapper = SupportMapper(conn.api.types_for_nodes, numbering=numbering)
+            load_mapper = LoadMapper(conn.api.loading, Loads=conn.api.loads, numbering=numbering)
             thickness_mapper = ThicknessMapper(conn.api.structure_core)
-            surface_mapper = SurfaceMapper(conn.api.structure_core, types_for_lines=conn.api.types_for_lines)
+            surface_mapper = SurfaceMapper(
+                conn.api.structure_core,
+                types_for_lines=conn.api.types_for_lines,
+                numbering=numbering,
+            )
 
             # 3. Mapping from neutral -> Dlubal objects
             objects = []
@@ -158,6 +189,12 @@ class DlubalImporter:
             for su in structural_model.supports:
                 objects.append(support_mapper.map(su))
 
+            # Line supports come after the surfaces, because a support on a
+            # plate edge must reference the line the surface already made -
+            # a parallel line of its own would hold nothing.
+            for line_support in getattr(structural_model, "line_supports", None) or []:
+                objects.append(surface_mapper.map_line_support(line_support, objects))
+
             # Load cases, loads and combinations come from the neutral model, so
             # every backend applies the same loading.
             objects.extend(load_mapper.map_load_cases(structural_model.load_cases))
@@ -167,6 +204,9 @@ class DlubalImporter:
 
             for member_load in structural_model.member_loads:
                 objects.extend(load_mapper.map_member_load(member_load))
+
+            for surface_load in getattr(structural_model, "surface_loads", None) or []:
+                objects.extend(load_mapper.map_surface_load(surface_load))
 
             # A combination needs its design situation to exist first - and
             # activating the classification add-on creates no. 1 by itself,
@@ -183,6 +223,10 @@ class DlubalImporter:
             except Exception as e:
                 print(f"Export error: {e}")
                 raise
+
+            # Only once the push succeeded: a map naming objects that were
+            # never created would make the next push update nothing.
+            self._save_map()
 
             if self.mesh_size:
                 settings = conn.application.get_mesh_settings()

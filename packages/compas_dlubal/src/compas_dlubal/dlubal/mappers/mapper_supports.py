@@ -2,13 +2,16 @@ from compas_timber_fea.core.model import StructuralSupport
 
 class SupportMapper:
     """Konvertiert neutrale Auflager in Dlubal PB Objekte"""
-    def __init__(self, TFN):
+    def __init__(self, TFN, numbering=None):
         self.TFN = TFN
+        from compas_dlubal.dlubal.numbering import Numbering
+
+        self.numbering = numbering or Numbering()
 
     def map(self, support: StructuralSupport):
         return self.TFN.NodalSupport(
-            no=support.id,
-            nodes=support.nodes,
+            no=self.numbering.support(support.id),
+            nodes=self.numbering.nodes(support.nodes),
             name=support.name,
             spring_x=support.ux,
             spring_y=support.uy,

@@ -171,7 +171,11 @@ def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, dele
     log("Rechnen und Ergebnisse lesen fuer Lastfall/-faelle {} …".format(cases))
 
     started = time.time()
-    reader = DlubalResultReader(app_type=app_type, api_key=api_key)
+    # The same numbering the push used: RFEM reports its own object numbers,
+    # and without the map they would be read back as neutral ids - which they
+    # have not been since the ids became hashes.
+    reader = DlubalResultReader(app_type=app_type, api_key=api_key,
+                                backend_map=importer.backend_map)
     combinations = list(model.load_combinations or [])
     if combinations:
         log("  plus {} Kombination(en), von RFEM geloest: {}".format(
