@@ -29,10 +29,122 @@ def _saf_constraint(value, rigid_threshold=1e10):
     return 'Flexible', value
 
 
+class UnsupportedModel(Exception):
+    """The model holds something a SAF export would silently change.
+
+    Raised rather than returning False, because the caller's natural reaction
+    to False is to look for a file that is not there - while the real problem
+    is that writing one would have been wrong.
+    """
+
+
+class FidelityReport:
+    """What a SAF export would drop, split by whether it changes the answer."""
+
+    def __init__(self):
+        #: Losses that make the exported model a *different structure*.
+        self.refuses = []
+        #: Losses that make it an *emptier* one - visible to whoever opens it.
+        self.warnings = []
+
+    def describe(self):
+        lines = []
+        if self.refuses:
+            lines.append("This model cannot be written to SAF without changing it:")
+            lines.extend("  - {}".format(reason) for reason in self.refuses)
+            lines.append(
+                "Use the RFEM or OpenSees backend instead, which carry these. "
+                "To export the geometry anyway, knowing the rest is missing, "
+                "pass allow_loss=True."
+            )
+        if self.warnings:
+            lines.append("The SAF export does not carry:")
+            lines.extend("  - {}".format(warning) for warning in self.warnings)
+        return "\n".join(lines)
+
+
+def fidelity_report(model):
+    """What an export of `model` would lose.
+
+    The split is by consequence, not by effort. A released member end that
+    arrives rigid is a **wrong** answer in a file that looks right - nobody
+    opening it has any way to notice. A missing load leaves an obviously empty
+    load case, which the engineer sees immediately. So the first refuses and
+    the second warns.
+    """
+    report = FidelityReport()
+
+    released = [
+        member.id for member in model.members
+        if member.release_start is not None or member.release_end is not None
+    ]
+    if released:
+        report.refuses.append(
+            "{} member(s) carry a release ({}); SAF export writes no member hinges, "
+            "so they would arrive rigid".format(
+                len(released), ", ".join(str(i) for i in released[:5])
+                + (" ..." if len(released) > 5 else ""))
+        )
+
+    surfaces = getattr(model, "surfaces", None) or []
+    if surfaces:
+        report.refuses.append(
+            "{} surface(s); SAF export writes no surface sheet, so the plates "
+            "would be missing entirely".format(len(surfaces))
+        )
+
+    line_supports = getattr(model, "line_supports", None) or []
+    if line_supports:
+        report.refuses.append(
+            "{} line support(s); SAF export writes point supports only, so the "
+            "model would arrive unsupported along those edges".format(len(line_supports))
+        )
+
+    loads = (
+        len(getattr(model, "point_loads", None) or [])
+        + len(getattr(model, "member_loads", None) or [])
+        + len(getattr(model, "surface_loads", None) or [])
+    )
+    if loads:
+        report.warnings.append(
+            "{} load(s) - load cases are written, the loads in them are not".format(loads)
+        )
+
+    if getattr(model, "load_combinations", None):
+        report.warnings.append(
+            "{} load combination(s) - no combination sheet is written".format(
+                len(model.load_combinations))
+        )
+
+    # Hardcoded in the cross-section sheet, so it applies to every export.
+    report.warnings.append("torsional stiffness - 'It' is written as 0.0 for every section")
+
+    return report
+
+
 class SAFExporter(BaseExporter):
-    """Exporter für das Structural Analysis Format (SAF) mittels Excel (.xlsx)."""
-    
+    """Exporter für das Structural Analysis Format (SAF) mittels Excel (.xlsx).
+
+    The export is lossy, and deliberately noisy about it: see
+    :func:`fidelity_report`. Losses that would change the structure raise
+    :class:`UnsupportedModel` unless ``allow_loss`` is set.
+    """
+
+    def __init__(self, model, allow_loss=False):
+        super().__init__(model)
+        #: Write the file even when something structural would be lost.
+        self.allow_loss = allow_loss
+        #: Populated by :meth:`export`, so a caller can show the losses rather
+        #: than relying on a console nobody is reading.
+        self.report = None
+
     def export(self, filepath: str):
+        self.report = fidelity_report(self.model)
+        if self.report.refuses and not self.allow_loss:
+            raise UnsupportedModel(self.report.describe())
+        if self.report.refuses or self.report.warnings:
+            print(self.report.describe())
+
         print(f"Starte SAF-Export nach: {filepath}")
         
         # Determine model name from filename (standard SAF behavior)

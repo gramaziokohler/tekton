@@ -102,7 +102,19 @@ def run_saf(model, out_path, model_name):
         target = os.path.splitext(target)[0] + ".xlsx"
 
     log("SAF-Export nach {}".format(target))
-    SAFExporter(model).export(target)
+    from compas_saf.exporter.saf import UnsupportedModel
+
+    exporter = SAFExporter(model)
+    try:
+        exporter.export(target)
+    except UnsupportedModel as error:
+        # A SAF file that drops releases or surfaces looks right and is a
+        # different structure. Say what and why, rather than writing it.
+        log(str(error))
+        raise
+    if exporter.report and exporter.report.warnings:
+        for warning in exporter.report.warnings:
+            log("SAF does not carry: {}".format(warning))
     log("SAF-Datei geschrieben.")
     return None
 
