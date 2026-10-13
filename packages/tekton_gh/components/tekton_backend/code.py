@@ -30,6 +30,60 @@ def _warn(message):
         Grasshopper.Kernel.GH_RuntimeMessageLevel.Warning, message
     )
 
+def _repo_candidates(explicit):
+    """Where to look for the monorepo, cheapest and most certain first.
+
+    Only `isdir` calls - never a filesystem search, this runs on every solve.
+    The document guess is what makes a definition stored inside the repo work
+    with nothing configured; the cache file is what makes a path typed in here
+    survive a Rhino restart. Mirrors tekton_gh.env.discover_repo_root, which
+    cannot be imported yet - finding the repo is what makes it importable.
+    """
+    yield explicit
+    yield os.environ.get("TEKTON_REPO")
+    try:
+        document = ghenv.Component.OnPingDocument()  # type: ignore # noqa: F821
+        current = os.path.dirname(document.FilePath) if document and document.FilePath else None
+        for _ in range(8):
+            if not current:
+                break
+            yield current
+            parent = os.path.dirname(current)
+            current = None if parent == current else parent
+    except Exception:
+        pass
+    try:
+        with open(os.path.join(os.path.expanduser("~"), ".tekton", "repo-root")) as handle:
+            yield handle.read()
+    except Exception:
+        pass
+    for guess in ("~/Documents/GitHub/tekton", "~/Documents/git/tekton", "~/git/tekton",
+                  "~/GitHub/tekton", "~/Developer/tekton", "~/src/tekton", "~/tekton",
+                  "~/Documents/tekton", "~/Desktop/tekton"):
+        yield guess
+
+
+def _remember_repo(root):
+    """Write the root down so the next Rhino session finds it by itself."""
+    try:
+        directory = os.path.join(os.path.expanduser("~"), ".tekton")
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
+        with open(os.path.join(directory, "repo-root"), "w") as handle:
+            handle.write(root)
+    except Exception:
+        pass
+
+
+def _find_repo(explicit):
+    """First candidate that looks like the monorepo, or None."""
+    for candidate in _repo_candidates(explicit):
+        candidate = str(candidate).strip() if candidate else ""
+        if candidate and os.path.isdir(os.path.join(os.path.expanduser(candidate), "packages")):
+            return os.path.expanduser(candidate)
+    return None
+
+
 # --------------------- INPUTS ---------------------
 backend: str  # type: ignore
 api_key: str  # type: ignore
@@ -43,7 +97,7 @@ mesh_size: float  # type: ignore
 
 VALID = ("rfem", "rstab", "saf", "opensees")
 try:
-    _gh_src = os.path.join(os.path.expanduser(repo or os.environ.get("TEKTON_REPO", "")), "packages", "tekton_gh", "src")
+    _gh_src = os.path.join(_find_repo(repo) or "", "packages", "tekton_gh", "src")
     if os.path.isdir(_gh_src) and _gh_src not in sys.path:
         sys.path.insert(0, _gh_src)
     from tekton_gh.rhino_io import attach_value_list
@@ -55,18 +109,17 @@ if kind not in VALID:
     _warn("Unknown backend '{}'. Allowed: {}.".format(kind, ", ".join(VALID)))
     kind = "rfem"
 
-root = None
-for candidate in (repo, os.environ.get("TEKTON_REPO")):
-    if candidate and os.path.isdir(os.path.join(os.path.expanduser(candidate), "packages")):
-        root = os.path.expanduser(candidate)
-        break
+root = _find_repo(repo)
 
 if root is None:
     _warn("Repo not found - TektonRun will fail. See TektonInfo.")
 else:
     # Deposit it for the remaining components (most have no repo input of
-    # their own).
+    # their own), and write it down: a path typed in here is then found
+    # again after a Rhino restart, and on the next definition, without the
+    # user wiring it a second time.
     os.environ["TEKTON_REPO"] = root
+    _remember_repo(root)
     venv = os.path.join(root, ".venv", "bin", "python")
     if not os.path.isfile(venv):
         venv = os.path.join(root, ".venv", "Scripts", "python.exe")
@@ -130,7 +183,7 @@ backend = BackendConfig(kind, root, api_key or None, filepath or None, bool(desi
                        float(mesh_size) if mesh_size else None, int(port) if port else None)
 
 print("Backend: {}".format(kind))
-print("Repo: {}".format(root or "NOT FOUND"))
+print("Repo: {}{}".format(root or "NOT FOUND", "" if repo or not root else "  (found, not wired)"))
 print("API key: {}".format(key_source))
 if kind in ("rfem", "rstab"):
     print("Port: {}".format(port if port else "9000-9003 (probed)"))
