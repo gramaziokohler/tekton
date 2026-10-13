@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "1 | Author",
     "description": "Load combinations, generated or by hand. With 'generate' on, the EN 1990 combinations for the wired load cases are built: ULS 6.10 with every variable action leading once and the others entering by psi_0, plus SLS characteristic (6.14b) and quasi-permanent (6.16b) for deflection and creep. The psi factors come from the action category on each load case. Without 'generate', give factors parallel to load_cases and it builds that one combination. The factors are EN 1990 recommended values, NOT checked by an engineer and not a national annex - see docs/discussion/work-packages.md.",
-    "exposure": 2,
+    "exposure": 8,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000007",
     "ghpython": {
         "marshalGuids": true,

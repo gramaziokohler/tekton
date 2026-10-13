@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "1 | Author",
     "description": "Point load at a location. On application it is assigned to the nearest node of the analysis model - so the assignment happens after translating, because only then do nodes exist.",
-    "exposure": 2,
+    "exposure": 16,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000005",
     "ghpython": {
         "marshalGuids": true,

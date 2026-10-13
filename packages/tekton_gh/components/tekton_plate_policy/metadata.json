@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "1 | Author",
     "description": "How plate edges are coupled to each other (hinged edge vs. continuous). The counterpart to the joint policy for the plate path.",
-    "exposure": 2,
+    "exposure": 32,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000009",
     "ghpython": {
         "marshalGuids": true,

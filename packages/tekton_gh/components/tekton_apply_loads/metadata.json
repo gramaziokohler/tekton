@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "2 | Translate",
     "description": "Applies the authored loads to the translated analysis model. Has to run AFTER TektonTranslate: point loads need nodes, line loads need the members a beam was split into. Neither exists before translating.",
-    "exposure": 2,
+    "exposure": 4,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000020",
     "ghpython": {
         "marshalGuids": true,
@@ -27,7 +27,7 @@
             {
                 "name": "loads",
                 "nickname": "loads",
-                "description": "From TektonPointLoad / TektonMemberLoad.",
+                "description": "From TektonPointLoad / TektonMemberLoad / TektonAreaLoad / TektonSurfaceLoad.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,

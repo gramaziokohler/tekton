@@ -10,8 +10,9 @@ arrows with a bar), moments as rings; support reactions in blue once the
 model carries results.
 
 Everything comes out as vertex-coloured meshes, so the picture is coloured
-without a Custom Preview; labels are text dots. The beams themselves are
-drawn by the component (SDK mode, `DrawViewportMeshes`) with `opacity`, so
+without a Custom Preview; labels are text dots, drawn only with `badges` on.
+The beams themselves are drawn by the component (SDK mode,
+`DrawViewportMeshes`) with `opacity`, so
 the connections inside the timber stay visible; the `elements` output still
 carries the solid meshes for anything downstream. What to draw and where is
 decided in `tekton_gh.model_view` (pure, tested); this script only builds
@@ -123,7 +124,7 @@ def _warn(message):
 
 
 class TektonDisplay(Grasshopper.Kernel.GH_ScriptInstance):
-    def RunScript(self, structural, show, geometry, load_case, scale, load_scale, opacity):
+    def RunScript(self, structural, show, geometry, load_case, scale, load_scale, opacity, badges):
         elements = []
         members = []
         connections = []
@@ -370,6 +371,11 @@ class TektonDisplay(Grasshopper.Kernel.GH_ScriptInstance):
 
         for line in legend:
             print(line)
+
+        # The text dots - support types, load values - are off unless asked
+        # for: on a real model there are hundreds, and they bury the picture.
+        if not badges:
+            labels = []
 
         # The beams: drawn here, not by Grasshopper - see DrawViewportMeshes.
         alpha = 0.35 if opacity is None else max(0.0, min(1.0, float(opacity)))

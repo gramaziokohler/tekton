@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "4 | Results",
     "description": "Deformed shape and colour by result value: system lines through the deformed stations, the sections swept along them as meshes with a colour per station, and one colour per member. Values above the upper bound turn hard red - an exceedance should stand out, not fade away.",
-    "exposure": 2,
+    "exposure": 4,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000016",
     "ghpython": {
         "marshalGuids": true,

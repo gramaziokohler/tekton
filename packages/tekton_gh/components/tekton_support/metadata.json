@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "1 | Author",
     "description": "Mark support points on beams. Writes beam.attributes['support_points'] - the only channel the translator reads today. The points have to lie on the beam axis (tolerance 1e-4 in model units).",
-    "exposure": 2,
+    "exposure": 4,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000003",
     "ghpython": {
         "marshalGuids": true,

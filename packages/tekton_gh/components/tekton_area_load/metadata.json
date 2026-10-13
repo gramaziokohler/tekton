@@ -1,0 +1,81 @@
+{
+    "name": "Tekton Area Load",
+    "nickname": "TALoad",
+    "category": "Tekton",
+    "subcategory": "1 | Author",
+    "description": "Pressure on a beam grid, in kN/m2 - for roofs and floors framed with beams and no plates. The fields between the horizontal members of one level take the pressure; TektonApplyLoads hands each field's load to the members around it (45-degree rule for rectangles, centroid rule otherwise). Regions are closed curves tested in plan, even-odd: outline plus inner curve is the ring between. On plates use Surface Load.",
+    "exposure": 16,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000030",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "regions",
+                "nickname": "regions",
+                "description": "Closed curves; a field is loaded when its centre lies inside (even-odd, in plan). Empty = the whole level.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "list",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "curve",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "pressure",
+                "nickname": "pressure",
+                "description": "Area load [kN/m2]. Negative z is downward.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "vector",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "load_case",
+                "nickname": "load_case",
+                "description": "Load case from TektonLoadCase.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "ghdoc",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "level",
+                "nickname": "level",
+                "description": "z of the beam grid (document units). Empty = the highest level.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "load",
+                "nickname": "load",
+                "description": "Area load for TektonApplyLoads",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

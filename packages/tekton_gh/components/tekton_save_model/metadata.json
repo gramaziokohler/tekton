@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "5 | IO",
     "description": "Writes the neutral model as JSON. That is also the handover format for engineers: traceable, versionable, open to discussion - including the assumptions report.",
-    "exposure": 2,
+    "exposure": 4,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000018",
     "ghpython": {
         "marshalGuids": true,

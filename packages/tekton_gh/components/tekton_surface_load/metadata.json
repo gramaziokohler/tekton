@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "1 | Author",
     "description": "Pressure on plates, in kN/m2. Like Member Load the assignment goes through the element GUID, because which surfaces a plate becomes is decided during idealisation. The load belongs to the plate, not to its mesh: how finely a backend tessellates is its own business, and the pressure survives a change of mesh density unchanged.",
-    "exposure": 2,
+    "exposure": 16,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000028",
     "ghpython": {
         "marshalGuids": true,

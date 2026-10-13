@@ -35,6 +35,10 @@ SUB_RUN = "3 | Run"
 SUB_RESULTS = "4 | Results"
 SUB_IO = "5 | IO"
 
+# Sections inside a group: Grasshopper draws a separator between exposure
+# levels. Same group, same level = same section.
+SECTION_1, SECTION_2, SECTION_3, SECTION_4, SECTION_5 = 2, 4, 8, 16, 32
+
 
 def p(name, hint="ghdoc", access="item", optional=True, desc="", nickname=None):
     """Input parameter definition (shorthand)."""
@@ -78,6 +82,7 @@ COMPONENTS = [
         name="Tekton Info",
         nickname="TInfo",
         sub=SUB_SETUP,
+        exposure=SECTION_1,
         description=(
             "Status report of the Tekton environment: Python version, compas_timber version, "
             "whether compas_timber.structural is present, whether the repo and the worker venv "
@@ -94,6 +99,7 @@ COMPONENTS = [
         name="Tekton Upgrade",
         nickname="TUpgrade",
         sub=SUB_SETUP,
+        exposure=SECTION_1,
         description=(
             "Brings every Tekton component in this definition up to date with one button "
             "press. A component you placed keeps the script it was placed with, even when "
@@ -115,6 +121,7 @@ COMPONENTS = [
         name="Tekton Material",
         nickname="TMat",
         sub=SUB_AUTHOR,
+        exposure=SECTION_1,
         description=(
             "Define a material, and optionally assign it to elements. Without 'elements' it "
             "returns a material for TektonTranslate, which then applies to the whole model. "
@@ -138,6 +145,7 @@ COMPONENTS = [
         name="Tekton Material Library",
         nickname="TMatLib",
         sub=SUB_AUTHOR,
+        exposure=SECTION_1,
         description=(
             "Pick a material from the library. On placement it attaches its own drop-down "
             "with all grades - no typing, no typos. Without a selection it lists what is "
@@ -158,6 +166,7 @@ COMPONENTS = [
         name="Tekton Support",
         nickname="TSup",
         sub=SUB_AUTHOR,
+        exposure=SECTION_2,
         description=(
             "Mark support points on beams. Writes beam.attributes['support_points'] - the only "
             "channel the translator reads today. The points have to lie on the beam axis "
@@ -181,6 +190,7 @@ COMPONENTS = [
         name="Tekton Load Case",
         nickname="TCase",
         sub=SUB_AUTHOR,
+        exposure=SECTION_3,
         description=(
             "Define a load case. Load cases are the containers that loads and combinations "
             "refer to, and the action category is what makes a combination possible: it "
@@ -203,6 +213,7 @@ COMPONENTS = [
         name="Tekton Point Load",
         nickname="TPLoad",
         sub=SUB_AUTHOR,
+        exposure=SECTION_4,
         description=(
             "Point load at a location. On application it is assigned to the nearest node of "
             "the analysis model - so the assignment happens after translating, because only "
@@ -222,6 +233,7 @@ COMPONENTS = [
         name="Tekton Member Load",
         nickname="TMLoad",
         sub=SUB_AUTHOR,
+        exposure=SECTION_4,
         description=(
             "Line load on beams. The assignment goes through the element GUID, not through "
             "member numbers - one physical beam is split into several members when it is "
@@ -231,10 +243,33 @@ COMPONENTS = [
             p("beams", access="list", desc="Beams (COMPAS Timber) or their GUIDs."),
             p("force", "vector", desc="Line load [kN/m]."),
             p("load_case", desc="Load case from TektonLoadCase."),
-            p("start", "float", desc="Relative start 0..1. Default 0."),
-            p("end", "float", desc="Relative end 0..1. Default 1."),
+            p("start", "float", desc="Relative start 0..1 along the whole beam. Default 0."),
+            p("end", "float", desc="Relative end 0..1 along the whole beam. Default 1."),
         ],
         outputs=[o("load", "Line load for TektonApplyLoads")],
+    ),
+    dict(
+        folder="tekton_area_load",
+        uid=30,
+        name="Tekton Area Load",
+        nickname="TALoad",
+        sub=SUB_AUTHOR,
+        exposure=SECTION_4,
+        description=(
+            "Pressure on a beam grid, in kN/m2 - for roofs and floors framed with beams and no "
+            "plates. The fields between the horizontal members of one level take the pressure; "
+            "TektonApplyLoads hands each field's load to the members around it (45-degree rule "
+            "for rectangles, centroid rule otherwise). Regions are closed curves tested in "
+            "plan, even-odd: outline plus inner curve is the ring between. On plates use "
+            "Surface Load."
+        ),
+        inputs=[
+            p("regions", "curve", access="list", desc="Closed curves; a field is loaded when its centre lies inside (even-odd, in plan). Empty = the whole level."),
+            p("pressure", "vector", desc="Area load [kN/m2]. Negative z is downward.", optional=False),
+            p("load_case", desc="Load case from TektonLoadCase."),
+            p("level", "float", desc="z of the beam grid (document units). Empty = the highest level."),
+        ],
+        outputs=[o("load", "Area load for TektonApplyLoads")],
     ),
     dict(
         folder="tekton_surface_load",
@@ -242,6 +277,7 @@ COMPONENTS = [
         name="Tekton Surface Load",
         nickname="TSLoad",
         sub=SUB_AUTHOR,
+        exposure=SECTION_4,
         description=(
             "Pressure on plates, in kN/m2. Like Member Load the assignment goes through the "
             "element GUID, because which surfaces a plate becomes is decided during "
@@ -263,6 +299,7 @@ COMPONENTS = [
         name="Tekton Load Combination",
         nickname="TComb",
         sub=SUB_AUTHOR,
+        exposure=SECTION_3,
         description=(
             "Load combinations, generated or by hand. With 'generate' on, the EN 1990 "
             "combinations for the wired load cases are built: ULS 6.10 with every variable "
@@ -271,7 +308,7 @@ COMPONENTS = [
             "come from the action category on each load case. Without 'generate', give "
             "factors parallel to load_cases and it builds that one combination. "
             "The factors are EN 1990 recommended values, NOT checked by an engineer and "
-            "not a national annex."
+            "not a national annex - see docs/discussion/work-packages.md."
         ),
         inputs=[
             p("name", "str", desc="Name, e.g. 'ULS 1'. Only for a manual combination; generated ones name themselves."),
@@ -292,6 +329,7 @@ COMPONENTS = [
         name="Tekton Joint Policy",
         nickname="TPolicy",
         sub=SUB_AUTHOR,
+        exposure=SECTION_5,
         description=(
             "Rule for how timber joints are idealised mechanically (pinned, rigid, spring). "
             "That is an engineering decision, not geometry - so it is explicit, overridable "
@@ -310,6 +348,7 @@ COMPONENTS = [
         name="Tekton Plate Policy",
         nickname="TPlatePol",
         sub=SUB_AUTHOR,
+        exposure=SECTION_5,
         description=(
             "How plate edges are coupled to each other (hinged edge vs. continuous). "
             "The counterpart to the joint policy for the plate path."
@@ -327,6 +366,7 @@ COMPONENTS = [
         name="Tekton Apply Loads",
         nickname="TApply",
         sub=SUB_TRANSLATE,
+        exposure=SECTION_2,
         description=(
             "Applies the authored loads to the translated analysis model. Has to run AFTER "
             "TektonTranslate: point loads need nodes, line loads need the members a beam was "
@@ -334,7 +374,7 @@ COMPONENTS = [
         ),
         inputs=[
             p("structural", desc="StructuralModel from TektonTranslate.", optional=False),
-            p("loads", access="list", desc="From TektonPointLoad / TektonMemberLoad."),
+            p("loads", access="list", desc="From TektonPointLoad / TektonMemberLoad / TektonAreaLoad / TektonSurfaceLoad."),
             p("combinations", access="list", desc="From TektonLoadCombination."),
             p("tolerance", "float", desc="Search radius point load -> node [m]. Default 0.01."),
         ],
@@ -349,6 +389,7 @@ COMPONENTS = [
         name="Tekton Support Nodes",
         nickname="TSupN",
         sub=SUB_TRANSLATE,
+        exposure=SECTION_2,
         description=(
             "Add supports directly to nodes of the analysis model, selected by a plane or by "
             "proximity to points. Needed for plates: the translator reads support_points off "
@@ -375,6 +416,7 @@ COMPONENTS = [
         name="Tekton Translate",
         nickname="TTrans",
         sub=SUB_TRANSLATE,
+        exposure=SECTION_1,
         description=(
             "The core of the bridge: TimberModel -> neutral StructuralModel. Produces system "
             "lines, nodes, cross-sections, releases, supports. The 'report' output lists every "
@@ -402,6 +444,7 @@ COMPONENTS = [
         name="Tekton Preflight",
         nickname="TCheck",
         sub=SUB_TRANSLATE,
+        exposure=SECTION_1,
         description=(
             "Checks the analysis model before calculating: supports present? model connected? "
             "cross-sections plausible? Otherwise a model without supports goes into the "
@@ -423,6 +466,7 @@ COMPONENTS = [
         name="Tekton Backend",
         nickname="TBackend",
         sub=SUB_RUN,
+        exposure=SECTION_1,
         description=(
             "Bundles the backend and its connection data. The API key does NOT belong in the "
             "GH file - that file gets emailed around. Leave it empty (the worker reads "
@@ -445,6 +489,7 @@ COMPONENTS = [
         name="Tekton Run",
         nickname="TRun",
         sub=SUB_RUN,
+        exposure=SECTION_1,
         description=(
             "Send the model to the backend, calculate, fetch the results back. "
             "Runs in a separate process (backends need Python >= 3.10). "
@@ -472,6 +517,7 @@ COMPONENTS = [
         name="Tekton Results",
         nickname="TRes",
         sub=SUB_RESULTS,
+        exposure=SECTION_1,
         description=(
             "Results per physical beam, straight off the StructuralModel: one envelope value "
             "per beam, the samples along each beam as a tree (t on the beam axis, not on the "
@@ -501,6 +547,7 @@ COMPONENTS = [
         name="Tekton Attach Results",
         nickname="TAttach",
         sub=SUB_RESULTS,
+        exposure=SECTION_1,
         description=(
             "Writes the results back onto the timber model "
             "(beam.attributes['analysis']) - with their provenance: which model state, "
@@ -519,6 +566,7 @@ COMPONENTS = [
         name="Tekton Visualize",
         nickname="TViz",
         sub=SUB_RESULTS,
+        exposure=SECTION_2,
         description=(
             "Deformed shape and colour by result value: system lines through the deformed "
             "stations, the sections swept along them as meshes with a colour per station, "
@@ -539,6 +587,8 @@ COMPONENTS = [
             o("colours", "Colour per member (its maximum)"),
             o("legend", "Labels of the scale"),
             o("deformed", "Deformed system lines, one polyline per member"),
+            o("facet_edges", "Facet edges of the deformed plate meshes: the mesh edges that lie on a plate boundary, i.e. the folds the structure is made of. Wire to a Custom Preview and give them their own colour and weight."),
+            o("mesh_edges", "Tessellation edges: the interior mesh edges of each plate, the mesher's discretisation. Draw these thin and faint, or not at all."),
             o("meshes", "Sections swept along the deformed lines, vertex-coloured by quantity"),
             o("values", "Maximum of the quantity per member, same order as the members"),
         ],
@@ -549,6 +599,7 @@ COMPONENTS = [
         name="Tekton Inspect",
         nickname="TInspect",
         sub=SUB_RESULTS,
+        exposure=SECTION_2,
         description=(
             "Shows the analysis model itself: system lines, nodes, support symbols, "
             "release markers. For checking the idealisation before calculating - kept "
@@ -573,6 +624,7 @@ COMPONENTS = [
         name="Tekton Display",
         nickname="TDisplay",
         sub=SUB_RESULTS,
+        exposure=SECTION_2,
         description=(
             "The analysis model as a picture: elements as their sections, connections "
             "highlighted (rigid links dark, couplings magenta with white hinge spheres), "
@@ -591,6 +643,7 @@ COMPONENTS = [
             p("scale", "float", desc="Symbol size in metres. Default 0.15."),
             p("load_scale", "float", desc="Arrow length per kN in metres. Default 0.25."),
             p("opacity", "float", desc="Opacity of the beams, 0..1. Default 0.35 - the connections inside stay visible."),
+            p("badges", "bool", desc="Text dots with support types and load values. Default off - on a real model there are hundreds."),
         ],
         outputs=[
             o("elements", "Section meshes of the beam members (drawn by the component with 'opacity'; solid meshes for downstream use)"),
@@ -609,6 +662,7 @@ COMPONENTS = [
         name="Tekton Summary",
         nickname="TSummary",
         sub=SUB_RESULTS,
+        exposure=SECTION_1,
         description=(
             "The analysis summary as a readable report: maximum and mean displacement with "
             "the node they sit on, support reactions with an equilibrium check against the "
@@ -644,6 +698,7 @@ COMPONENTS = [
         name="Tekton Save Model",
         nickname="TSave",
         sub=SUB_IO,
+        exposure=SECTION_2,
         description=(
             "Writes the neutral model as JSON. That is also the handover format for "
             "engineers: traceable, versionable, open to discussion - including the "
@@ -663,6 +718,7 @@ COMPONENTS = [
         name="Tekton Load Model",
         nickname="TLoad",
         sub=SUB_IO,
+        exposure=SECTION_2,
         description=(
             "Reads a neutral model (results included) from JSON back onto the canvas - "
             "for instance what the engineer sends back, or an earlier calculation run."
@@ -677,11 +733,33 @@ COMPONENTS = [
         ],
     ),
     dict(
+        folder="tekton_load_timber",
+        uid=29,
+        name="Tekton Load Timber",
+        nickname="TLoadTimber",
+        sub=SUB_IO,
+        exposure=SECTION_1,
+        description=(
+            "Reads a compas_timber model from JSON onto the canvas - the design model, "
+            "with its beams, plates and joints. Everything downstream starts from one. "
+            "For a neutral model (with results) use Tekton Load Model instead."
+        ),
+        inputs=[
+            p("filepath", "str", desc="Source file (.json), saved by COMPAS.", optional=False),
+            p("repo", "str", desc="Path to the monorepo."),
+        ],
+        outputs=[
+            o("model", "TimberModel"),
+            o("info", "Beams, plates, joints - and which unit the geometry looks like"),
+        ],
+    ),
+    dict(
         folder="tekton_to_timber",
         uid=23,
         name="Tekton To Timber",
         nickname="TToTimber",
         sub=SUB_IO,
+        exposure=SECTION_1,
         description=(
             "Rebuilds the TimberModel from a StructuralModel: beams from their segments, "
             "sections and orientation, with the original GUIDs, results attached as "
@@ -765,7 +843,7 @@ def main():
             "category": CATEGORY,
             "subcategory": spec["sub"],
             "description": spec["description"],
-            "exposure": 2,
+            "exposure": spec.get("exposure", SECTION_1),
             "instanceGuid": "7ec70000-0000-0000-0000-{:012d}".format(spec["uid"]),
             "ghpython": {
                 "marshalGuids": True,

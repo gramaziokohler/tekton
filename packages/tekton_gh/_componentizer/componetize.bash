@@ -16,6 +16,22 @@ if [ ! -f "$DOTNET" ]; then
     exit 1
 fi
 
+# If this produces nothing - exit 0, no new lines in componentizer.log, no
+# fresh .ghuser - the RhinoCode CLI is not executing scripts at all. Seen on
+# 2026-10-09 after a Rhino restart: `rhinocode list` showed the instance,
+# `script` returned 0 for every target including a three-line probe, and
+# -v printed nothing. Rhino itself was fine.
+#
+# The way through is the LAMCP bridge, which Rhino serves on port 8234 and
+# which runs code *inside* the Rhino process (verified: CPython 3.9.10, same
+# PID). POST the componentizer to it:
+#
+#   curl -X POST http://127.0.0.1:8234/exec -H 'Content-Type: application/json' \
+#        -d '{"code": "import runpy; runpy.run_path(r\"<abs path>/componentize_cpy.py\", run_name=\"__main__\")"}'
+#
+# Check the result the same way either route: the timestamp and size of
+# ghuser_build/*.ghuser. The log appends, so an old success at the tail
+# proves nothing.
 echo "Staring componentizer engine... (this might take a few seconds and run silently)"
 
 # Run the python script using Rhino's internal Python 3 engine

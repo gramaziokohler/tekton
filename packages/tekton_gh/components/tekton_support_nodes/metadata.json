@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "2 | Translate",
     "description": "Add supports directly to nodes of the analysis model, selected by a plane or by proximity to points. Needed for plates: the translator reads support_points off beams only, so a plate model reaches analysis unsupported - a mechanism. Runs after Translate, because nodes only exist from then on.",
-    "exposure": 2,
+    "exposure": 4,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000022",
     "ghpython": {
         "marshalGuids": true,

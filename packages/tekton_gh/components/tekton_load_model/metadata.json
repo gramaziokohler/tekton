@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "5 | IO",
     "description": "Reads a neutral model (results included) from JSON back onto the canvas - for instance what the engineer sends back, or an earlier calculation run.",
-    "exposure": 2,
+    "exposure": 4,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000019",
     "ghpython": {
         "marshalGuids": true,

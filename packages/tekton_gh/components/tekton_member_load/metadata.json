@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "1 | Author",
     "description": "Line load on beams. The assignment goes through the element GUID, not through member numbers - one physical beam is split into several members when it is idealised, and the load has to reach all of them.",
-    "exposure": 2,
+    "exposure": 16,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000006",
     "ghpython": {
         "marshalGuids": true,
@@ -55,7 +55,7 @@
             {
                 "name": "start",
                 "nickname": "start",
-                "description": "Relative start 0..1. Default 0.",
+                "description": "Relative start 0..1 along the whole beam. Default 0.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,
@@ -69,7 +69,7 @@
             {
                 "name": "end",
                 "nickname": "end",
-                "description": "Relative end 0..1. Default 1.",
+                "description": "Relative end 0..1 along the whole beam. Default 1.",
                 "optional": true,
                 "allowTreeAccess": true,
                 "showTypeHints": true,

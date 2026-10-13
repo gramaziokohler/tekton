@@ -22,6 +22,21 @@ def _warn(message):
         Grasshopper.Kernel.GH_RuntimeMessageLevel.Warning, message
     )
 
+class _Load(object):
+    """Carries the load description to TektonApplyLoads.
+
+    A bare dict does not survive the trip: Grasshopper unpacks it into its
+    keys, and a dict inside a list arrives as a .NET Dictionary. A plain
+    object goes through untouched - TektonApplyLoads reads `.spec`.
+    """
+
+    def __init__(self, spec):
+        self.spec = spec
+
+    def __repr__(self):
+        return "Tekton {} load, LC {}".format(self.spec.get("kind"), self.spec.get("load_case_id"))
+
+
 # --------------------- INPUTS ---------------------
 beams = beams  # type: ignore # noqa: F821
 force = force  # type: ignore # noqa: F821
@@ -51,3 +66,7 @@ else:
     }
     print("Line load {} kN/m on {} element(s), load case {}".format(
         [round(v, 3) for v in load["force"]], len(guids), load["load_case_id"]))
+
+# Handed over wrapped - see _Load.
+if load is not None:
+    load = _Load(load)

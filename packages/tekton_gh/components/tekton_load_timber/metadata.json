@@ -1,0 +1,61 @@
+{
+    "name": "Tekton Load Timber",
+    "nickname": "TLoadTimber",
+    "category": "Tekton",
+    "subcategory": "5 | IO",
+    "description": "Reads a compas_timber model from JSON onto the canvas - the design model, with its beams, plates and joints. Everything downstream starts from one. For a neutral model (with results) use Tekton Load Model instead.",
+    "exposure": 2,
+    "instanceGuid": "7ec70000-0000-0000-0000-000000000029",
+    "ghpython": {
+        "marshalGuids": true,
+        "iconDisplay": 0,
+        "inputParameters": [
+            {
+                "name": "filepath",
+                "nickname": "filepath",
+                "description": "Source file (.json), saved by COMPAS.",
+                "optional": false,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "repo",
+                "nickname": "repo",
+                "description": "Path to the monorepo.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "str",
+                "reverse": false,
+                "simplify": false
+            }
+        ],
+        "outputParameters": [
+            {
+                "name": "model",
+                "nickname": "model",
+                "description": "TimberModel",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            },
+            {
+                "name": "info",
+                "nickname": "info",
+                "description": "Beams, plates, joints - and which unit the geometry looks like",
+                "optional": false,
+                "sourceCount": 0,
+                "graft": false
+            }
+        ]
+    }
+}

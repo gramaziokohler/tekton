@@ -111,6 +111,12 @@ if structural is None:
     _warn("No StructuralModel connected.")
 else:
     _setup()
+    import copy
+
+    # Work on a copy. Grasshopper hands over the very object TektonTranslate
+    # holds; when only a load changes, this re-solves without Translate and
+    # would stack the loads onto those of the previous solve.
+    structural = copy.deepcopy(structural)
     from compas_timber_fea.core.model import StructuralMemberLoad, StructuralPointLoad, StructuralSurfaceLoad
 
     tol = 0.01 if tolerance is None else float(tolerance)
@@ -137,8 +143,13 @@ else:
     applied_points = 0
     applied_members = 0
     applied_surfaces = 0
+    applied_areas = 0
 
     for load in loads or []:
+        # The load components hand over a carrier with the dict in `.spec`
+        # (a bare dict would arrive unpacked into its keys); a plain dict,
+        # from a script, is taken as it is.
+        load = getattr(load, "spec", load)
         if not isinstance(load, dict):
             report.append("Skipped unknown load entry: {}".format(type(load).__name__))
             continue
@@ -175,28 +186,75 @@ else:
 
         elif load.get("kind") == "member":
             from compas.geometry import Vector
+            from compas_timber_fea.core.load_distribution import element_ranges, split_range
 
+            start = float(load.get("dist_start", 0.0))
+            end = float(load.get("dist_end", 1.0))
             hit = 0
             for element_id in load.get("element_ids", []):
                 member_ids = by_source.get(str(element_id), [])
                 if not member_ids:
                     report.append("Element {} has no members in the analysis model.".format(element_id))
                     continue
-                for member_id in member_ids:
+                # start/end are relative to the beam, but the beam is a chain
+                # of members now - map the stretch onto the pieces covering it.
+                if start <= 0.0 and end >= 1.0:
+                    pieces = [(member_id, 0.0, 1.0) for member_id in member_ids]
+                else:
+                    pieces = split_range(element_ranges(structural, member_ids), start, end)
+                for member_id, dist_start, dist_end in pieces:
                     structural.member_loads.append(
                         StructuralMemberLoad(
                             id=next_member_id,
                             member_id=member_id,
                             load_case_id=load.get("load_case_id", 1),
                             force=Vector(*load["force"]),
-                            dist_start=load.get("dist_start", 0.0),
-                            dist_end=load.get("dist_end", 1.0),
+                            dist_start=dist_start,
+                            dist_end=dist_end,
                         )
                     )
                     next_member_id += 1
                     hit += 1
             if hit:
                 applied_members += hit
+
+        elif load.get("kind") == "area":
+            from compas.geometry import Vector
+            from compas_timber_fea.core.load_distribution import distribute_area_load
+
+            regions = [[[c * to_meters for c in point] for point in polygon] for polygon in load.get("regions") or []]
+            level = load.get("level")
+            level = None if level is None else level * to_meters
+            line_loads, info = distribute_area_load(
+                structural, load["pressure"], regions=regions or None, level=level)
+            for member_id, force in sorted(line_loads.items()):
+                structural.member_loads.append(
+                    StructuralMemberLoad(
+                        id=next_member_id,
+                        member_id=member_id,
+                        load_case_id=load.get("load_case_id", 1),
+                        force=Vector(*force),
+                    )
+                )
+                next_member_id += 1
+            applied_members += len(line_loads)
+            applied_areas += 1
+            if info["level"] is None or not info["panels"]:
+                report.append(
+                    "Area load ({}): no closed fields of horizontal members found - NOT applied.".format(
+                        load.get("name") or "LC {}".format(load.get("load_case_id", 1))))
+            else:
+                report.append(
+                    "Area load {} kN/m2, LC {}: level z = {:.3f} m, {} of {} fields, {:.1f} m2, "
+                    "{:.1f} kN on {} members ({})".format(
+                        [round(v, 3) for v in load["pressure"]], load.get("load_case_id", 1),
+                        info["level"], info["panels_loaded"], info["panels"], info["area"],
+                        info["total"], info["members"],
+                        ", ".join("{} {}".format(n, rule) for rule, n in sorted(info["rules"].items())) or "-"))
+                if not info["panels_loaded"]:
+                    report.append("  The regions contain no field centre - check the curves (they are tested in plan).")
+                if info["pruned"]:
+                    report.append("  {} member(s) with a free end frame no field and carry nothing.".format(info["pruned"]))
 
         elif load.get("kind") == "surface":
             from compas.geometry import Vector
@@ -225,8 +283,9 @@ else:
     for combination in combinations or []:
         structural.load_combinations.append(combination)
 
-    report.insert(0, "{} point loads, {} member loads, {} area loads applied.".format(
-        applied_points, applied_members, applied_surfaces))
+    report.insert(0, "{} point loads, {} member loads, {} plate loads applied{}.".format(
+        applied_points, applied_members, applied_surfaces,
+        " ({} area load(s) on beam grids among the member loads)".format(applied_areas) if applied_areas else ""))
     if combinations:
         report.insert(1, "{} combination(s) taken over.".format(len(combinations)))
 

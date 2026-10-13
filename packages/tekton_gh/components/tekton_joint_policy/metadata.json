@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "1 | Author",
     "description": "Rule for how timber joints are idealised mechanically (pinned, rigid, spring). That is an engineering decision, not geometry - so it is explicit, overridable and documented in the assumptions report.",
-    "exposure": 2,
+    "exposure": 32,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000008",
     "ghpython": {
         "marshalGuids": true,

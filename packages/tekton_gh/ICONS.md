@@ -126,6 +126,14 @@ Line load on beams, kN/m.
 *Motif:* a row of equal-length downward arrows above a beam, with the
 connecting top line (the standard depiction of a uniform load).
 
+### Tekton Area Load (`TALoad`)
+Pressure in kN/m2 on a beam grid without plates; Apply Loads hands each
+field's load to the members around it.
+*Motif:* Surface Load's three arrows over the same oblique outline, but the
+outline is a **grid** (one line each way) instead of a closed plate - the pair
+Surface/Area Load differs exactly in what carries the pressure. Drawn
+2026-10-13; at 24px a finer grid turns to mush, so 2 x 2 fields it is.
+
 ### Tekton Load Combination (`TComb`)
 Combine load cases with partial safety factors.
 *Motif:* two or three arrows converging into one; or a Σ gesture. The

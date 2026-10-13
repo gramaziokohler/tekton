@@ -4,7 +4,7 @@
     "category": "Tekton",
     "subcategory": "4 | Results",
     "description": "Shows the analysis model itself: system lines, nodes, support symbols, release markers. For checking the idealisation before calculating - kept separate from the display of results.",
-    "exposure": 2,
+    "exposure": 4,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000017",
     "ghpython": {
         "marshalGuids": true,
