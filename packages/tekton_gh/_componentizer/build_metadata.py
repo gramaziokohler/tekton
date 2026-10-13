@@ -479,6 +479,7 @@ COMPONENTS = [
             p("repo", "str", desc="Path to the monorepo (that is where the worker venv lives)."),
             p("filepath", "str", desc="Only for 'saf': target path of the xlsx file."),
             p("design", "bool", desc="rfem only: run RFEM's timber design add-on and read its utilisation (EC5). Needs the add-on licence and, once per model, the combination-wizard standard group 'EN 1990 | Basis + Holz' set in the GUI."),
+            p("port", "int", desc="rfem/rstab: the gRPC port the application listens on. Empty: 9000-9003 are tried, which covers the usual case. RFEM gives its first running instance 9000, the next 9001 and so on, so pin this only when several are open or the API port was changed in Program Options."),
             p("mesh_size", "float", desc="opensees: target edge length for plate meshing, in metres. Default 0.5. Smaller is finer, slower and closer to converged; shared edges between plates are subdivided from the same value on both sides, so conformity holds at any setting. Ignored for other backends."),
         ],
         outputs=[o("backend", "Backend configuration for TektonRun")],

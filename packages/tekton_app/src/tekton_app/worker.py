@@ -143,7 +143,7 @@ def run_opensees(model, load_cases, calculate, mesh_target_length=None):
     return model
 
 
-def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, delete_all, design=False):
+def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, delete_all, design=False, port=None):
     """Modell nach RFEM/RSTAB schieben, rechnen, Ergebnisse zurueckholen.
 
     Mit ``design`` wird nach dem Push das Holzbemessungs-Add-on eingerichtet
@@ -153,7 +153,7 @@ def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, dele
     from compas_dlubal.dlubal.result_reader import DlubalResultReader
 
     log("Verbinde mit {} …".format(app_type.upper()))
-    importer = DlubalImporter(app_type=app_type, api_key=api_key, delete_all=delete_all, design=design)
+    importer = DlubalImporter(app_type=app_type, api_key=api_key, delete_all=delete_all, design=design, port=port)
 
     started = time.time()
     if not importer.run(model, model_name=model_name):
@@ -175,7 +175,7 @@ def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, dele
     # and without the map they would be read back as neutral ids - which they
     # have not been since the ids became hashes.
     reader = DlubalResultReader(app_type=app_type, api_key=api_key,
-                                backend_map=importer.backend_map)
+                                backend_map=importer.backend_map, port=port)
     combinations = list(model.load_combinations or [])
     if combinations:
         log("  plus {} Kombination(en), von RFEM geloest: {}".format(
@@ -216,6 +216,8 @@ def main(argv=None):
     parser.add_argument("--no-calculate", action="store_true", help="Nur uebertragen, nicht rechnen")
     parser.add_argument("--delete-all", action="store_true", help="Backend-Modell vor dem Push leeren")
     parser.add_argument("--design", action="store_true", help="rfem: Holzbemessungs-Add-on einrichten und Ausnutzung mitlesen")
+    parser.add_argument("--port", type=int, default=None,
+                        help="rfem/rstab: gRPC-Port der laufenden Anwendung. Ohne Angabe werden 9000-9003 probiert.")
     parser.add_argument("--mesh-size", type=float, default=None,
                         help="opensees: Zielkantenlaenge der Plattenvernetzung in Metern (Default 0.5)")
 
@@ -258,6 +260,7 @@ def main(argv=None):
             api_key=api_key,
             delete_all=args.delete_all,
             design=args.design and args.backend == "rfem",
+            port=args.port,
         )
 
     if result_model is not None:

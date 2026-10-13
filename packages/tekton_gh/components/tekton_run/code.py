@@ -103,6 +103,7 @@ else:
             api_key=api_key,
             calculate=True if calculate is None else bool(calculate),
             design=bool(_cfg("design", False)) and kind == "rfem",
+            port=_cfg("port", None) if kind in ("rfem", "rstab") else None,
             # Plate mesh density, opensees only. It changes how long a run
             # takes and how close it is to converged - see meshing.py.
             mesh_size=_cfg("mesh_size", None) if kind == "opensees" else None,

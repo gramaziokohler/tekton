@@ -36,6 +36,7 @@ api_key: str  # type: ignore
 repo: str  # type: ignore
 filepath: str  # type: ignore
 design: bool  # type: ignore
+port: int  # type: ignore
 mesh_size: float  # type: ignore
 
 # --------------------- SCRIPT ---------------------
@@ -112,24 +113,27 @@ class BackendConfig(object):
     single item.
     """
 
-    def __init__(self, backend, repo, api_key, filepath, design=False, mesh_size=None):
+    def __init__(self, backend, repo, api_key, filepath, design=False, mesh_size=None, port=None):
         self.backend = backend
         self.repo = repo
         self.api_key = api_key
         self.filepath = filepath
         self.design = design
         self.mesh_size = mesh_size
+        self.port = port
 
     def __repr__(self):
         return "Backend({}, repo={})".format(self.backend, self.repo)
 
 
 backend = BackendConfig(kind, root, api_key or None, filepath or None, bool(design),
-                       float(mesh_size) if mesh_size else None)
+                       float(mesh_size) if mesh_size else None, int(port) if port else None)
 
 print("Backend: {}".format(kind))
 print("Repo: {}".format(root or "NOT FOUND"))
 print("API key: {}".format(key_source))
+if kind in ("rfem", "rstab"):
+    print("Port: {}".format(port if port else "9000-9003 (probed)"))
 if kind == "saf" and not filepath:
     _warn("Backend 'saf' needs a filepath.")
 if kind == "opensees":

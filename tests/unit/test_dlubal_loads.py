@@ -133,3 +133,54 @@ def test_combinations_get_one_design_situation_per_type(mapper):
 
 def test_no_combinations_means_no_design_situations(mapper):
     assert mapper.map_design_situations([]) == []
+
+
+# --- action categories under the active standard ------------------------------
+
+def test_every_mapped_category_exists_in_the_api_enum():
+    """The names were probed live against RFEM; this guards them against an API update."""
+    from compas_dlubal.dlubal.mappers.mapper_loads import ACTION_CATEGORY_NAMES
+
+    enum_type = rfem.loading.LoadCase.DESCRIPTOR.fields_by_name["action_category"].enum_type
+    available = {value.name for value in enum_type.values}
+    missing = {key: name for key, name in ACTION_CATEGORY_NAMES.items() if name not in available}
+    assert not missing, missing
+
+
+def test_the_catalogue_categories_are_all_mapped():
+    """Every key the load catalogue can put on a load case must reach RFEM."""
+    from compas_timber_fea.core.load_catalogue import CATEGORIES
+    from compas_dlubal.dlubal.mappers.mapper_loads import ACTION_CATEGORY_NAMES
+
+    assert not set(CATEGORIES) - set(ACTION_CATEGORY_NAMES)
+
+
+def test_snow_is_the_en_1990_altitude_category(mapper):
+    """RFEM refuses SNOW_ACTION_FSN under EN 1990 - it is the SIA one (live, 2026-10-13)."""
+    cases = mapper.map_load_cases([
+        StructuralLoadCase(id=1, name="S", action_category="SNOW"),
+        StructuralLoadCase(id=2, name="S hoch", action_category="SNOW_HIGH"),
+    ])
+    enum_type = rfem.loading.LoadCase.DESCRIPTOR.fields_by_name["action_category"].enum_type
+    names = [enum_type.values_by_number[case.action_category].name for case in cases[1:]]
+    assert names == [
+        "ACTION_CATEGORY_SNOW_ICE_LOADS_H_LESS_OR_EQUAL_TO_1000_M_QS",
+        "ACTION_CATEGORY_SNOW_ICE_LOADS_H_GREATER_THAN_1000_M_QS",
+    ]
+
+
+def test_unspecified_variable_follows_the_catalogue_to_category_a(mapper):
+    """The catalogue borrows A's psi for it, so RFEM must see A - or the two disagree over one load case."""
+    case = mapper.map_load_cases([StructuralLoadCase(id=7, name="X", action_category="VARIABLE")])[1]
+
+    enum_type = rfem.loading.LoadCase.DESCRIPTOR.fields_by_name["action_category"].enum_type
+    assert enum_type.values_by_number[case.action_category].name.endswith("CATEGORY_A_DOMESTIC_RESIDENTIAL_AREAS_QI_A")
+    assert mapper.unmapped_categories == []
+
+
+def test_a_category_without_an_equivalent_is_left_unset_and_recorded(mapper):
+    """Sending an invalid value makes RFEM refuse the whole load case, so it is dropped and reported."""
+    case = mapper.map_load_cases([StructuralLoadCase(id=7, name="X", action_category="SEISMIC")])[1]
+
+    assert case.action_category == 0
+    assert mapper.unmapped_categories == [(7, "SEISMIC")]

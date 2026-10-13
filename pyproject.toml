@@ -21,6 +21,10 @@ dependencies = [
 dev = [
     "pytest >=7",
     "ruff",
+    # Builds the .ghuser components on Windows without a running Rhino: the
+    # componentizer only needs GH_IO.dll, which pythonnet loads directly.
+    # macOS has no such route and drives Rhino instead (see install.py).
+    "pythonnet >=3.0; sys_platform == 'win32'",
 ]
 
 [tool.uv.workspace]

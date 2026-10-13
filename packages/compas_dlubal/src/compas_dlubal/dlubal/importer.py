@@ -18,7 +18,7 @@ from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper
 class DlubalImporter:
     """Orchestrates the export from the neutral structural model to Dlubal via gRPC."""
     
-    def __init__(self, app_type="rfem", api_key=None, delete_all=False, design=False, service_class=1, mesh_size=None, map_path=None, **legacy):
+    def __init__(self, app_type="rfem", api_key=None, delete_all=False, design=False, service_class=1, mesh_size=None, map_path=None, port=None, **legacy):
         """
         Parameters
         ----------
@@ -43,6 +43,7 @@ class DlubalImporter:
         """
         self.app_type = app_type
         self.api_key = api_key
+        self.port = port
         self.delete_all = delete_all
         self.design = design
         self.service_class = service_class
@@ -109,7 +110,7 @@ class DlubalImporter:
             print(report.summary())
 
         # 1. Connect to Dlubal via Client Module
-        with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
+        with DlubalClient(app_type=self.app_type, api_key=self.api_key, port=self.port) as conn:
             if self.delete_all:
                 conn.delete_all_objects()
 
@@ -215,6 +216,10 @@ class DlubalImporter:
                 create_or_update(conn.application, situation)
             for combination in structural_model.load_combinations:
                 objects.append(load_mapper.map_load_combination(combination))
+
+            for load_case_id, category in load_mapper.unmapped_categories:
+                print("Load case {}: action category {!r} has no equivalent under the active "
+                      "standard - RFEM will treat it as permanent.".format(load_case_id, category))
 
             # 4. Push to Dlubal
             try:

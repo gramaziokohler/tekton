@@ -62,6 +62,7 @@ def run_backend(
     timeout=600,
     design=False,
     mesh_size=None,
+    port=None,
 ):
     """Send the model to a backend and (for RFEM) fetch results back.
 
@@ -82,6 +83,8 @@ def run_backend(
         When False, only push, do not calculate (the handoff case).
     design : bool
         rfem only: set up the timber design add-on and read its ratios.
+    port : int, optional
+        rfem/rstab: the gRPC port. None lets the client probe.
     mesh_size : float, optional
         opensees only: target edge length for plate meshing, in metres.
         A hint to the mesher, not part of the model.
@@ -124,6 +127,8 @@ def run_backend(
         command.append("--design")
     if mesh_size:
         command += ["--mesh-size", str(float(mesh_size))]
+    if port:
+        command += ["--port", str(int(port))]
     # Every run rebuilds the backend model from scratch - that is the contract
     # the Run component documents. Without this, the second push into the same
     # RFEM model fails on "Material No. 1 already exists".

@@ -81,6 +81,20 @@
                 "simplify": false
             },
             {
+                "name": "port",
+                "nickname": "port",
+                "description": "rfem/rstab: the gRPC port the application listens on. Empty: 9000-9003 are tried, which covers the usual case. RFEM gives its first running instance 9000, the next 9001 and so on, so pin this only when several are open or the API port was changed in Program Options.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "int",
+                "reverse": false,
+                "simplify": false
+            },
+            {
                 "name": "mesh_size",
                 "nickname": "mesh_size",
                 "description": "opensees: target edge length for plate meshing, in metres. Default 0.5. Smaller is finer, slower and closer to converged; shared edges between plates are subdivided from the same value on both sides, so conformity holds at any setting. Ignored for other backends.",

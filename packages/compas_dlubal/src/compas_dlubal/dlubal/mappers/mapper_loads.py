@@ -22,14 +22,24 @@ def _message_class(descriptor):
 
 #: Neutral action categories -> RFEM action-category enum names.
 #: RFEM offers many code-specific variants; these are the plain EN 1990 ones.
+#: Neutral action categories -> RFEM action-category enum names.
+#:
+#: The enum carries every standard RFEM knows; which of its values a load
+#: case may actually take depends on the active combination-wizard standard,
+#: and an invalid one is refused on create ("Attribute 'action_category' or
+#: the attribute on which it depends is invalid"). Every name below was
+#: probed live against RFEM 6.13 under EN 1990 (2026-10-13). Three that read
+#: plausibly are **not** valid there and are therefore absent: the SIA-style
+#: ``SNOW_ACTION_FSN``, the generic ``IMPOSED_ACTION_Q``, and
+#: ``ACTIONS_DUE_TO_CLIMATE_CHANGES_..._QC``.
+#:
+#: A category with no entry here is left unset: RFEM then applies its own
+#: default (permanent) and :class:`LoadMapper` records it in
+#: ``unmapped_categories`` so the push can say so. Guessing a neighbouring
+#: category instead would put a wrong psi into RFEM's own combinations.
 ACTION_CATEGORY_NAMES = {
     "PERMANENT": "ACTION_CATEGORY_PERMANENT_G",
-    "VARIABLE": "ACTION_CATEGORY_IMPOSED_ACTION_Q",
-    "SNOW": "ACTION_CATEGORY_SNOW_ACTION_FSN",
-    "WIND": "ACTION_CATEGORY_WIND_QW",
-    # The EN 1990 catalogue keys (core/load_catalogue.py). RFEM derives the
-    # load duration - and so k_mod in the timber design - from these, so an
-    # imposed load pushed without its category is designed as permanent.
+    # EN 1990 imposed-load categories A-H (core/load_catalogue.py).
     "A": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_A_DOMESTIC_RESIDENTIAL_AREAS_QI_A",
     "B": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_B_OFFICE_AREAS_QI_B",
     "C": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_C_CONGREGATION_AREAS_QI_C",
@@ -38,9 +48,17 @@ ACTION_CATEGORY_NAMES = {
     "F": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_F_ROOFS_ACCESSIBLE_ONLY_PRIVATELY_QI_F",
     "G": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_G1_ROOFS_SLOPE_LESS_THAN_20_Q_G1",
     "H": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_H_ROOFS_QI_H",
-    "SNOW_HIGH": "ACTION_CATEGORY_SNOW_ACTION_FSN",
-    "THERMAL": "ACTION_CATEGORY_ACTIONS_DUE_TO_CLIMATE_CHANGES_IN_TEMPERATURE_AND_AIR_PRESSURE_QC",
+    "SNOW": "ACTION_CATEGORY_SNOW_ICE_LOADS_H_LESS_OR_EQUAL_TO_1000_M_QS",
+    "SNOW_HIGH": "ACTION_CATEGORY_SNOW_ICE_LOADS_H_GREATER_THAN_1000_M_QS",
+    "WIND": "ACTION_CATEGORY_WIND_QW",
+    "THERMAL": "ACTION_CATEGORY_TEMPERATURE_NON_FIRE_QT",
+    # The catalogue's legacy "unspecified variable" borrows category A's psi
+    # and says so, so RFEM gets the same category - anything else would make
+    # its combinations disagree with ours over the same load case. RFEM has
+    # no generic variable action under EN 1990 (IMPOSED_ACTION_Q is refused).
+    "VARIABLE": "ACTION_CATEGORY_IMPOSED_LOADS_CATEGORY_A_DOMESTIC_RESIDENTIAL_AREAS_QI_A",
 }
+
 
 
 #: Neutral combination types -> (RFEM design situation number, type enum name, label).
@@ -68,6 +86,10 @@ class LoadMapper:
         # NodalLoad/MemberLoad live in a different proto module than LoadCase.
         self.Loads = Loads
         self._load_id_counter = 1
+        #: Categories RFEM was not given, as (load case id, category). The
+        #: importer prints them: silently designing an imposed load as
+        #: permanent is the failure an engineer must not be surprised by.
+        self.unmapped_categories = []
         # Loads reference members, surfaces and nodes, all of which carry
         # hash ids. Load cases have their own dense counter.
         from compas_dlubal.dlubal.numbering import Numbering
@@ -92,7 +114,7 @@ class LoadMapper:
                 # Gravity acts along RFEM's global Z, which points down.
                 kwargs["self_weight_factor_z"] = 1.0
 
-            action_category = self._action_category(load_case.action_category)
+            action_category = self._action_category(load_case.action_category, load_case.id)
             if action_category is not None:
                 kwargs["action_category"] = action_category
 
@@ -100,14 +122,16 @@ class LoadMapper:
 
         return objects
 
-    def _action_category(self, category):
-        """Resolve a neutral action category to the RFEM enum, or None if unavailable."""
+    def _action_category(self, category, load_case_id=None):
+        """Resolve a neutral action category to the RFEM enum, or None when there is no valid one."""
         name = ACTION_CATEGORY_NAMES.get((category or "").upper())
-        if name is None:
-            return None
         enum_type = self.Loc.LoadCase.DESCRIPTOR.fields_by_name["action_category"].enum_type
-        value = enum_type.values_by_name.get(name)
-        return value.number if value else None
+        value = enum_type.values_by_name.get(name) if name else None
+        if value is None:
+            if category:
+                self.unmapped_categories.append((load_case_id, str(category)))
+            return None
+        return value.number
 
     # -- loads --------------------------------------------------------------
 

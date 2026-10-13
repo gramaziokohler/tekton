@@ -120,11 +120,16 @@ def check_pins(report, fix):
         "Make both files name the same revision, then re-run with --fix.")
 
 
+def worker_python():
+    """The interpreter inside the repo's .venv, whether or not it exists yet."""
+    if platform.system() == "Windows":
+        return os.path.join(HERE, ".venv", "Scripts", "python.exe")
+    return os.path.join(HERE, ".venv", "bin", "python")
+
+
 def check_worker_env(report, fix):
     """The 3.12 environment the worker runs in."""
-    python = os.path.join(HERE, ".venv", "bin", "python")
-    if platform.system() == "Windows":
-        python = os.path.join(HERE, ".venv", "Scripts", "python.exe")
+    python = worker_python()
 
     if not os.path.exists(python):
         if not fix:
@@ -167,9 +172,7 @@ def check_plate_solver(report, fix):
     This is the check that catches "PlateStructuralElementSolver cannot be
     imported" before it happens in Rhino.
     """
-    python = os.path.join(HERE, ".venv", "bin", "python")
-    if platform.system() == "Windows":
-        python = os.path.join(HERE, ".venv", "Scripts", "python.exe")
+    python = worker_python()
     if not os.path.exists(python):
         return report.add(INFO, "plate solver", "skipped, no worker venv yet")
     code, out = run([python, "-c",
@@ -300,41 +303,66 @@ def check_api_key(report, fix):
         "cp .env.example .env, then put the key in it. .env is gitignored.")
 
 
-def check_components(report, fix, build):
-    """The .ghuser files Grasshopper reads."""
-    bundles = os.path.join(HERE, "packages", "tekton_gh", "components")
-    count = len([d for d in os.listdir(bundles)
-                 if os.path.isdir(os.path.join(bundles, d))]) if os.path.isdir(bundles) else 0
+def user_objects_dir():
+    """Where Grasshopper reads .ghuser files from on this platform.
 
-    target = os.path.expanduser(
+    On macOS they sit inside the Grasshopper plug-in folder, whose name
+    carries the plug-in GUID; on Windows they are simply under %APPDATA%.
+    """
+    if platform.system() == "Windows":
+        return os.path.join(os.environ.get("APPDATA", ""), "Grasshopper", "UserObjects", "tekton")
+    return os.path.expanduser(
         "~/Library/Application Support/McNeel/Rhinoceros/8.0/Plug-ins/"
         "Grasshopper (b45a29b1-4343-4035-989e-044e8580d9cf)/UserObjects/tekton")
-    installed = len([f for f in os.listdir(target) if f.endswith(".ghuser")]) \
-        if os.path.isdir(target) else 0
 
-    if installed == count and count:
-        return report.add(OK, "components", "{} installed".format(installed))
 
-    detail = "{} bundles, {} installed".format(count, installed)
-    if not build:
-        return report.add(
-            WARN if installed else INFO, "components", detail,
-            "Re-run with --build, with Rhino running (the componentizer\n"
-            "drives Rhino to write the .ghuser files).")
+def _install_built(report, target, built):
+    """Copy the freshly built bundles over the installed ones."""
+    if not os.path.isdir(built):
+        return report.add(FAIL, "components", "nothing was built", built)
+    if not os.path.isdir(target):
+        os.makedirs(target)
+    for name in os.listdir(target):
+        if name.endswith(".ghuser"):
+            os.remove(os.path.join(target, name))
+    copied = 0
+    for name in sorted(os.listdir(built)):
+        if name.endswith(".ghuser"):
+            shutil.copy2(os.path.join(built, name), os.path.join(target, name))
+            copied += 1
+    return report.add(OK, "components", "{} built and installed".format(copied),
+                      "Restart Rhino - Grasshopper reads UserObjects at startup.")
 
-    componentizer = os.path.join(HERE, "packages", "tekton_gh", "_componentizer")
-    python = sys.executable
-    code, out = run([python, os.path.join(componentizer, "build_metadata.py")], cwd=os.path.dirname(componentizer))
+
+def _build_windows(report, componentizer):
+    """Build the .ghuser files with pythonnet; no Rhino needed.
+
+    The .NET step only has to load GH_IO.dll, which pythonnet can do on the
+    .NET Framework. Rhino's own RhinoCode refuses to run without a live
+    Rhino, so on Windows this is the shorter path, not a workaround.
+    """
+    python = worker_python()
+    code, _ = run([python, "-c", "import clr"])
     if code != 0:
-        return report.add(FAIL, "components", "build_metadata failed", out.strip()[-300:])
+        print("       installing pythonnet into the worker venv ...")
+        code, out = run(["uv", "pip", "install", "pythonnet"], cwd=HERE)
+        if code != 0:
+            return report.add(FAIL, "components", "pythonnet could not be installed", out.strip()[-300:])
+    print("       building the components (pythonnet) ...")
+    code, out = run([python, os.path.join(componentizer, "componentize_cpy.py")], cwd=componentizer)
+    if code != 0:
+        return report.add(FAIL, "components", "componentizer failed", out.strip()[-400:])
+    return None
 
+
+def _build_macos(report, componentizer):
+    """Build by driving a running Rhino, which is the only way on macOS."""
     resources = "/Applications/Rhino 8.app/Contents/Frameworks/RhCore.framework/Versions/Current/Resources"
     dotnet = os.path.join(resources, "dotnet", platform.machine(), "dotnet")
     rhinocode = os.path.join(resources, "RhinoCode.dll")
     if not os.path.exists(dotnet):
         return report.add(FAIL, "components", "Rhino's dotnet not found",
                           "Is Rhino 8 installed in /Applications?")
-
     code, out = run([dotnet, rhinocode, "list"])
     instance = None
     for line in out.splitlines()[1:]:
@@ -346,23 +374,48 @@ def check_components(report, fix, build):
         return report.add(
             FAIL, "components", "no running Rhino",
             "The componentizer drives a live Rhino. Start Rhino 8 and re-run.")
-
-    print("       building the components ...")
+    print("       building the components (via Rhino) ...")
     run([dotnet, rhinocode, "-r", instance, "script",
          os.path.join(componentizer, "componentize_cpy.py")])
-    code, out = run(["bash", os.path.join(componentizer, "install.sh")])
-    if code != 0:
-        return report.add(FAIL, "components", "install.sh failed", out.strip()[-300:])
+    return None
+
+
+def check_components(report, fix, build):
+    """The .ghuser files Grasshopper reads."""
+    bundles = os.path.join(HERE, "packages", "tekton_gh", "components")
+    count = len([d for d in os.listdir(bundles)
+                 if os.path.isdir(os.path.join(bundles, d))]) if os.path.isdir(bundles) else 0
+
+    target = user_objects_dir()
     installed = len([f for f in os.listdir(target) if f.endswith(".ghuser")]) \
         if os.path.isdir(target) else 0
-    return report.add(OK, "components", "{} built and installed".format(installed))
+
+    if installed == count and count:
+        return report.add(OK, "components", "{} installed".format(installed))
+
+    detail = "{} bundles, {} installed".format(count, installed)
+    if not build:
+        hint = "Re-run with --build."
+        if platform.system() != "Windows":
+            hint += "\nRhino must be running (the componentizer drives it)."
+        return report.add(WARN if installed else INFO, "components", detail, hint)
+
+    componentizer = os.path.join(HERE, "packages", "tekton_gh", "_componentizer")
+    code, out = run([worker_python(), os.path.join(componentizer, "build_metadata.py")],
+                    cwd=os.path.dirname(componentizer))
+    if code != 0:
+        return report.add(FAIL, "components", "build_metadata failed", out.strip()[-300:])
+
+    builder = _build_windows if platform.system() == "Windows" else _build_macos
+    failed = builder(report, componentizer)
+    if failed is not None:
+        return failed
+    return _install_built(report, target, os.path.join(componentizer, "ghuser_build"))
 
 
 def check_tests(report, fix):
     """A green suite is the cheapest proof the install actually works."""
-    python = os.path.join(HERE, ".venv", "bin", "python")
-    if platform.system() == "Windows":
-        python = os.path.join(HERE, ".venv", "Scripts", "python.exe")
+    python = worker_python()
     if not os.path.exists(python):
         return report.add(INFO, "tests", "skipped, no worker venv")
     code, out = run([python, "-m", "pytest", "tests/unit", "-q", "--no-header"], cwd=HERE)

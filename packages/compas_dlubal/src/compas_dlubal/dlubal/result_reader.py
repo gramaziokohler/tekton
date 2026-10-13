@@ -31,9 +31,11 @@ class DlubalResultReader:
     against a real RFEM response.
     """
 
-    def __init__(self, app_type="rfem", api_key=None, backend_map=None):
+    def __init__(self, app_type="rfem", api_key=None, backend_map=None, port=None):
         self.app_type = app_type
         self.api_key = api_key
+        #: None probes the usual ports; see DlubalClient.
+        self.port = port
         #: Translates RFEM's object numbers back to neutral ids. Without
         #: one the two are taken to be the same, which is what every
         #: result read before the BackendMap existed assumed.
@@ -45,12 +47,12 @@ class DlubalResultReader:
         Returns the name of the application method that was used. Raises a clear
         AttributeError if no known calculation method is available.
         """
-        with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
+        with DlubalClient(app_type=self.app_type, api_key=self.api_key, port=self.port) as conn:
             return self._calculate(conn, [1], skip_warnings=skip_warnings)
 
     def inspect(self):
         """Return available Dlubal API/application attributes relevant for results."""
-        with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
+        with DlubalClient(app_type=self.app_type, api_key=self.api_key, port=self.port) as conn:
             return self._inspect(conn)
 
     def read(self, load_cases=None, calculate=True, structural_model=None, design=False, combinations=None):
@@ -80,7 +82,7 @@ class DlubalResultReader:
         member_lengths = member_lengths_from_model(structural_model) if structural_model else {}
         self._has_surfaces = bool(structural_model.surfaces) if structural_model is not None else True
 
-        with DlubalClient(app_type=self.app_type, api_key=self.api_key) as conn:
+        with DlubalClient(app_type=self.app_type, api_key=self.api_key, port=self.port) as conn:
             calculation_method = None
             if calculate:
                 calculation_method = self._calculate(conn, load_cases)
