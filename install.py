@@ -63,11 +63,24 @@ class Report:
         return [row for row in self.rows if row[0] == WARN]
 
 
+#: Variables that make one Python's installation visible to another. An
+#: activated venv (or uv's own interpreter) exports PYTHONHOME, and Rhino's
+#: 3.9 then starts against a 3.12 standard library and dies with "can't
+#: initialize sys standard streams" - which this script used to report as
+#: "compas_timber missing or too old". Every child here is either a different
+#: interpreter or a venv that finds its own home through pyvenv.cfg, so none
+#: of them wants these inherited.
+LEAKING_VARS = ("PYTHONHOME", "PYTHONPATH", "PYTHONSTARTUP", "PYTHONEXECUTABLE")
+
+
 def run(command, **kwargs):
     """Run a command, returning (code, stdout+stderr). Never raises."""
+    environment = kwargs.pop("env", None) or os.environ
+    environment = dict((k, v) for k, v in environment.items() if k not in LEAKING_VARS)
     try:
         finished = subprocess.run(
-            command, capture_output=True, text=True, timeout=kwargs.pop("timeout", 900), **kwargs)
+            command, capture_output=True, text=True, env=environment,
+            timeout=kwargs.pop("timeout", 900), **kwargs)
         return finished.returncode, (finished.stdout or "") + (finished.stderr or "")
     except FileNotFoundError:
         return 127, "not found: {}".format(command[0])
