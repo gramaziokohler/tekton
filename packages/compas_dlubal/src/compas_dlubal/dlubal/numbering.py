@@ -20,7 +20,7 @@ import os
 
 #: Object categories, in the order a first push numbers them. RFEM keeps a
 #: separate namespace per category, so each starts again at 1.
-CATEGORIES = ("node", "member", "surface", "support", "line_support",
+CATEGORIES = ("node", "member", "member_set", "surface", "support", "line_support",
               "section", "thickness", "material", "load_case", "load")
 
 
@@ -64,6 +64,9 @@ class Numbering:
     def member(self, neutral_id):
         return self._at("member", neutral_id)
 
+    def member_set(self, neutral_id):
+        return self._at("member_set", neutral_id)
+
     def surface(self, neutral_id):
         return self._at("surface", neutral_id)
 
@@ -104,6 +107,8 @@ def number_model(model, backend_map):
         backend_map.number_for("node", node.id)
     for member in model.members:
         backend_map.number_for("member", member.id)
+    for member_set in getattr(model, "member_sets", None) or []:
+        backend_map.number_for("member_set", member_set.id)
     for surface in getattr(model, "surfaces", None) or []:
         backend_map.number_for("surface", surface.id)
     for support in model.supports:

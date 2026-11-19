@@ -78,6 +78,68 @@ class DlubalClient:
     def loading(self):
         return self.api.loading
 
+    def use_model(self, name):
+        """Make the model called ``name`` the active one, creating it if none is open.
+
+        Every push rebuilds its model from scratch (``delete_all``), and the
+        API works on whichever model is active - so without this a run wipes
+        whatever the user happens to have open, an engineer's model included
+        (nearly happened 2026-11-17). The push therefore only ever writes into
+        a model of its own name: an open one of that name is activated, else
+        a new one is created. Returns ``(name, created)``.
+        """
+        if not name:
+            raise ValueError("use_model needs a model name: the push must not write into whatever is active")
+        app = self.application
+        models = list(app.get_model_list().model_info)
+        active = app.get_active_model()
+        active_guid = getattr(active, "guid", None)
+        for info in models:
+            if info.name == name:
+                if info.guid != active_guid:
+                    self._set_active(info)
+                return name, False
+        model_id = app.create_model(name=name)
+        self._set_active(model_id)
+        return name, True
+
+    def select_model(self, name):
+        """Activate the open model called ``name``; never create one, never fall back.
+
+        For reading and calculating: RFEM's active model is per connection
+        (a new one starts on the GUI's model again), so the result reader must
+        pick its model itself - else it calculates and reads whatever the user
+        has in front, an engineer's model included (seen 2026-11-17).
+        """
+        if not name:
+            raise ValueError("select_model needs a model name")
+        for info in self.application.get_model_list().model_info:
+            if info.name == name:
+                self._set_active(info)
+                if self.active_model_name() != name:
+                    raise RuntimeError("RFEM did not activate model '{}'".format(name))
+                return name
+        raise RuntimeError("No open RFEM model is called '{}': push it first".format(name))
+
+    def active_model_name(self):
+        """Name of the active model, or None."""
+        app = self.application
+        active = app.get_active_model()
+        for info in app.get_model_list().model_info:
+            if info.guid == getattr(active, "guid", None):
+                return info.name
+        return None
+
+    def _set_active(self, model):
+        """set_active_model takes the id by keyword in dlubal.api 2.13, positionally in 2.16."""
+        from dlubal.api.common.model_id_pb2 import ModelId
+
+        model_id = model if isinstance(model, ModelId) else ModelId(guid=model.guid)
+        try:
+            self.application.set_active_model(model_id=model_id)
+        except TypeError:
+            self.application.set_active_model(model_id)
+
     def delete_all_objects(self):
         """Löscht alle Objekte im aktuellen Modell"""
         self.application.delete_all_objects()

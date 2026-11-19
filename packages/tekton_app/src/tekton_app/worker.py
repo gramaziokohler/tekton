@@ -175,7 +175,7 @@ def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, dele
     # and without the map they would be read back as neutral ids - which they
     # have not been since the ids became hashes.
     reader = DlubalResultReader(app_type=app_type, api_key=api_key,
-                                backend_map=importer.backend_map, port=port)
+                                backend_map=importer.backend_map, port=port, model_name=model_name)
     combinations = list(model.load_combinations or [])
     if combinations:
         log("  plus {} Kombination(en), von RFEM geloest: {}".format(

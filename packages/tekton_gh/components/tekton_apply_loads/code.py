@@ -6,9 +6,8 @@ existence during translation. The authoring components therefore hand over
 geometric descriptions (point, element GUID), and resolving those to model IDs
 happens here.
 
-Careful: the Dlubal importer still ignores the neutral model's load cases and
-uses a hard-wired catalogue (priority 1 in docs/handoff.md). Until that is
-fixed, what is set here does not necessarily arrive in RFEM.
+Area loads also stay in the model as such (StructuralAreaLoad): RFEM can
+carry them as load transfer surfaces when the Area Load asks for it.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -219,42 +218,13 @@ else:
                 applied_members += hit
 
         elif load.get("kind") == "area":
-            from compas.geometry import Vector
-            from compas_timber_fea.core.load_distribution import distribute_area_load
+            # The work lives in the library (reloads without rebuilding this component).
+            from compas_timber_fea.core.load_distribution import apply_area_load
 
-            regions = [[[c * to_meters for c in point] for point in polygon] for polygon in load.get("regions") or []]
-            level = load.get("level")
-            level = None if level is None else level * to_meters
-            line_loads, info = distribute_area_load(
-                structural, load["pressure"], regions=regions or None, level=level)
-            for member_id, force in sorted(line_loads.items()):
-                structural.member_loads.append(
-                    StructuralMemberLoad(
-                        id=next_member_id,
-                        member_id=member_id,
-                        load_case_id=load.get("load_case_id", 1),
-                        force=Vector(*force),
-                    )
-                )
-                next_member_id += 1
-            applied_members += len(line_loads)
+            info = apply_area_load(structural, load, to_meters=to_meters, report=report)
+            applied_members += info["members"]
             applied_areas += 1
-            if info["level"] is None or not info["panels"]:
-                report.append(
-                    "Area load ({}): no closed fields of horizontal members found - NOT applied.".format(
-                        load.get("name") or "LC {}".format(load.get("load_case_id", 1))))
-            else:
-                report.append(
-                    "Area load {} kN/m2, LC {}: level z = {:.3f} m, {} of {} fields, {:.1f} m2, "
-                    "{:.1f} kN on {} members ({})".format(
-                        [round(v, 3) for v in load["pressure"]], load.get("load_case_id", 1),
-                        info["level"], info["panels_loaded"], info["panels"], info["area"],
-                        info["total"], info["members"],
-                        ", ".join("{} {}".format(n, rule) for rule, n in sorted(info["rules"].items())) or "-"))
-                if not info["panels_loaded"]:
-                    report.append("  The regions contain no field centre - check the curves (they are tested in plan).")
-                if info["pruned"]:
-                    report.append("  {} member(s) with a free end frame no field and carry nothing.".format(info["pruned"]))
+            next_member_id = max([m.id for m in structural.member_loads] or [0]) + 1
 
         elif load.get("kind") == "surface":
             from compas.geometry import Vector
@@ -289,11 +259,6 @@ else:
     if combinations:
         report.insert(1, "{} combination(s) taken over.".format(len(combinations)))
 
-    report.append(
-        "Note: the Dlubal importer still uses a hard-wired load catalogue - "
-        "what stands here may not arrive in RFEM "
-        "(docs/handoff.md, item 1)."
-    )
 
 for line in report:
     print(line)

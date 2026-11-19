@@ -3,7 +3,7 @@
     "nickname": "TALoad",
     "category": "Tekton",
     "subcategory": "1 | Author",
-    "description": "Pressure on a beam grid, in kN/m2 - for roofs and floors framed with beams and no plates. The fields between the horizontal members of one level take the pressure; TektonApplyLoads hands each field's load to the members around it (45-degree rule for rectangles, centroid rule otherwise). Regions are closed curves tested in plan, even-odd: outline plus inner curve is the ring between. On plates use Surface Load.",
+    "description": "Pressure on a beam grid, in kN/m2 - for roofs and floors framed with beams and no plates. The fields between the horizontal members of one level take the pressure; TektonApplyLoads hands each field's load to the members around it (45-degree rule for rectangles, centroid rule otherwise). Regions are closed curves tested in plan, even-odd: outline plus inner curve is the ring between. On plates use Surface Load. On a shaped (folded) roof give 'band'; 'transfer' makes RFEM carry the load as load transfer surfaces.",
     "exposure": 16,
     "instanceGuid": "7ec70000-0000-0000-0000-000000000030",
     "ghpython": {
@@ -63,6 +63,34 @@
                 "wireDisplay": "default",
                 "sourceCount": 0,
                 "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "band",
+                "nickname": "band",
+                "description": "Shaped roof: every near-horizontal member (rising up to 0.25 m per m) whose mid-height lies within this depth below the level (document units). Empty = one flat level.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "float",
+                "reverse": false,
+                "simplify": false
+            },
+            {
+                "name": "transfer",
+                "nickname": "transfer",
+                "description": "RFEM: carry the load as load transfer surfaces (Lastuebertragungsflaechen) on the fields instead of member loads, as an engineer models it. Other backends always get the member loads.",
+                "optional": true,
+                "allowTreeAccess": true,
+                "showTypeHints": true,
+                "scriptParamAccess": "item",
+                "wireDisplay": "default",
+                "sourceCount": 0,
+                "typeHintID": "bool",
                 "reverse": false,
                 "simplify": false
             }

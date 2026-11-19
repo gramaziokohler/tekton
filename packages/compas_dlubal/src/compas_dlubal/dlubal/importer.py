@@ -13,6 +13,8 @@ from compas_dlubal.dlubal.mappers.mapper_supports import SupportMapper
 from compas_dlubal.dlubal.mappers.mapper_loads import LoadMapper
 from compas_dlubal.dlubal.mappers.mapper_thicknesses import ThicknessMapper
 from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper
+from compas_dlubal.dlubal.mappers.mapper_sets import LoadTransferMapper
+from compas_dlubal.dlubal.mappers.mapper_sets import MemberSetMapper
 # Translator removed here, handled upstream
 
 class DlubalImporter:
@@ -111,6 +113,10 @@ class DlubalImporter:
 
         # 1. Connect to Dlubal via Client Module
         with DlubalClient(app_type=self.app_type, api_key=self.api_key, port=self.port) as conn:
+            # Only ever into a model of our own name: delete_all on whatever
+            # happens to be active would wipe the user's (or an engineer's) model.
+            _, created = conn.use_model(model_name)
+            print("RFEM model '{}' ({})".format(model_name, "created" if created else "reused"))
             if self.delete_all:
                 conn.delete_all_objects()
 
@@ -169,8 +175,13 @@ class DlubalImporter:
                 objects.append(thickness_mapper.map(t, material_id=member_mapper.surface_material_id(t.material_id)))
 
             # Sections
+            # Only the sections a beam uses. Rigid links and couplings carry no
+            # section in RFEM, and the translator's "Rigid" placeholder is no
+            # name RFEM 6.16 parses ("Ungueltiger Querschnittsname", 2026-11-17).
+            used = {m.section_id for m in structural_model.members if m.member_type not in ("RIGID", "COUPLING")}
             for s in structural_model.sections:
-                objects.append(member_mapper.map_section(s))
+                if s.id in used:
+                    objects.append(member_mapper.map_section(s))
 
             # Member hinges must exist before the members that reference them.
             objects.extend(member_mapper.map_hinges_for_members(structural_model.members))
@@ -178,6 +189,11 @@ class DlubalImporter:
             # Members
             for m in structural_model.members:
                 objects.append(member_mapper.map_member(m))
+
+            # Member sets (Stabsaetze): a girder split at its nodes, designed whole.
+            set_mapper = MemberSetMapper(conn.api.structure_core, numbering)
+            for member_set in getattr(structural_model, "member_sets", None) or []:
+                objects.append(set_mapper.map(member_set))
 
             # Surfaces
             for su in structural_model.surfaces:
@@ -203,7 +219,13 @@ class DlubalImporter:
             for point_load in structural_model.point_loads:
                 objects.append(load_mapper.map_point_load(point_load))
 
+            # Area loads that RFEM carries as load transfer surfaces replace their
+            # member loads; the surfaces follow once the members' lines exist.
+            transfer = LoadTransferMapper(conn.api, numbering, load_mapper)
+            replaced = transfer.skipped_member_loads(structural_model)
             for member_load in structural_model.member_loads:
+                if member_load.id in replaced:
+                    continue
                 objects.extend(load_mapper.map_member_load(member_load))
 
             for surface_load in getattr(structural_model, "surface_loads", None) or []:
@@ -228,6 +250,11 @@ class DlubalImporter:
             except Exception as e:
                 print(f"Export error: {e}")
                 raise
+
+            if transfer.wanted(structural_model):
+                conn.create_object_list(transfer.build(conn.application, structural_model))
+                print("Load transfer surfaces: {surfaces} ({triangulated_fields} warped fields as triangles), "
+                      "fields kept as member loads: {fields_as_member_loads}".format(**transfer.report))
 
             # Only once the push succeeded: a map naming objects that were
             # never created would make the next push update nothing.

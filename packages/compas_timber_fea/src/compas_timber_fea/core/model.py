@@ -224,6 +224,41 @@ class StructuralSurfaceLoad:
     projected: bool = False
 
 @dataclass
+class StructuralMemberSet:
+    """Members that are one physical member: a beam split at its nodes.
+
+    The analysis splits a beam wherever something connects to it; design
+    (buckling lengths, deflection over the span) wants the beam whole again.
+    RFEM keeps exactly this as a member set (Stabsatz); OpenSees has no use
+    for it. ``set_type`` "continuous" is a chain of members end to end,
+    "group" any collection.
+    """
+    id: int
+    name: str
+    member_ids: List[int] = field(default_factory=list)
+    set_type: str = "continuous"  # "continuous" | "group"
+    source_element_id: Optional[str] = None
+
+@dataclass
+class StructuralAreaLoad:
+    """A pressure on a beam grid, kept as such next to the member loads it became.
+
+    Every backend gets the area load as member loads (``member_load_ids``,
+    the 45-degree / centroid rule). A backend that can carry the area itself -
+    RFEM's load transfer surface (Lastuebertragungsflaeche) - may drop those
+    and build its own from ``panels``: each the loaded field's corner nodes
+    (counter-clockwise in plan) and the members along its edges.
+    """
+    id: int
+    load_case_id: int
+    pressure: Vector = field(default_factory=lambda: Vector(0, 0, 0))  # kN/m2
+    name: Optional[str] = None
+    panels: List[Dict[str, Any]] = field(default_factory=list)  # {"nodes": [...], "members": [...]}
+    member_load_ids: List[int] = field(default_factory=list)
+    #: Ask a backend that can to carry it as a load transfer surface (RFEM).
+    transfer_surface: bool = False
+
+@dataclass
 class StructuralModel:
     nodes: List[StructuralNode] = field(default_factory=list)
     members: List[StructuralMember] = field(default_factory=list)
@@ -242,6 +277,8 @@ class StructuralModel:
     thicknesses: List[StructuralThickness] = field(default_factory=list)
     surfaces: List[StructuralSurface] = field(default_factory=list)
     surface_connections: List[StructuralSurfaceConnection] = field(default_factory=list)
+    member_sets: List[StructuralMemberSet] = field(default_factory=list)
+    area_loads: List[StructuralAreaLoad] = field(default_factory=list)
     results: Dict[int, StructuralResultSet] = field(default_factory=dict)
     # Everything in the neutral model is SI: metres, kN, kNm. The source model's
     # unit is recorded so a translation can state what it converted from.

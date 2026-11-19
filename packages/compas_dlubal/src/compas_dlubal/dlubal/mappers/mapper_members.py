@@ -295,6 +295,26 @@ class MemberMapper:
         if not section_attr:
              raise AttributeError(f"Dlubal StructureCore has no CrossSection or Section: {dir(self.Core)}")
 
+        # A rectangle goes in by its parameters (SI), not by name: RFEM reads
+        # the dimensions in a name in the model's units - mm in a new RFEM 6.16
+        # model - so "R_M1 0.28/1" became 0.28 x 1 mm and the structure
+        # singular (2026-11-17). RFEM then names it "R_M1 280/1000" itself, as
+        # in an engineer's model.
+        if getattr(section, "shape_type", "rectangular") == "rectangular" and section.width and section.height:
+            fields = section_attr.DESCRIPTOR.fields_by_name
+            if "parametrization_type" in fields and "b" in fields:
+                types = fields["type"].enum_type.values_by_name
+                params = fields["parametrization_type"].enum_type.values_by_name
+                return section_attr(
+                    no=section.id,
+                    material=section.material_id,
+                    type=types["TYPE_PARAMETRIC_MASSIVE_I"].number,
+                    parametrization_type=params[
+                        "PARAMETRIZATION_TYPE_PARAMETRIC_MASSIVE_I__MASSIVE_RECTANGLE__R_M1"].number,
+                    b=float(section.width),
+                    h=float(section.height),
+                )
+
         # Protobuf Objekte akzeptieren oft nur die ID für verknüpfte Objekte
         return section_attr(
             no=section.id,

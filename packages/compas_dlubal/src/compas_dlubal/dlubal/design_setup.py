@@ -22,6 +22,14 @@ objects, because every run re-pushes the structure but not the base data.
 from dlubal.api import common
 
 
+def _enum_value(enum, *names):
+    """The first of ``names`` the enum knows (dlubal.api renames values between releases)."""
+    for name in names:
+        if name in enum.keys():
+            return enum.Value(name)
+    return enum.Value(names[0])  # raises, naming the first spelling
+
+
 def create_or_update(application, obj):
     """create_object, or update_object when RFEM says the number is taken."""
     try:
@@ -66,8 +74,11 @@ def setup_timber_design(conn, structural_model, service_class=1, stability=False
     base = app.get_base_data()
     base.addons.timber_design_active = True
     base.addons.combination_wizard_and_classification_active = True
-    base.standards.timber_design_standard = BaseData.Standards.TimberDesignStandard.Value(
-        "TIMBER_DESIGN_STANDARD_NATIONAL_ANNEX_AND_EDITION_EN_1995_CEN_2014_05_STANDARD")
+    base.standards.timber_design_standard = _enum_value(
+        BaseData.Standards.TimberDesignStandard,
+        # dlubal.api 2.13 / 2.16 spell the same standard differently
+        "TIMBER_DESIGN_STANDARD_NATIONAL_ANNEX_AND_EDITION_EN_1995_CEN_2014_05_STANDARD",
+        "TIMBER_DESIGN_NATIONAL_ANNEX_AND_EDITION_EN_1995_CEN_2014_05_STANDARD")
     base.combinations_settings.combination_wizard_active = not bool(getattr(structural_model, "load_combinations", None))
     base.combinations_settings.result_combinations_active = False
     app.set_base_data(base_data=base)

@@ -32,6 +32,11 @@ SUPPORT_TYPES = {
     "pinned": _support(
         INF, INF, INF, FREE, FREE, FREE,
         "Pinned - all translations held, free to rotate"),
+    "pinned_rz": _support(
+        INF, INF, INF, FREE, FREE, INF,
+        "Pinned, rotation about z held - RFEM's 'hinged' (gelenkig)",
+        "RFEM's own nodal support preset: the engineer's choice under columns. Holding "
+        "the twist keeps a hinged column (torsion kept in its end hinges) from spinning."),
     "fixed": _support(
         INF, INF, INF, INF, INF, INF,
         "Fixed - fully restrained"),
@@ -74,7 +79,7 @@ SUPPORT_TYPES = {
 
 #: Order for drop-downs: the common three first, then the rest.
 SUPPORT_TYPE_ORDER = (
-    "pinned", "fixed", "roller",
+    "pinned", "pinned_rz", "fixed", "roller",
     "roller_x", "roller_y", "sliding",
     "hinge_x", "hinge_y", "hinge_z",
     "vertical_only", "horizontal_only", "free",

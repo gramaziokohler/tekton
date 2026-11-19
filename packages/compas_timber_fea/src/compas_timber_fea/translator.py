@@ -15,6 +15,7 @@ from compas_timber_fea.core.units import check_thickness_plausible
 from compas_timber_fea.core.units import scale_to_meters
 
 from .core.model import StructuralMember
+from .core.model import StructuralMemberSet
 from .core.model import StructuralModel
 from .core.model import StructuralNode
 from .core.model import StructuralSection
@@ -44,6 +45,44 @@ OPENING_COUNTER_SINK = True
 #: Kept for the older path: when a feature carries no `counter_sink` at all,
 #: the cutter side is the only hint left.
 OPENING_TOOL_POSITION = "right"
+
+
+def _release_from(value):
+    """A MemberRelease from a beam's end_releases entry: a preset name, a release, or None."""
+    from compas_timber_fea.core.releases import MemberRelease
+
+    if value is None or isinstance(value, MemberRelease):
+        return value
+    name = str(value).strip().lower()
+    presets = {"pinned": MemberRelease.pinned, "hinged": MemberRelease.pinned,
+               "spherical": MemberRelease.spherical, "rigid": MemberRelease.rigid}
+    if name not in presets:
+        raise ValueError("end release {!r}: use one of {}".format(value, ", ".join(sorted(presets))))
+    release = presets[name]()
+    return None if release.is_rigid() else release
+
+
+def _chain(members):
+    """The members ordered end to end, or None when they do not form one open chain."""
+    ends = {}
+    for m in members:
+        for node in (m.node_start, m.node_end):
+            ends.setdefault(node, []).append(m)
+    if any(len(v) > 2 for v in ends.values()):
+        return None
+    tips = [node for node, v in ends.items() if len(v) == 1]
+    if len(tips) != 2:
+        return None
+    ordered, node, used = [], tips[0], set()
+    while True:
+        nxt = [m for m in ends[node] if m.id not in used]
+        if not nxt:
+            break
+        m = nxt[0]
+        used.add(m.id)
+        ordered.append(m)
+        node = m.node_end if m.node_start == node else m.node_start
+    return ordered if len(ordered) == len(members) else None
 
 
 def _dimension_key(*values):
@@ -210,6 +249,8 @@ class TimberToStructural:
         #: Reset per call - a translator reused for a second model must not
         #: carry the first model's ids into it.
         self._member_ids = set()
+        self._set_keys = {}
+        self._set_ids = set()
         #: Assumptions and anomalies recorded during the last translate().
         self.report = []
 
@@ -293,6 +334,8 @@ class TimberToStructural:
         # libraries refuse a duplicate key, so the second translate() used to
         # fail outright on the "Rigid" section.
         self._member_ids = set()
+        self._set_keys = {}
+        self._set_ids = set()
         self.sections_library = SectionLibrary()
         self.thicknesses_library = ThicknessLibrary()
         self.sections_library.model_sections = model.sections  # Damit die SectionLibrary direkt in das Model schreibt
@@ -317,10 +360,12 @@ class TimberToStructural:
             self._add_plate_connections(model, structural_graph)
 
         self._remove_zero_length_members(model)
+        self._add_member_sets(model)
 
         # Lager nur aus explizit markierten Support-Punkten im TimberModel ableiten.
         self._add_support_nodes(model, structural_graph)
         self._add_line_supports(model, timber_model)
+        self._settle_fully_released_nodes(model)
 
         # 4. Loads (Static Cases - Default for now)
         self._add_load_cases(model)
@@ -435,6 +480,8 @@ class TimberToStructural:
             start_id = node_to_id(structural_graph, n1)
             end_id = node_to_id(structural_graph, n2)
             segment_key = "{}:{}".format(*sorted((start_id, end_id)))
+            release_start, release_end = self._beam_end_releases(structural_graph, beam, n1, n2)
+            set_key = (getattr(beam, "attributes", {}) or {}).get("member_set") or source_id(beam)
             model.members.append(
                 StructuralMember(
                     id=self._next_member_id(source_id(beam), segment_key),
@@ -442,11 +489,106 @@ class TimberToStructural:
                     node_end=end_id,
                     section_id=section.id,
                     orientation_vector=y_vector,
+                    release_start=release_start,
+                    release_end=release_end,
                     source_element_id=source_id(beam),
                     source_element_type="beam",
                     source_segment_id=f"{source_id(beam)}:{segment_key}",
                 )
             )
+            self._set_keys.setdefault(set_key, []).append(model.members[-1].id)
+
+    def _add_member_sets(self, model):
+        """One member set per physical member that the analysis split into several.
+
+        The members of a beam - or of every beam sharing ``attributes["member_set"]``
+        (a girder modelled in pieces) - form one set: "continuous" when they
+        chain end to end, else "group". Single members get none, as in an
+        engineer's model. Ids follow the key, so a set keeps its id across runs.
+        """
+        if not self._set_keys:
+            return
+        by_id = {m.id: m for m in model.members}
+        made = {"continuous": 0, "group": 0}
+        for key, member_ids in sorted(self._set_keys.items(), key=lambda kv: str(kv[0])):
+            members = [by_id[i] for i in member_ids if i in by_id]  # zero-length ones are gone
+            if len(members) < 2:
+                continue
+            ordered = _chain(members)
+            set_type = "continuous" if ordered is not None else "group"
+            made[set_type] += 1
+            model.member_sets.append(StructuralMemberSet(
+                id=_unique_id(self._set_ids, "member_set", str(key)),
+                name=str(key),
+                member_ids=[m.id for m in (ordered or members)],
+                set_type=set_type,
+                source_element_id=str(key),
+            ))
+        if made["continuous"] or made["group"]:
+            self.report.append("member sets: {} continuous, {} group".format(made["continuous"], made["group"]))
+
+    #: How close (source units) a graph node must lie to a beam's centreline end
+    #: to count as that end.
+    END_TOLERANCE = 1e-6
+
+    def _beam_end_releases(self, structural_graph, beam, n1, n2):
+        """End releases a beam asks for, on the segment ends that are its own ends.
+
+        ``beam.attributes["end_releases"]`` names them: a preset name for both
+        ends ("pinned", "spherical", "rigid"), or ``{"start": ..., "end": ...}``
+        with a preset name, a :class:`MemberRelease` or ``None`` per end. A
+        beam split into several members gets the release only where its own
+        centreline starts or ends - an engineer's member hinge, as on a column
+        hinged top and bottom. Joints between system lines that do not meet
+        are the joint policy's business (connectors), not this.
+        """
+        spec = getattr(beam, "attributes", {}).get("end_releases") if beam is not None else None
+        if not spec:
+            return None, None
+        if not isinstance(spec, dict):
+            spec = {"start": spec, "end": spec}
+        line = beam.centerline
+        tol = self.END_TOLERANCE / self.scale  # 1 micrometre, in source units
+
+        def release_at(node):
+            p = structural_graph.node_point(node)
+            for end, q in (("start", line.start), ("end", line.end)):
+                if p.distance_to_point(q) <= tol:
+                    return _release_from(spec.get(end))
+            return None
+
+        return release_at(n1), release_at(n2)
+
+    def _settle_fully_released_nodes(self, model):
+        """Keep one member end continuous where every member end at a node is released.
+
+        A node whose every member end is hinged has no rotational stiffness of
+        its own: unless a support holds its rotations it is singular (OpenSees
+        stops; RFEM eliminates it silently). Hinges on n-1 of the n ends are
+        the same mechanics, so the release on one end - the lowest member id,
+        deterministic - is dropped and recorded.
+        """
+        held = set()  # nodes a support holds against every rotation: hinges there are fine
+        for support in model.supports:
+            if all(getattr(support, dof) == float("inf") for dof in ("rx", "ry", "rz")):
+                held.update(support.nodes)
+        ends = {}
+        for member in model.members:
+            for node, attr in ((member.node_start, "release_start"), (member.node_end, "release_end")):
+                ends.setdefault(node, []).append((member, attr))
+        settled = 0
+        for node, items in ends.items():
+            if node in held:
+                continue
+            released = [(m, a) for m, a in items if getattr(m, a) is not None and not getattr(m, a).is_rigid()]
+            if released and len(released) == len(items):
+                member, attr = min(released, key=lambda item: str(item[0].id))
+                setattr(member, attr, None)
+                settled += 1
+        if settled:
+            self.report.append(
+                "{} node(s) where every member end was hinged: one end kept continuous each "
+                "(n-1 hinges, the same mechanics, no singular node)".format(settled))
 
     def _add_connectors(self, model, structural_graph):
         """Turn connector edges into members whose end conditions the joint policy decides.

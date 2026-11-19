@@ -12,6 +12,11 @@ centre lies inside them by the even-odd rule. Outline plus inner curve is the
 ring between them - a canopy around a middle field, say. Where the curves
 come from is up to the definition: drawn in Rhino, or built in Grasshopper.
 Without regions the whole level is loaded. On plates use Surface Load.
+
+A shaped roof (folds, a landscape) has no single level: 'band' takes every
+near-horizontal member within that depth below the highest. 'transfer' asks
+RFEM to carry the load as load transfer surfaces, one per field - what an
+engineer models; a field that is not planar stays member loads there.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -61,6 +66,8 @@ regions = regions  # type: ignore # noqa: F821
 pressure = pressure  # type: ignore # noqa: F821
 load_case = load_case  # type: ignore # noqa: F821
 level: float  # type: ignore
+band: float  # type: ignore
+transfer: bool  # type: ignore
 
 # --------------------- SCRIPT ---------------------
 
@@ -96,6 +103,8 @@ if pressure is not None:
         "pressure": [pressure.X, pressure.Y, pressure.Z],
         "load_case_id": getattr(load_case, "id", 1),
         "level": None if level is None else float(level),
+        "band": None if band is None else float(band),
+        "transfer_surface": bool(transfer),
         "name": getattr(load_case, "name", None),
     }
     print("Area load {} kN/m2, load case {}, {}".format(

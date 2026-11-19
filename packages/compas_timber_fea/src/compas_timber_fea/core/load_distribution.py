@@ -67,14 +67,21 @@ def point_in_regions(point, regions):
 
 # --- the level ----------------------------------------------------------------
 
-def level_members(model, level=None, tol=1e-3):
+def level_members(model, level=None, tol=1e-3, band=None, slope=None):
     """Horizontal beam members of one level: (z, [(member, start, end), ...]).
 
     Without `level` the highest level that carries horizontal members is
     taken - the roof. Rigid links and couplings are left out: they frame no
     field.
+
+    A shaped roof (a folded or landscaped beam grid) has no single level:
+    `slope` admits members rising up to that much per metre in plan as
+    "horizontal", and `band` takes every such member whose mid-height lies
+    within that depth below the level (the highest, unless given). The fields
+    are found in plan either way; without both the behaviour is unchanged.
     """
     nodes = {node.id: node.point for node in model.nodes}
+    flat = tol if slope is None else None
     horizontal = []
     for member in model.members:
         if getattr(member, "member_type", "BEAM") != "BEAM":
@@ -82,16 +89,20 @@ def level_members(model, level=None, tol=1e-3):
         a, b = nodes.get(member.node_start), nodes.get(member.node_end)
         if a is None or b is None:
             continue
-        if abs(a[2] - b[2]) > tol:
+        plan = math.hypot(b[0] - a[0], b[1] - a[1])
+        if plan < tol:
             continue
-        if math.hypot(b[0] - a[0], b[1] - a[1]) < tol:
+        rise = abs(a[2] - b[2])
+        if (flat is not None and rise > flat) or (flat is None and rise > slope * plan + tol):
             continue
         horizontal.append((member, a, b))
     if not horizontal:
         return None, []
     if level is None:
         level = max(0.5 * (a[2] + b[2]) for _, a, b in horizontal)
-    return level, [(m, a, b) for m, a, b in horizontal if abs(0.5 * (a[2] + b[2]) - level) <= tol]
+    depth = tol if band is None else max(float(band), tol)
+    return level, [(m, a, b) for m, a, b in horizontal
+                   if -depth <= 0.5 * (a[2] + b[2]) - level <= tol]
 
 
 # --- the panels -----------------------------------------------------------------
@@ -235,7 +246,7 @@ def edge_widths(panel):
     return widths, "centroid"
 
 
-def distribute_area_load(model, pressure, regions=None, level=None, tol=1e-3):
+def distribute_area_load(model, pressure, regions=None, level=None, tol=1e-3, band=None, slope=None):
     """Line loads on the members framing the loaded panels.
 
     Parameters
@@ -248,19 +259,26 @@ def distribute_area_load(model, pressure, regions=None, level=None, tol=1e-3):
         panel of the level.
     level : float, optional
         z of the beam grid in metres. None = the highest one.
+    band, slope : float, optional
+        For a shaped roof, see :func:`level_members`: members rising up to
+        `slope` per metre, mid-height within `band` below the level.
 
     Returns
     -------
     (loads, info)
         loads: {member_id: (fx, fy, fz)} in kN/m, summed over the panels.
-        info: what was found and how much went where.
+        info: what was found and how much went where; ``info["fields"]`` the
+        loaded fields, each ``{"points", "edges", "nodes", "members"}`` (plan
+        corners, the edges as (member id, a, b), the corner node ids and the
+        members along it) - what a backend needs to carry the area itself.
     """
-    z, members = level_members(model, level=level, tol=tol)
+    z, members = level_members(model, level=level, tol=tol, band=band, slope=slope)
     info = {"level": z, "panels": 0, "panels_loaded": 0, "area": 0.0, "total": 0.0,
-            "members": 0, "pruned": 0, "rules": {}}
+            "members": 0, "pruned": 0, "rules": {}, "fields": []}
     if not members:
         return {}, info
     edges = [(m.id, a, b) for m, a, b in members]
+    by_id = {m.id: (m, a, b) for m, a, b in members}
     panels, pruned = find_panels(edges, tol=tol)
     info["panels"] = len(panels)
     info["pruned"] = pruned
@@ -279,9 +297,96 @@ def distribute_area_load(model, pressure, regions=None, level=None, tol=1e-3):
         for (member_id, a, b), width in zip(panel["edges"], widths):
             f = loads.get(member_id, (0.0, 0.0, 0.0))
             loads[member_id] = (f[0] + px * width, f[1] + py * width, f[2] + pz * width)
+        info["fields"].append(_field_record(panel, by_id, tol))
     info["total"] = magnitude * info["area"]
     info["members"] = len(loads)
     return loads, info
+
+
+def _field_record(panel, by_id, tol):
+    """A loaded field as plain data: plan corners, edges, corner node ids, members."""
+    nodes = []
+    for member_id, a, _b in panel["edges"]:
+        member, p, q = by_id[member_id]
+        start = math.hypot(p[0] - a[0], p[1] - a[1]) <= max(tol, 1e-6) * 2
+        nodes.append(member.node_start if start else member.node_end)
+    return {
+        "points": [[x, y] for x, y in panel["points"]],
+        "edges": [[member_id, [a[0], a[1]], [b[0], b[1]]] for member_id, a, b in panel["edges"]],
+        "nodes": nodes,
+        "members": [member_id for member_id, _a, _b in panel["edges"]],
+    }
+
+
+def apply_area_load(structural, load, to_meters=1.0, report=None):
+    """Put one authored area load onto a translated model: member loads, plus the area itself.
+
+    ``load`` is the Area Load component's description (``pressure``,
+    ``load_case_id``, ``regions``, ``level``, ``band``, ``slope``,
+    ``transfer_surface``, ``name``), lengths in document units scaled by
+    ``to_meters``. Appends :class:`StructuralMemberLoad` s (every backend
+    takes those) and one :class:`StructuralAreaLoad` naming them and the
+    fields, so a backend that can carry the area itself - RFEM's load transfer
+    surface - may do so instead. Returns the info of :func:`distribute_area_load`.
+
+    Plain Python 3.9: it runs inside Rhino (Tekton Apply Loads).
+    """
+    from compas.geometry import Vector
+
+    from compas_timber_fea.core.model import StructuralAreaLoad
+    from compas_timber_fea.core.model import StructuralMemberLoad
+
+    report = report if report is not None else []
+    regions = [[[c * to_meters for c in point] for point in polygon] for polygon in load.get("regions") or []]
+    level = load.get("level")
+    level = None if level is None else level * to_meters
+    band = load.get("band")
+    band = None if band is None else band * to_meters
+    slope = load.get("slope")
+    if band is not None and slope is None:
+        slope = 0.25  # a shaped roof's girders rise a little; columns and braces do not pass
+    case = load.get("load_case_id", 1)
+    line_loads, info = distribute_area_load(
+        structural, load["pressure"], regions=regions or None, level=level, band=band, slope=slope)
+
+    next_id = max([m.id for m in structural.member_loads] or [0]) + 1
+    ids = []
+    for member_id, force in sorted(line_loads.items(), key=lambda kv: str(kv[0])):
+        structural.member_loads.append(StructuralMemberLoad(id=next_id, member_id=member_id, load_case_id=case,
+                                                            force=Vector(*force)))
+        ids.append(next_id)
+        next_id += 1
+    if ids:
+        areas = getattr(structural, "area_loads", None)
+        if areas is None:  # a model serialised before area loads existed
+            structural.area_loads = areas = []
+        areas.append(StructuralAreaLoad(
+            id=max([a.id for a in areas] or [0]) + 1,
+            load_case_id=case,
+            pressure=Vector(*load["pressure"]),
+            name=load.get("name"),
+            panels=info["fields"],
+            member_load_ids=ids,
+            transfer_surface=bool(load.get("transfer_surface", False)),
+        ))
+
+    name = load.get("name") or "LC {}".format(case)
+    if info["level"] is None or not info["panels"]:
+        report.append("Area load ({}): no closed fields of horizontal members found - NOT applied.".format(name))
+    else:
+        report.append(
+            "Area load {} kN/m2, LC {}: level z = {:.3f} m{}, {} of {} fields, {:.1f} m2, "
+            "{:.1f} kN on {} members ({}){}".format(
+                [round(v, 3) for v in load["pressure"]], case, info["level"],
+                "" if band is None else " (band {:.2f} m, slope <= {:.2f})".format(band, slope),
+                info["panels_loaded"], info["panels"], info["area"], info["total"], info["members"],
+                ", ".join("{} {}".format(n, rule) for rule, n in sorted(info["rules"].items())) or "-",
+                "; RFEM: load transfer surfaces" if load.get("transfer_surface") else ""))
+        if not info["panels_loaded"]:
+            report.append("  The regions contain no field centre - check the curves (they are tested in plan).")
+        if info["pruned"]:
+            report.append("  {} member(s) with a free end frame no field and carry nothing.".format(info["pruned"]))
+    return info
 
 
 # --- beam-relative ranges -----------------------------------------------------------

@@ -31,8 +31,12 @@ class DlubalResultReader:
     against a real RFEM response.
     """
 
-    def __init__(self, app_type="rfem", api_key=None, backend_map=None, port=None):
+    def __init__(self, app_type="rfem", api_key=None, backend_map=None, port=None, model_name=None):
         self.app_type = app_type
+        #: The model to calculate and read. RFEM's active model is per
+        #: connection, so without a name the reader takes the GUI's - which
+        #: may be someone else's model.
+        self.model_name = model_name
         self.api_key = api_key
         #: None probes the usual ports; see DlubalClient.
         self.port = port
@@ -48,7 +52,12 @@ class DlubalResultReader:
         AttributeError if no known calculation method is available.
         """
         with DlubalClient(app_type=self.app_type, api_key=self.api_key, port=self.port) as conn:
+            self._select(conn)
             return self._calculate(conn, [1], skip_warnings=skip_warnings)
+
+    def _select(self, conn):
+        if self.model_name:
+            conn.select_model(self.model_name)
 
     def inspect(self):
         """Return available Dlubal API/application attributes relevant for results."""
@@ -83,6 +92,7 @@ class DlubalResultReader:
         self._has_surfaces = bool(structural_model.surfaces) if structural_model is not None else True
 
         with DlubalClient(app_type=self.app_type, api_key=self.api_key, port=self.port) as conn:
+            self._select(conn)
             calculation_method = None
             if calculate:
                 calculation_method = self._calculate(conn, load_cases)

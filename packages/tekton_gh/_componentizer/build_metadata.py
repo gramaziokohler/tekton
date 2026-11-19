@@ -261,13 +261,16 @@ COMPONENTS = [
             "TektonApplyLoads hands each field's load to the members around it (45-degree rule "
             "for rectangles, centroid rule otherwise). Regions are closed curves tested in "
             "plan, even-odd: outline plus inner curve is the ring between. On plates use "
-            "Surface Load."
+            "Surface Load. On a shaped (folded) roof give 'band'; 'transfer' makes RFEM carry "
+            "the load as load transfer surfaces."
         ),
         inputs=[
             p("regions", "curve", access="list", desc="Closed curves; a field is loaded when its centre lies inside (even-odd, in plan). Empty = the whole level."),
             p("pressure", "vector", desc="Area load [kN/m2]. Negative z is downward.", optional=False),
             p("load_case", desc="Load case from TektonLoadCase."),
             p("level", "float", desc="z of the beam grid (document units). Empty = the highest level."),
+            p("band", "float", desc="Shaped roof: every near-horizontal member (rising up to 0.25 m per m) whose mid-height lies within this depth below the level (document units). Empty = one flat level."),
+            p("transfer", "bool", desc="RFEM: carry the load as load transfer surfaces (Lastuebertragungsflaechen) on the fields instead of member loads, as an engineer models it. Other backends always get the member loads."),
         ],
         outputs=[o("load", "Area load for TektonApplyLoads")],
     ),
