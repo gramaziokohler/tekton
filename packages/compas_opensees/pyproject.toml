@@ -9,7 +9,7 @@ description = "OpenSees backend for Tekton - pip-installable, headless, runs the
 authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
 requires-python = ">=3.10"
 dependencies = [
-    "compas_timber_fea",
+    "compas_timber_fea == 0.1.0",
     # openseespywin needs Python >= 3.12 (the Windows wheel), so the solver is
     # conditional; on older interpreters the package imports but cannot run.
     "openseespy >= 3.8; python_version >= '3.12'",

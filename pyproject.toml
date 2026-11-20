@@ -26,6 +26,16 @@ dev = [
     # macOS has no such route and drives Rhino instead (see install.py).
     "pythonnet >=3.0; sys_platform == 'win32'",
 ]
+# Release tooling, kept out of `dev` so a plain checkout does not pull in
+# pythonnet on every platform (compas_invocations2 requires it unconditionally).
+# Used by tasks.py and the publish workflows; see docs/RELEASE.md.
+release = [
+    "bump-my-version",
+    "build",
+    "compas_invocations2 >=1.3",
+    "invoke >=2",
+    "requests",
+]
 
 [tool.uv.workspace]
 members = ["packages/*"]
@@ -42,6 +52,58 @@ tekton-gh = { workspace = true }
 # requirements.txt. To work against a local checkout instead, see README.
 compas_timber = { git = "https://github.com/gramaziokohler/compas_timber.git", rev = "4f45dc2019a8bee35c03665d17ce05412c64989e" }
 
+# One version for every package, released in lockstep: the components name
+# tekton-gh, which pins compas_timber_fea exactly, so the Rhino side and the
+# worker always come from the same release. `invoke bump --part patch` (or
+# `bump-my-version bump patch`) rewrites all of the files below at once.
+[tool.bumpversion]
+current_version = "0.1.0"
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+regex = true
+search = '^version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+glob = "packages/*/pyproject.toml"
+regex = true
+search = '^version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+# The exact internal pins. Not every package has every pin, hence
+# ignore_missing_version; a third-party pin can never match because the
+# package name is part of the search.
+[[tool.bumpversion.files]]
+glob = "packages/*/pyproject.toml"
+search = '"compas_timber_fea == {current_version}"'
+replace = '"compas_timber_fea == {new_version}"'
+ignore_missing_version = true
+
+[[tool.bumpversion.files]]
+glob = "packages/*/pyproject.toml"
+search = '"compas_dlubal == {current_version}"'
+replace = '"compas_dlubal == {new_version}"'
+ignore_missing_version = true
+
+[[tool.bumpversion.files]]
+glob = "packages/*/pyproject.toml"
+search = '"compas_saf == {current_version}"'
+replace = '"compas_saf == {new_version}"'
+ignore_missing_version = true
+
+[[tool.bumpversion.files]]
+filename = "packages/compas_timber_fea/src/compas_timber_fea/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "packages/tekton_gh/src/tekton_gh/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
 [tool.pytest.ini_options]
 # Only tests/unit is collected. Everything else under tests/ is a manual script
 # that needs a running RFEM instance and an API key; those are run by hand.
@@ -50,6 +112,9 @@ testpaths = ["tests/unit"]
 [tool.ruff]
 line-length = 180
 target-version = "py310"
+# The Rhino side runs on CPython 3.9 (Rhino 8): ruff then reports 3.10-only
+# syntax there as an error. build.yml's rhino-side job catches the rest.
+per-file-target-version = { "packages/compas_timber_fea/**" = "py39", "packages/tekton_gh/**" = "py39" }
 # packages/tekton_gh/components/*/code.py are Grasshopper script-component
 # bodies too: they run inside Rhino, where `ghenv` and the input variables are
 # injected by the host, so they do not resolve as standalone modules. The

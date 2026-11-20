@@ -13,12 +13,14 @@ authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
 # (keine PEP-604-Unions, kein match, keine slots=-Dataclasses).
 requires-python = ">=3.9"
 
-# compas_timber_fea steht bewusst nicht drin: in Rhino gibt es keinen
-# pip-Install des Monorepos, dort wird es zur Laufzeit über sys.path gefunden
-# (siehe tekton_gh/env.py). Eine harte Abhängigkeit wäre zudem widersprüchlich,
-# solange compas_timber_fea selbst >=3.10 deklariert — das würde diesem Paket
-# seine 3.9-Installierbarkeit nehmen.
-dependencies = []
+# This is the one package a released component names in its `# r:` header:
+# Rhino's pip installs it and, through it, the rest of the Rhino side. The pin
+# is exact because both are released in lockstep (see [tool.bumpversion] in
+# the root pyproject.toml). From a repo checkout the components still put
+# packages/*/src on sys.path instead (see tekton_gh/env.py).
+dependencies = [
+    "compas_timber_fea == 0.1.0",
+]
 
 [tool.setuptools]
 package-dir = { "" = "src" }

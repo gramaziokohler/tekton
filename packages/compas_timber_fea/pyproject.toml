@@ -7,9 +7,17 @@ name = "compas_timber_fea"
 version = "0.1.0"
 description = "Core module for Tekton"
 authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
-requires-python = ">=3.10"
+# Runs inside Rhino 8 (CPython 3.9) as well as in the worker, so it has to
+# stay 3.9-clean: no PEP 604 unions at runtime, no match, no slots= dataclasses.
+# build.yml runs its tests on 3.9 to keep it that way.
+requires-python = ">=3.9"
 dependencies = [
-    "compas_timber"
+    "compas_timber",
+    # compas 2.16 makes angle_vectors raise on zero-length vectors, and the
+    # pinned compas_timber hits that in Plate features (free_contour.py), so
+    # every plate translation fails. Lift the cap together with the git pin,
+    # once a compas_timber release that copes with it is out.
+    "compas >= 2.15, < 2.16",
 ]
 
 [tool.setuptools]
