@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=66.0"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,6 +7,8 @@ name = "compas_opensees"
 version = "0.1.0"
 description = "OpenSees backend for Tekton - pip-installable, headless, runs the whole chain in CI"
 authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
+readme = "PYPI.md"
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
     "compas_timber_fea == 0.1.0",
@@ -20,6 +22,11 @@ dependencies = [
     # Measured in tests/spike_meshers.py.
     "gmsh >= 4.13",
 ]
+
+[project.urls]
+Repository = "https://github.com/gramaziokohler/tekton"
+Issues = "https://github.com/gramaziokohler/tekton/issues"
+Changelog = "https://github.com/gramaziokohler/tekton/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
