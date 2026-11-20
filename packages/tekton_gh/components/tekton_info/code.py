@@ -85,8 +85,27 @@ report.append("Python {}".format(sys.version.split()[0]))
 if sys.version_info[:2] != (3, 9):
     report.append("  Note: Rhino 8 / CPython 3.9 was expected.")
 
-root = _find_repo(repo)
-if root is None:
+# Installed from the Package Manager (and no repo named): nothing to find,
+# the packages are importable as they are; only the worker needs a check.
+installed = False
+if not (repo and str(repo).strip()) and not os.environ.get("TEKTON_REPO"):
+    import importlib.util
+
+    installed = bool(importlib.util.find_spec("compas_timber_fea") and importlib.util.find_spec("tekton_gh"))
+
+root = None if installed else _find_repo(repo)
+if installed:
+    from tekton_gh import __version__ as _tekton_version
+    from tekton_gh.worker import find_worker_python, worker_setup_hint
+
+    report.append("Tekton {} (installed from the Package Manager, no repo needed)".format(_tekton_version))
+    _worker = find_worker_python()
+    if _worker:
+        report.append("Worker: {}".format(_worker))
+    else:
+        report.append("Worker: NOT SET UP")
+        report.extend("  " + line for line in worker_setup_hint().splitlines())
+elif root is None:
     report.append("Repo: NOT FOUND")
     report.append("  -> Set the 'repo' input or the TEKTON_REPO environment variable.")
 else:
@@ -148,7 +167,7 @@ if compas_timber is not None:
             import compas_timber_fea  # noqa: F401
 
             report.append("compas_timber_fea: OK")
-            ok = root is not None
+            ok = installed or root is not None
         except ImportError as exc:
             report.append("compas_timber_fea not importable ({})".format(exc))
 

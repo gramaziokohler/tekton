@@ -12,7 +12,9 @@ preference:
 3. Paste the key itself. Works, but warns: it is now in the definition.
 
 'repo' is the path to the monorepo; the venv with the backend packages
-(Python >= 3.10) lives there.
+(Python >= 3.10) lives there. Leave it empty for a Tekton installed from the
+Package Manager: the worker then lives in ~/.tekton/worker, and the '.env' of
+option 1 is ~/.tekton/.env.
 """
 # venv: tekton-test
 # r: compas, compas_timber
@@ -96,8 +98,24 @@ mesh_size: float  # type: ignore
 # --------------------- SCRIPT ---------------------
 
 VALID = ("rfem", "rstab", "saf", "opensees")
+
+
+def _installed():
+    """Tekton from the Package Manager, and no repo named explicitly.
+
+    Then nothing is guessed: a developer checkout lying around on the same
+    machine must not quietly take over the worker or sys.path.
+    """
+    if (repo and str(repo).strip()) or os.environ.get("TEKTON_REPO"):
+        return False
+    import importlib.util
+
+    return bool(importlib.util.find_spec("compas_timber_fea") and importlib.util.find_spec("tekton_gh"))
+
+
+installed = _installed()
 try:
-    _gh_src = os.path.join(_find_repo(repo) or "", "packages", "tekton_gh", "src")
+    _gh_src = os.path.join(("" if installed else _find_repo(repo)) or "", "packages", "tekton_gh", "src")
     if os.path.isdir(_gh_src) and _gh_src not in sys.path:
         sys.path.insert(0, _gh_src)
     from tekton_gh.rhino_io import attach_value_list
@@ -109,9 +127,14 @@ if kind not in VALID:
     _warn("Unknown backend '{}'. Allowed: {}.".format(kind, ", ".join(VALID)))
     kind = "rfem"
 
-root = _find_repo(repo)
+root = None if installed else _find_repo(repo)
 
-if root is None:
+if installed:
+    from tekton_gh.worker import find_worker_python, worker_setup_hint
+
+    if find_worker_python() is None:
+        _warn("No worker environment - TektonRun will fail.\n" + worker_setup_hint())
+elif root is None:
     _warn("Repo not found - TektonRun will fail. See TektonInfo.")
 else:
     # Deposit it for the remaining components (most have no repo input of
@@ -144,7 +167,8 @@ def _key_from_file(path):
     return None
 
 
-key_source = "from environment (TEKTON_API_KEY / DLUBAL_API_KEY / repo .env)"
+key_source = "from environment (TEKTON_API_KEY / DLUBAL_API_KEY / {})".format(
+    "~/.tekton/.env" if installed else "repo .env")
 if api_key:
     candidate = os.path.expanduser(api_key.strip())
     if os.path.isfile(candidate):
@@ -183,7 +207,10 @@ backend = BackendConfig(kind, root, api_key or None, filepath or None, bool(desi
                        float(mesh_size) if mesh_size else None, int(port) if port else None)
 
 print("Backend: {}".format(kind))
-print("Repo: {}{}".format(root or "NOT FOUND", "" if repo or not root else "  (found, not wired)"))
+if installed:
+    print("Repo: none needed (Tekton installed from the Package Manager)")
+else:
+    print("Repo: {}{}".format(root or "NOT FOUND", "" if repo or not root else "  (found, not wired)"))
 print("API key: {}".format(key_source))
 if kind in ("rfem", "rstab"):
     print("Port: {}".format(port if port else "9000-9003 (probed)"))

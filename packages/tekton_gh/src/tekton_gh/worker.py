@@ -11,10 +11,14 @@ is handed over to engineers.
 
 Flow::
 
-    Rhino                          Worker (repo venv, Py 3.12)
-    -----                          --------------------------
+    Rhino                          Worker (Py 3.12)
+    -----                          ----------------
     model.to_json(in.json)   -->   from_json, push, calculate, read
     from_json(out.json)      <--   model.results filled, to_json
+
+Which worker: from a repo checkout, the repo's own ``.venv``; for a Tekton
+installed from the Package Manager, the environment in ``~/.tekton/worker``
+(see :func:`find_worker_python`). ``TEKTON_WORKER_PYTHON`` overrides both.
 
 TODO(scaffold): The worker CLI (`tekton run ...`) does not exist yet. It
 belongs in `tekton_app`, which already depends on compas_dlubal and compas_saf
@@ -32,22 +36,67 @@ class WorkerError(RuntimeError):
     """The worker did not run, or it ran and was unhappy."""
 
 
-def worker_python(repo_root):
-    """Find the interpreter of the repo venv.
+#: Overrides every other way of finding the worker interpreter.
+WORKER_PYTHON_ENV_VAR = "TEKTON_WORKER_PYTHON"
 
-    Rhino's own interpreter will not do - it is 3.9 and has no grpc.
-    """
-    candidates = [
-        os.path.join(repo_root, ".venv", "bin", "python"),
-        os.path.join(repo_root, ".venv", "Scripts", "python.exe"),  # Windows
-    ]
-    for candidate in candidates:
+#: Home of an installed Tekton outside Rhino: the worker environment lives in
+#: ``worker/`` below it, and the worker runs here, so a ``.env`` in this folder
+#: (``DLUBAL_API_KEY=...``) is where an installed Tekton finds the API key.
+TEKTON_HOME = os.path.join(os.path.expanduser("~"), ".tekton")
+WORKER_DIR = os.path.join(TEKTON_HOME, "worker")
+
+
+def _venv_python(venv):
+    for candidate in (
+        os.path.join(venv, "bin", "python"),
+        os.path.join(venv, "Scripts", "python.exe"),  # Windows
+    ):
         if os.path.isfile(candidate):
             return candidate
-    raise WorkerError(
-        "No venv found in the repo ({}). Expected: .venv in the repo root - "
-        "run 'uv sync --extra dev' in the repo.".format(repo_root)
+    return None
+
+
+def find_worker_python(repo_root=None):
+    """The worker interpreter, or None. Never raises.
+
+    Rhino's own interpreter will not do - it is 3.9 and has no grpc. The order
+    runs from told to conventional: ``TEKTON_WORKER_PYTHON``, then the repo's
+    ``.venv`` when Tekton runs from a checkout, then ``~/.tekton/worker`` for
+    a Tekton installed from the Package Manager.
+    """
+    explicit = os.environ.get(WORKER_PYTHON_ENV_VAR, "").strip()
+    if explicit:
+        return explicit if os.path.isfile(explicit) else None
+    if repo_root:
+        found = _venv_python(os.path.join(repo_root, ".venv"))
+        if found:
+            return found
+    return _venv_python(WORKER_DIR)
+
+
+def worker_setup_hint(repo_root=None):
+    """What to do when there is no worker - for messages in GH."""
+    if repo_root:
+        return "Run 'uv sync --extra dev' in the repo ({}).".format(repo_root)
+    from tekton_gh import __version__
+
+    return (
+        "Create the worker environment once (Python 3.12, needs uv):\n"
+        "  uv venv --python 3.12 {dir}\n"
+        "  uv pip install --python {dir} tekton-app=={v} compas_opensees=={v}\n"
+        "or point {var} at a Python that has them.".format(dir=WORKER_DIR, v=__version__, var=WORKER_PYTHON_ENV_VAR)
     )
+
+
+def worker_python(repo_root=None):
+    """Like :func:`find_worker_python`, but loud when there is none."""
+    found = find_worker_python(repo_root)
+    if found:
+        return found
+    explicit = os.environ.get(WORKER_PYTHON_ENV_VAR, "").strip()
+    if explicit:
+        raise WorkerError("{} points at {}, which does not exist.".format(WORKER_PYTHON_ENV_VAR, explicit))
+    raise WorkerError("No worker environment found. " + worker_setup_hint(repo_root))
 
 
 def run_backend(
@@ -69,8 +118,9 @@ def run_backend(
     Parameters
     ----------
     structural_model : compas_timber_fea.core.model.StructuralModel
-    repo_root : str
-        Root of the monorepo; the venv with the backend packages lives there.
+    repo_root : str or None
+        Root of the monorepo when Tekton runs from a checkout; the venv with
+        the backend packages lives there. None for an installed Tekton.
     backend : {'rfem', 'rstab', 'saf', 'opensees'}
     load_cases : list of int, optional
         Load cases whose results are read. None = all.
@@ -142,7 +192,9 @@ def run_backend(
     try:
         completed = subprocess.run(
             command,
-            cwd=repo_root,
+            # The worker reads a .env from its working directory: the repo's
+            # for a checkout, ~/.tekton/.env for an installed Tekton.
+            cwd=repo_root or (TEKTON_HOME if os.path.isdir(TEKTON_HOME) else None),
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
