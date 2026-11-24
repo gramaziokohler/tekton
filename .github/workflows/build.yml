@@ -25,6 +25,12 @@ jobs:
         with:
           enable-cache: true
 
+      # gmsh (plate meshing for OpenSees) loads these at import; the Ubuntu
+      # runner doesn't ship them, Windows wheels bundle their own.
+      - name: System libraries for gmsh (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libxcursor1 libxft2 libxinerama1
+
       # Installs the whole workspace (the four packages under packages/) from
       # uv.lock, using the interpreter pinned in .python-version.
       - name: Install workspace
