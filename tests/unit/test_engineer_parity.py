@@ -9,7 +9,6 @@ into the engineer's open model.
 import pytest
 from compas.geometry import Line
 from compas.geometry import Point
-from compas.geometry import Vector
 from compas_timber.elements import Beam
 from compas_timber.model import TimberModel
 
