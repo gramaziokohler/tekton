@@ -4,7 +4,6 @@ from compas.geometry import Point
 from compas.geometry import Vector
 from compas_timber.structural import StructuralSegment
 from compas_timber.structural import StructuralGraph
-from compas_timber.structural import BeamStructuralElementSolver
 
 from compas_timber_fea.core.model import StructuralLoadCase
 from compas_timber_fea.core.joint_policy import PlateConnectionPolicy
@@ -292,15 +291,11 @@ class TimberToStructural:
         return Point(point.x * self.scale, point.y * self.scale, point.z * self.scale)
 
     def translate(self, timber_model) -> StructuralModel:
-        # Sicherstellen, dass die strukturellen Segmente generiert sind
+        # Ensure that the structural segments exist before translating.
         if timber_model.beams:
-             if not any(timber_model.get_beam_structural_segments(beam) for beam in timber_model.beams):
-                 print("Generiere strukturelle Segmente...")
-                 timber_model.create_beam_structural_segments()
-             
-             solver = BeamStructuralElementSolver()
-             _, joints_traversed = solver.add_structural_segments(timber_model)
-             solver.add_joint_structural_segments(timber_model, joints_traversed)
+            if not any(timber_model.get_beam_structural_segments(beam) for beam in timber_model.beams):
+                print("Generiere strukturelle Segmente...")
+                timber_model.create_beam_structural_segments()
 
         if list(timber_model.plates):
             from compas_timber.structural import PlateStructuralElementSolver
@@ -418,7 +413,11 @@ class TimberToStructural:
         that reaches analysis without supports is a mechanism.
         """
         by_type = {}
-        unmatched = 0
+        # A beam split into several members is visited once per member, so a
+        # point is "unmatched" only if no member of its beam has it at an end -
+        # counting per member reported a false miss for every other piece.
+        declared = set()
+        matched_points = set()
 
         for u, v in structural_graph.beam_edges:
             beam = structural_graph.beam(u, v)
@@ -435,7 +434,8 @@ class TimberToStructural:
                     support_type = str(support_point[3])
                 else:
                     support_type = types.get(str(index)) or types.get(index) or "pinned"
-                matched = False
+                key = (id(beam), index)
+                declared.add(key)
                 for node in (u, v):
                     node_point = structural_graph.node_point(node)
                     dx = node_point.x - support_point[0]
@@ -443,10 +443,9 @@ class TimberToStructural:
                     dz = node_point.z - support_point[2]
                     if (dx * dx + dy * dy + dz * dz) ** 0.5 <= tol:
                         by_type.setdefault(support_type, set()).add(node_to_id(structural_graph, node))
-                        matched = True
-                if not matched:
-                    unmatched += 1
+                        matched_points.add(key)
 
+        unmatched = len(declared - matched_points)
         if unmatched:
             self.report.append(f"{unmatched} declared support point(s) matched no structural node and were ignored")
 
