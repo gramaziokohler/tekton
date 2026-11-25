@@ -12,9 +12,9 @@ license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
     "PySide6",
-    "compas_timber_fea == 0.1.0",
-    "compas_dlubal == 0.1.0",
-    "compas_saf == 0.1.0",
+    "tekton-core == 0.1.0",
+    "tekton-dlubal == 0.1.0",
+    "tekton-saf == 0.1.0",
 ]
 
 [project.scripts]

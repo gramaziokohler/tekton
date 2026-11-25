@@ -16,11 +16,15 @@ bump + changelog -> tag vX.Y.Z -> release.yml (PyPI) -> publish_yak (test)
 
 | Where | What |
 | --- | --- |
-| PyPI | `compas_timber_fea`, `tekton-gh` (Rhino side, Python 3.9+); `compas_dlubal`, `compas_opensees`, `compas_saf`, `tekton-app` (worker, 3.10+/3.12) |
+| PyPI | `tekton-core`, `tekton-gh` (Rhino side, Python 3.9+); `tekton-dlubal`, `tekton-opensees`, `tekton-saf`, `tekton-app` (worker, 3.10+/3.12) |
 | Yak (`tekton`, `rh8`) | the 29 `.ghuser` components, icon, README, LICENSE |
 
 All packages share one version (`[tool.bumpversion]` in `pyproject.toml`) and
 pin each other exactly.
+The PyPI names are Tekton's own; the import names stay as they are
+(`tekton-core` imports as `compas_timber_fea`, `tekton-dlubal` as
+`compas_dlubal`, `tekton-opensees` as `compas_opensees`, `tekton-saf` as
+`compas_saf`).
 
 ## Two modes, one source
 
@@ -33,7 +37,7 @@ installed and searches for no repo; a repo named explicitly (a `repo` input,
 or `TEKTON_REPO`) still wins.
 
 The worker of an installed Tekton lives in `~/.tekton/worker` (Python 3.12,
-`tekton-app` + `compas_opensees` at the same version), and reads the Dlubal
+`tekton-app` + `tekton-opensees` at the same version), and reads the Dlubal
 key from `TEKTON_API_KEY`/`DLUBAL_API_KEY` or `~/.tekton/.env`.
 `TEKTON_WORKER_PYTHON` overrides the location. `Tekton Info` reports both.
 

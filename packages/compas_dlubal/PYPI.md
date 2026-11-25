@@ -1,6 +1,6 @@
-# compas_dlubal
+# tekton-dlubal
 
-Dlubal RFEM 6 / RSTAB 9 adapter for Tekton: pushes a Tekton `StructuralModel`
+Imported as `compas_dlubal`. Dlubal RFEM 6 / RSTAB 9 adapter for Tekton: pushes a Tekton `StructuralModel`
 through the Dlubal gRPC API (`dlubal-api`), runs the calculation and the timber
 design add-on, and reads the results back. Needs a Dlubal licence and API key;
 RFEM runs on Windows.

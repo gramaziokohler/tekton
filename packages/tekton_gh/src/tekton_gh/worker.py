@@ -83,7 +83,7 @@ def worker_setup_hint(repo_root=None):
     return (
         "Create the worker environment once (Python 3.12, needs uv):\n"
         "  uv venv --python 3.12 {dir}\n"
-        "  uv pip install --python {dir} tekton-app=={v} compas_opensees=={v}\n"
+        "  uv pip install --python {dir} tekton-app=={v} tekton-opensees=={v}\n"
         "or point {var} at a Python that has them.".format(dir=WORKER_DIR, v=__version__, var=WORKER_PYTHON_ENV_VAR)
     )
 

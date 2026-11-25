@@ -2,7 +2,7 @@
 
 The Python runtime behind the Tekton Grasshopper components for Rhino 8. You do
 not install this by hand: install **Tekton** from Rhino's Package Manager, and
-Rhino installs this package (and `compas_timber_fea`) the first time a
+Rhino installs this package (and `tekton-core`) the first time a
 component runs.
 
 Part of [Tekton](https://github.com/gramaziokohler/tekton), which carries a [COMPAS Timber](https://github.com/gramaziokohler/compas_timber)

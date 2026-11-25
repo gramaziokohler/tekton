@@ -68,7 +68,7 @@ jobs:
 
       - name: Build sdists and wheels
         run: |
-          for package in compas_timber_fea compas_dlubal compas_opensees compas_saf tekton-app tekton-gh; do
+          for package in tekton-core tekton-dlubal tekton-opensees tekton-saf tekton-app tekton-gh; do
             uv build --package "$package" --out-dir dist
           done
           ls -l dist

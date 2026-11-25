@@ -16,13 +16,13 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "compas-dlubal",
-    "compas-opensees",
-    "compas-saf",
-    "compas-timber-fea",
     "tekton",
     "tekton-app",
+    "tekton-core",
+    "tekton-dlubal",
     "tekton-gh",
+    "tekton-opensees",
+    "tekton-saf",
 ]
 
 [[package]]
@@ -462,23 +462,6 @@ wheels = [
 ]
 
 [[package]]
-name = "compas-dlubal"
-version = "0.1.0"
-source = { editable = "packages/compas_dlubal" }
-dependencies = [
-    { name = "compas-timber-fea" },
-    { name = "dlubal-api", version = "2.13.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "dlubal-api", version = "2.16.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "compas-timber-fea", editable = "packages/compas_timber_fea" },
-    { name = "dlubal-api", marker = "python_full_version < '3.11'", specifier = "==2.13.8" },
-    { name = "dlubal-api", marker = "python_full_version >= '3.11'", specifier = "==2.16.7" },
-]
-
-[[package]]
 name = "compas-invocations2"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -507,41 +490,6 @@ wheels = [
 ]
 
 [[package]]
-name = "compas-opensees"
-version = "0.1.0"
-source = { editable = "packages/compas_opensees" }
-dependencies = [
-    { name = "compas-timber-fea" },
-    { name = "gmsh" },
-    { name = "openseespy", marker = "python_full_version >= '3.12'" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "compas-timber-fea", editable = "packages/compas_timber_fea" },
-    { name = "gmsh", specifier = ">=4.13" },
-    { name = "openseespy", marker = "python_full_version >= '3.12'", specifier = ">=3.8" },
-]
-
-[[package]]
-name = "compas-saf"
-version = "0.1.0"
-source = { editable = "packages/compas_saf" }
-dependencies = [
-    { name = "compas-timber-fea" },
-    { name = "openpyxl" },
-    { name = "pandas", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
-    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14'" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "compas-timber-fea", editable = "packages/compas_timber_fea" },
-    { name = "openpyxl" },
-    { name = "pandas" },
-]
-
-[[package]]
 name = "compas-timber"
 version = "2.1.1rc1"
 source = { git = "https://github.com/gramaziokohler/compas_timber.git?rev=4f45dc2019a8bee35c03665d17ce05412c64989e#4f45dc2019a8bee35c03665d17ce05412c64989e" }
@@ -552,21 +500,6 @@ dependencies = [
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-]
-
-[[package]]
-name = "compas-timber-fea"
-version = "0.1.0"
-source = { editable = "packages/compas_timber_fea" }
-dependencies = [
-    { name = "compas" },
-    { name = "compas-timber" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "compas", specifier = ">=2.15,<2.16" },
-    { name = "compas-timber", git = "https://github.com/gramaziokohler/compas_timber.git?rev=4f45dc2019a8bee35c03665d17ce05412c64989e" },
 ]
 
 [[package]]
@@ -3187,12 +3120,12 @@ name = "tekton"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "compas-dlubal" },
-    { name = "compas-opensees" },
-    { name = "compas-saf" },
-    { name = "compas-timber-fea" },
     { name = "tekton-app" },
+    { name = "tekton-core" },
+    { name = "tekton-dlubal" },
     { name = "tekton-gh" },
+    { name = "tekton-opensees" },
+    { name = "tekton-saf" },
 ]
 
 [package.optional-dependencies]
@@ -3214,18 +3147,18 @@ release = [
 requires-dist = [
     { name = "build", marker = "extra == 'release'" },
     { name = "bump-my-version", marker = "extra == 'release'" },
-    { name = "compas-dlubal", editable = "packages/compas_dlubal" },
     { name = "compas-invocations2", marker = "extra == 'release'", specifier = ">=1.3" },
-    { name = "compas-opensees", editable = "packages/compas_opensees" },
-    { name = "compas-saf", editable = "packages/compas_saf" },
-    { name = "compas-timber-fea", editable = "packages/compas_timber_fea" },
     { name = "invoke", marker = "extra == 'release'", specifier = ">=2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
     { name = "pythonnet", marker = "sys_platform == 'win32' and extra == 'dev'", specifier = ">=3.0" },
     { name = "requests", marker = "extra == 'release'" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "tekton-app", editable = "packages/tekton_app" },
+    { name = "tekton-core", editable = "packages/compas_timber_fea" },
+    { name = "tekton-dlubal", editable = "packages/compas_dlubal" },
     { name = "tekton-gh", editable = "packages/tekton_gh" },
+    { name = "tekton-opensees", editable = "packages/compas_opensees" },
+    { name = "tekton-saf", editable = "packages/compas_saf" },
 ]
 provides-extras = ["dev", "release"]
 
@@ -3234,18 +3167,50 @@ name = "tekton-app"
 version = "0.1.0"
 source = { editable = "packages/tekton_app" }
 dependencies = [
-    { name = "compas-dlubal" },
-    { name = "compas-saf" },
-    { name = "compas-timber-fea" },
     { name = "pyside6" },
+    { name = "tekton-core" },
+    { name = "tekton-dlubal" },
+    { name = "tekton-saf" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "compas-dlubal", editable = "packages/compas_dlubal" },
-    { name = "compas-saf", editable = "packages/compas_saf" },
-    { name = "compas-timber-fea", editable = "packages/compas_timber_fea" },
     { name = "pyside6" },
+    { name = "tekton-core", editable = "packages/compas_timber_fea" },
+    { name = "tekton-dlubal", editable = "packages/compas_dlubal" },
+    { name = "tekton-saf", editable = "packages/compas_saf" },
+]
+
+[[package]]
+name = "tekton-core"
+version = "0.1.0"
+source = { editable = "packages/compas_timber_fea" }
+dependencies = [
+    { name = "compas" },
+    { name = "compas-timber" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "compas", specifier = ">=2.15,<2.16" },
+    { name = "compas-timber", git = "https://github.com/gramaziokohler/compas_timber.git?rev=4f45dc2019a8bee35c03665d17ce05412c64989e" },
+]
+
+[[package]]
+name = "tekton-dlubal"
+version = "0.1.0"
+source = { editable = "packages/compas_dlubal" }
+dependencies = [
+    { name = "dlubal-api", version = "2.13.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "dlubal-api", version = "2.16.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "tekton-core" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "dlubal-api", marker = "python_full_version < '3.11'", specifier = "==2.13.8" },
+    { name = "dlubal-api", marker = "python_full_version >= '3.11'", specifier = "==2.16.7" },
+    { name = "tekton-core", editable = "packages/compas_timber_fea" },
 ]
 
 [[package]]
@@ -3253,11 +3218,46 @@ name = "tekton-gh"
 version = "0.1.0"
 source = { editable = "packages/tekton_gh" }
 dependencies = [
-    { name = "compas-timber-fea" },
+    { name = "tekton-core" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "compas-timber-fea", editable = "packages/compas_timber_fea" }]
+requires-dist = [{ name = "tekton-core", editable = "packages/compas_timber_fea" }]
+
+[[package]]
+name = "tekton-opensees"
+version = "0.1.0"
+source = { editable = "packages/compas_opensees" }
+dependencies = [
+    { name = "gmsh" },
+    { name = "openseespy", marker = "python_full_version >= '3.12'" },
+    { name = "tekton-core" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "gmsh", specifier = ">=4.13" },
+    { name = "openseespy", marker = "python_full_version >= '3.12'", specifier = ">=3.8" },
+    { name = "tekton-core", editable = "packages/compas_timber_fea" },
+]
+
+[[package]]
+name = "tekton-saf"
+version = "0.1.0"
+source = { editable = "packages/compas_saf" }
+dependencies = [
+    { name = "openpyxl" },
+    { name = "pandas", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14'" },
+    { name = "tekton-core" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "openpyxl" },
+    { name = "pandas" },
+    { name = "tekton-core", editable = "packages/compas_timber_fea" },
+]
 
 [[package]]
 name = "tomli"

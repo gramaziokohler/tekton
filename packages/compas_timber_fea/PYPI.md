@@ -1,6 +1,6 @@
-# compas_timber_fea
+# tekton-core
 
-The neutral layer of Tekton: the `TimberToStructural` translator from a COMPAS
+Imported as `compas_timber_fea`. The neutral layer of Tekton: the `TimberToStructural` translator from a COMPAS
 Timber model to a `StructuralModel`, the joint and plate policies, units,
 preflight checks, EN 1995 design checks, JSON serialisation, and putting
 results back onto the timber model. Pure Python; it also runs inside Rhino 8

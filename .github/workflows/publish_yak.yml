@@ -42,7 +42,7 @@ jobs:
         shell: pwsh
         run: |
           $version = uv run --no-sync python -c "import tasks; print(tasks.current_version())"
-          foreach ($package in @("tekton-gh", "compas-timber-fea")) {
+          foreach ($package in @("tekton-gh", "tekton-core")) {
             $code = (Invoke-WebRequest -Uri "https://pypi.org/pypi/$package/$version/json" -SkipHttpErrorCheck).StatusCode
             if ($code -ne 200) { Write-Error "$package $version is not on PyPI (HTTP $code). Run release.yml first."; exit 1 }
           }

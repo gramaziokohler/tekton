@@ -21,7 +21,7 @@ requires-python = ">=3.9"
 # the root pyproject.toml). From a repo checkout the components still put
 # packages/*/src on sys.path instead (see tekton_gh/env.py).
 dependencies = [
-    "compas_timber_fea == 0.1.0",
+    "tekton-core == 0.1.0",
 ]
 
 [project.urls]

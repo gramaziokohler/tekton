@@ -1,6 +1,6 @@
-# compas_opensees
+# tekton-opensees
 
-OpenSees backend for Tekton: builds and solves a Tekton `StructuralModel` with
+Imported as `compas_opensees`. OpenSees backend for Tekton: builds and solves a Tekton `StructuralModel` with
 openseespy (beams, springs, rigid links, shells meshed with gmsh) and reads the
 results back. No licence and no desktop application needed.
 

@@ -1,6 +1,6 @@
-# compas_saf
+# tekton-saf
 
-SAF exporter for Tekton: writes a Tekton `StructuralModel` as a
+Imported as `compas_saf`. SAF exporter for Tekton: writes a Tekton `StructuralModel` as a
 [SAF](https://www.saf.guide/) spreadsheet that most structural analysis
 programs can import.
 

@@ -9,10 +9,10 @@ requires-python = ">=3.10"
 # This root project exists so the workspace can be locked and installed as a
 # whole (uv sync), and so CI has a single install target.
 dependencies = [
-    "compas_timber_fea",
-    "compas_dlubal",
-    "compas_opensees",
-    "compas_saf",
+    "tekton-core",
+    "tekton-dlubal",
+    "tekton-opensees",
+    "tekton-saf",
     "tekton-app",
     "tekton-gh",
 ]
@@ -41,10 +41,10 @@ release = [
 members = ["packages/*"]
 
 [tool.uv.sources]
-compas_timber_fea = { workspace = true }
-compas_dlubal = { workspace = true }
-compas_opensees = { workspace = true }
-compas_saf = { workspace = true }
+tekton-core = { workspace = true }
+tekton-dlubal = { workspace = true }
+tekton-opensees = { workspace = true }
+tekton-saf = { workspace = true }
 tekton-app = { workspace = true }
 tekton-gh = { workspace = true }
 # Tekton depends on the compas_timber.structural API, which lives on the
@@ -78,20 +78,20 @@ replace = 'version = "{new_version}"'
 # package name is part of the search.
 [[tool.bumpversion.files]]
 glob = "packages/*/pyproject.toml"
-search = '"compas_timber_fea == {current_version}"'
-replace = '"compas_timber_fea == {new_version}"'
+search = '"tekton-core == {current_version}"'
+replace = '"tekton-core == {new_version}"'
 ignore_missing_version = true
 
 [[tool.bumpversion.files]]
 glob = "packages/*/pyproject.toml"
-search = '"compas_dlubal == {current_version}"'
-replace = '"compas_dlubal == {new_version}"'
+search = '"tekton-dlubal == {current_version}"'
+replace = '"tekton-dlubal == {new_version}"'
 ignore_missing_version = true
 
 [[tool.bumpversion.files]]
 glob = "packages/*/pyproject.toml"
-search = '"compas_saf == {current_version}"'
-replace = '"compas_saf == {new_version}"'
+search = '"tekton-saf == {current_version}"'
+replace = '"tekton-saf == {new_version}"'
 ignore_missing_version = true
 
 [[tool.bumpversion.files]]
