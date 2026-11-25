@@ -63,6 +63,21 @@ def test_repeated_translate_adds_nothing():
     assert len(structural.members) == 3
 
 
+def test_beam_added_after_a_translate_gets_segments():
+    model = TimberModel()
+    girder = Beam.from_centerline(Line(Point(0, 0, 0), Point(4, 0, 0)), 0.2, 0.4, z_vector=Vector(0, 0, 1))
+    model.add_element(girder)
+    TimberToStructural().translate(model)  # the girder now has its segments, alone
+
+    leg = Beam.from_centerline(Line(Point(2, 0, -3), Point(2, 0, 0)), 0.2, 0.4, z_vector=Vector(1, 0, 0))
+    model.add_element(leg)
+    TButtJoint.create(model, leg, girder)
+    structural = TimberToStructural().translate(model)
+
+    assert _segment_counts(model) == [2, 1]  # regenerated: the girder split at the new leg
+    assert len(structural.members) == 3
+
+
 def test_support_on_split_beam_not_reported_unmatched():
     model, _, _ = _girder_and_leg()
 

@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **tekton_gh**: the Grasshopper worker call passes `--delete-all` for rfem/rstab, matching the documented "every run rebuilds" contract.
 
 ### Fixed
-- **compas_timber_fea**: Translate made the structural segments twice, doubling them on every run and mixing its own into a model's existing ones. Now they are made only when the model has none.
+- **compas_timber_fea**: Translate made the structural segments twice, doubling them on every run and mixing its own into a model's existing ones. Now they are made only when a beam has none - then all are regenerated, so a beam added after an earlier translate is no longer silently left out of the analysis.
 - **compas_timber_fea**: "support point(s) matched no structural node" no longer appears for supports on beams split into several members; only points that match no node are counted.
 - **compas_dlubal**: surfaces were pushed with RFEM's library variant of the timber grade as orthotropic 2D - E0 along the surface's local x, E90 (370 MPa for C24) across, axes the neutral model never set. A simply supported square plate came back as a one-way slab, 3.2x softer than Navier. The importer now overwrites the variant with the neutral (isotropic) stiffness: E0 both ways, nu and G from the material. Found by the plate calibration.
 - **compas_dlubal**: an active timber design add-on left over in RFEM's base data (which survive `delete_all`) made every following non-design run calculate nothing; the importer switches it off when `design` is not requested.

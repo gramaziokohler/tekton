@@ -291,15 +291,20 @@ class TimberToStructural:
         return Point(point.x * self.scale, point.y * self.scale, point.z * self.scale)
 
     def translate(self, timber_model) -> StructuralModel:
-        # Ensure that the structural segments exist before translating.
+        # Segments made upstream are kept as they are. But a beam without any
+        # (one added after an earlier translate of the same model) would be
+        # dropped from the structural graph without a word, so if any beam
+        # lacks them the whole set is regenerated -
+        # create_beam_structural_segments clears the old ones first, nothing
+        # is doubled.
         if timber_model.beams:
-            if not any(timber_model.get_beam_structural_segments(beam) for beam in timber_model.beams):
-                print("Generiere strukturelle Segmente...")
+            if not all(timber_model.get_beam_structural_segments(beam) for beam in timber_model.beams):
+                print("Generating structural segments...")
                 timber_model.create_beam_structural_segments()
 
         if list(timber_model.plates):
             from compas_timber.structural import PlateStructuralElementSolver
-            print("Generiere strukturelle Flächen...")
+            print("Generating structural surfaces...")
             # The model *appends* structural surfaces and surface lines on
             # every generation. Translating the same TimberModel twice (a
             # re-solve in Grasshopper) would therefore double every plate in
