@@ -11,13 +11,13 @@ from compas.geometry import Line
 from compas_timber.elements import Beam
 from compas_timber.model import TimberModel
 
-from compas_timber_fea.core.model import StructuralMemberResult
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralResultSet
-from compas_timber_fea.results import ANALYSIS_KEY
-from compas_timber_fea.results import attach_results_to_timber
-from compas_timber_fea.results import samples_by_beam
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.core.model import StructuralMemberResult
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralResultSet
+from tekton_core.results import ANALYSIS_KEY
+from tekton_core.results import attach_results_to_timber
+from tekton_core.results import samples_by_beam
+from tekton_core.translator import TimberToStructural
 
 
 @pytest.fixture

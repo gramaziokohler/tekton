@@ -9,10 +9,10 @@ import pytest
 from compas.geometry import Point
 from compas.geometry import Vector
 
-from compas_dlubal.dlubal.conventions import calculate_beta_from_vector
-from compas_dlubal.dlubal.conventions import point_to_dlubal
-from compas_dlubal.dlubal.conventions import vector_from_dlubal
-from compas_dlubal.dlubal.conventions import vector_to_dlubal
+from tekton_dlubal.dlubal.conventions import calculate_beta_from_vector
+from tekton_dlubal.dlubal.conventions import point_to_dlubal
+from tekton_dlubal.dlubal.conventions import vector_from_dlubal
+from tekton_dlubal.dlubal.conventions import vector_to_dlubal
 
 
 def _triple_product(a, b, c):

@@ -9,12 +9,12 @@ import math
 import pytest
 from compas.data import json_load
 
-from compas_timber_fea.core.joint_policy import JointPolicy
-from compas_timber_fea.core.joint_policy import policy_from_connector_mode
-from compas_timber_fea.core.releases import FREE
-from compas_timber_fea.core.releases import RIGID
-from compas_timber_fea.core.releases import MemberRelease
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.core.joint_policy import JointPolicy
+from tekton_core.core.joint_policy import policy_from_connector_mode
+from tekton_core.core.releases import FREE
+from tekton_core.core.releases import RIGID
+from tekton_core.core.releases import MemberRelease
+from tekton_core.translator import TimberToStructural
 
 STICKS = "tests/timber_model_sticks.json"
 
@@ -139,7 +139,7 @@ def test_translation_reports_joint_decisions(sticks):
 
 
 def test_released_connector_survives_serialization(sticks, tmp_path):
-    from compas_timber_fea.core.model import StructuralModel
+    from tekton_core.core.model import StructuralModel
 
     model = TimberToStructural(joint_policy=JointPolicy.conservative()).translate(sticks)
     path = tmp_path / "model.json"

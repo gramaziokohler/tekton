@@ -6,7 +6,7 @@ no ``match``, no ``slots=`` dataclasses.
 
 What belongs here: anything more than one component needs - path setup, the
 backend worker call, COMPAS <-> Rhino conversions. What does *not* belong
-here: domain logic. That lives in ``compas_timber_fea``; this package is
+here: domain logic. That lives in ``tekton_core``; this package is
 wiring.
 """
 

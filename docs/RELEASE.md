@@ -21,10 +21,8 @@ bump + changelog -> tag vX.Y.Z -> release.yml (PyPI) -> publish_yak (test)
 
 All packages share one version (`[tool.bumpversion]` in `pyproject.toml`) and
 pin each other exactly.
-The PyPI names are Tekton's own; the import names stay as they are
-(`tekton-core` imports as `compas_timber_fea`, `tekton-dlubal` as
-`compas_dlubal`, `tekton-opensees` as `compas_opensees`, `tekton-saf` as
-`compas_saf`).
+The PyPI name and the import name are the same, `-` for `_`
+(`tekton-core` imports as `tekton_core`).
 
 ## Two modes, one source
 
@@ -73,7 +71,7 @@ pypi.org, then release `X.Y.(Z+1)` through every step above.
 
 - `compas_timber` with the plate API released to PyPI; replace the git pin
   in `pyproject.toml` and `requirements.txt`, and lift the `compas < 2.16`
-  cap in `compas_timber_fea`. `release.yml` refuses to publish until the git
+  cap in `tekton_core`. `release.yml` refuses to publish until the git
   pin is gone.
 - PyPI: a trusted publisher per project (repository
   `gramaziokohler/tekton`, workflow `release.yml`, environment `pypi`), and

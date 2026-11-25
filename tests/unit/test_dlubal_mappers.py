@@ -8,16 +8,16 @@ import math
 
 import pytest
 
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralThickness
-from compas_timber_fea.core.releases import MemberRelease
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralThickness
+from tekton_core.core.releases import MemberRelease
 
 rfem = pytest.importorskip("dlubal.api.rfem", reason="dlubal-api not installed")
 
-from compas_dlubal.dlubal.mappers.mapper_members import MemberMapper  # noqa: E402
-from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper  # noqa: E402
-from compas_dlubal.dlubal.mappers.mapper_thicknesses import ThicknessMapper  # noqa: E402
+from tekton_dlubal.dlubal.mappers.mapper_members import MemberMapper  # noqa: E402
+from tekton_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper  # noqa: E402
+from tekton_dlubal.dlubal.mappers.mapper_thicknesses import ThicknessMapper  # noqa: E402
 
 
 @pytest.fixture
@@ -164,7 +164,7 @@ def test_springy_coupling_becomes_a_rigid_member_with_hinges(member_mapper):
 
 
 def test_material_object_resolves_to_rfem_library_name(member_mapper):
-    from compas_timber_fea.core.materials import Material as NeutralMaterial
+    from tekton_core.core.materials import Material as NeutralMaterial
 
     proto = member_mapper.map_material(1, NeutralMaterial.from_preset("GL24h"))
 
@@ -189,8 +189,8 @@ def test_surface_material_variant_is_orthotropic_2d(member_mapper):
 
 
 def test_thickness_can_point_at_the_surface_material(core):
-    from compas_dlubal.dlubal.mappers.mapper_thicknesses import ThicknessMapper
-    from compas_timber_fea.core.model import StructuralThickness
+    from tekton_dlubal.dlubal.mappers.mapper_thicknesses import ThicknessMapper
+    from tekton_core.core.model import StructuralThickness
 
     proto = ThicknessMapper(core).map(StructuralThickness(id=1, name="t", material_id=1, thickness=0.1), material_id=1001)
 
@@ -220,7 +220,7 @@ def test_full_hinge_on_coupling_keeps_the_coupling_type(member_mapper):
 
 def test_plate_material_is_isotropic_with_the_neutral_stiffness():
     """The library's orthotropic 2D variant (E90 across) made a one-way slab; the plate must carry E0 both ways."""
-    from compas_timber_fea.core.materials import Material
+    from tekton_core.core.materials import Material
 
     values = MemberMapper.plate_material_values(Material.resolve("C24"))
     assert values["e_x"] == pytest.approx(11000e6)          # N/m2

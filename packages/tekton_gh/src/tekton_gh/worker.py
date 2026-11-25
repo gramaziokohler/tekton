@@ -21,7 +21,7 @@ installed from the Package Manager, the environment in ``~/.tekton/worker``
 (see :func:`find_worker_python`). ``TEKTON_WORKER_PYTHON`` overrides both.
 
 TODO(scaffold): The worker CLI (`tekton run ...`) does not exist yet. It
-belongs in `tekton_app`, which already depends on compas_dlubal and compas_saf
+belongs in `tekton_app`, which already depends on tekton_dlubal and tekton_saf
 anyway. Until then `run_backend` raises a WorkerError with instructions for
 doing the same step by hand.
 """
@@ -117,7 +117,7 @@ def run_backend(
 
     Parameters
     ----------
-    structural_model : compas_timber_fea.core.model.StructuralModel
+    structural_model : tekton_core.core.model.StructuralModel
     repo_root : str or None
         Root of the monorepo when Tekton runs from a checkout; the venv with
         the backend packages lives there. None for an installed Tekton.
@@ -222,7 +222,7 @@ def run_backend(
     if not os.path.isfile(out_path):
         raise WorkerError("Worker reported success but wrote no result to {}".format(out_path))
 
-    from compas_timber_fea.core.model import StructuralModel
+    from tekton_core.core.model import StructuralModel
 
     return StructuralModel.from_json(out_path), log_lines
 
@@ -231,10 +231,10 @@ def model_fingerprint(structural_model):
     """Short hash over everything in the model that changes the answer.
 
     Kept here as the name the components already import; the implementation
-    lives in the neutral layer (:mod:`compas_timber_fea.core.fingerprint`), so
+    lives in the neutral layer (:mod:`tekton_core.core.fingerprint`), so
     the CLI and the OpenSees path get the same stamp as Grasshopper.
     """
-    from compas_timber_fea.core.fingerprint import model_fingerprint as _fingerprint
+    from tekton_core.core.fingerprint import model_fingerprint as _fingerprint
 
     return _fingerprint(structural_model)
 

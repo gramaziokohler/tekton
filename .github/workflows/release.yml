@@ -79,7 +79,7 @@ jobs:
         run: |
           uv venv --python 3.9 /tmp/rhino39
           VIRTUAL_ENV=/tmp/rhino39 uv pip install --find-links dist tekton-gh
-          /tmp/rhino39/bin/python -c "import tekton_gh, compas_timber_fea; print('ok', compas_timber_fea.__version__)"
+          /tmp/rhino39/bin/python -c "import tekton_gh, tekton_core; print('ok', tekton_core.__version__)"
 
       - uses: actions/upload-artifact@v4
         with:

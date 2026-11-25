@@ -53,7 +53,7 @@ tekton-gh = { workspace = true }
 compas_timber = { git = "https://github.com/gramaziokohler/compas_timber.git", rev = "4f45dc2019a8bee35c03665d17ce05412c64989e" }
 
 # One version for every package, released in lockstep: the components name
-# tekton-gh, which pins compas_timber_fea exactly, so the Rhino side and the
+# tekton-gh, which pins tekton_core exactly, so the Rhino side and the
 # worker always come from the same release. `invoke bump --part patch` (or
 # `bump-my-version bump patch`) rewrites all of the files below at once.
 [tool.bumpversion]
@@ -95,7 +95,7 @@ replace = '"tekton-saf == {new_version}"'
 ignore_missing_version = true
 
 [[tool.bumpversion.files]]
-filename = "packages/compas_timber_fea/src/compas_timber_fea/__init__.py"
+filename = "packages/tekton_core/src/tekton_core/__init__.py"
 search = '__version__ = "{current_version}"'
 replace = '__version__ = "{new_version}"'
 
@@ -114,7 +114,7 @@ line-length = 180
 target-version = "py310"
 # The Rhino side runs on CPython 3.9 (Rhino 8): ruff then reports 3.10-only
 # syntax there as an error. build.yml's rhino-side job catches the rest.
-per-file-target-version = { "packages/compas_timber_fea/**" = "py39", "packages/tekton_gh/**" = "py39" }
+per-file-target-version = { "packages/tekton_core/**" = "py39", "packages/tekton_gh/**" = "py39" }
 # packages/tekton_gh/components/*/code.py are Grasshopper script-component
 # bodies too: they run inside Rhino, where `ghenv` and the input variables are
 # injected by the host, so they do not resolve as standalone modules. The

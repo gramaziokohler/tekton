@@ -2,10 +2,10 @@
 
 Two ways Tekton reaches Rhino. *Installed*: the components come from the
 Package Manager, their `# r: tekton-gh>=X.Y.Z` header has Rhino pip-install
-tekton-gh and compas_timber_fea, and there is nothing to find - see
+tekton-gh and tekton_core, and there is nothing to find - see
 :func:`installed`. *From a checkout*: the components are built from the repo,
 and the problem this module solves is that Rhino's Python does not find
-`compas_timber_fea`, because the package sits in the monorepo and is not
+`tekton_core`, because the package sits in the monorepo and is not
 installed. A repo named explicitly (a `repo` input, or TEKTON_REPO) wins over
 an installed Tekton, so a developer can point released components at a
 checkout. And the Rhino session may already have imported a *different*
@@ -44,9 +44,9 @@ COMMON_LOCATIONS = (
 )
 
 #: Monorepo packages allowed to run inside Rhino (the pure-Python layer).
-#: `compas_dlubal` and `compas_saf` are deliberately absent - they need
+#: `tekton_dlubal` and `tekton_saf` are deliberately absent - they need
 #: grpc/pandas/vtk and only run in the worker (see worker.py).
-IN_PROCESS_PACKAGES = ("compas_timber_fea",)
+IN_PROCESS_PACKAGES = ("tekton_core",)
 
 
 def installed():
@@ -258,7 +258,7 @@ def tekton_repo_root(explicit=None, document_path=None):
 
 
 def ensure_tekton_path(repo_root=None, purge_conflicting=True, document_path=None):
-    """Make `compas_timber_fea` importable.
+    """Make `tekton_core` importable.
 
     Parameters
     ----------
@@ -296,7 +296,7 @@ def ensure_tekton_path(repo_root=None, purge_conflicting=True, document_path=Non
 
     if purge_conflicting:
         _purge("compas_timber")
-        _purge("compas_timber_fea")
+        _purge("tekton_core")
 
     for package in IN_PROCESS_PACKAGES:
         src = os.path.join(root, "packages", package, "src")
@@ -397,10 +397,10 @@ def diagnose(repo_root=None, document_path=None):
         )
 
     try:
-        import compas_timber_fea  # noqa: F401
+        import tekton_core  # noqa: F401
 
-        lines.append("compas_timber_fea: OK")
+        lines.append("tekton_core: OK")
     except ImportError as exc:
-        lines.append("compas_timber_fea not importable ({})".format(exc))
+        lines.append("tekton_core not importable ({})".format(exc))
 
     return lines

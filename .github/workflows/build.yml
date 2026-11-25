@@ -37,7 +37,7 @@ jobs:
         run: uv run pytest -v
 
   # Rhino 8 runs CPython 3.9 and pip-installs only the Rhino side
-  # (compas_timber_fea + tekton-gh, see the `# r:` headers). The workspace
+  # (tekton_core + tekton-gh, see the `# r:` headers). The workspace
   # itself is locked for 3.10+, so this job builds a plain 3.9 venv with just
   # those two packages and runs the unit tests in Rhino-side mode: tests that
   # need a worker-only package are skipped (tests/unit/conftest.py), anything
@@ -60,7 +60,7 @@ jobs:
           uv venv --python 3.9 .venv39
           VIRTUAL_ENV=.venv39 uv pip install \
             "compas_timber @ git+https://github.com/gramaziokohler/compas_timber.git@${REV}" \
-            ./packages/compas_timber_fea ./packages/tekton_gh "pytest >=7"
+            ./packages/tekton_core ./packages/tekton_gh "pytest >=7"
 
       - name: Test (Rhino side, 3.9)
         env:

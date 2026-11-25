@@ -10,14 +10,14 @@ import pytest
 
 from compas.geometry import Point
 
-from compas_timber_fea.core.materials import Material
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralSupport
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralThickness
-from compas_opensees import run_model
+from tekton_core.core.materials import Material
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralSupport
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralThickness
+from tekton_opensees import run_model
 
 GRAVITY = 9.81
 SIDE = 4.0
@@ -209,7 +209,7 @@ def test_one_way_plate_bends_about_one_axis_only(along):
 def surface_load(model, pressure_z, load_case_id=1, projected=False):
     from compas.geometry import Vector
 
-    from compas_timber_fea.core.model import StructuralSurfaceLoad
+    from tekton_core.core.model import StructuralSurfaceLoad
 
     model.surface_loads = [StructuralSurfaceLoad(
         id=1, surface_id=1, load_case_id=load_case_id,
@@ -252,7 +252,7 @@ def test_a_pressure_on_another_load_case_is_not_applied():
 def test_a_pressure_on_an_unknown_surface_is_ignored_not_crashed():
     from compas.geometry import Vector
 
-    from compas_timber_fea.core.model import StructuralSurfaceLoad
+    from tekton_core.core.model import StructuralSurfaceLoad
 
     model = square_plate(0.5)
     model.load_cases[0].self_weight = False

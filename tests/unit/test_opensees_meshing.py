@@ -11,15 +11,15 @@ import pytest
 
 from compas.geometry import Point
 
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralThickness
-from compas_opensees.meshing import DEFAULT_TARGET_LENGTH
-from compas_opensees.meshing import MESH_TAG_BASE
-from compas_opensees.meshing import mesh_surfaces
-from compas_opensees.meshing import shared_edges
-from compas_opensees.meshing import subdivisions_for
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralThickness
+from tekton_opensees.meshing import DEFAULT_TARGET_LENGTH
+from tekton_opensees.meshing import MESH_TAG_BASE
+from tekton_opensees.meshing import mesh_surfaces
+from tekton_opensees.meshing import shared_edges
+from tekton_opensees.meshing import subdivisions_for
 
 
 def plate_model(second_plate=True, hole=False):
@@ -241,10 +241,10 @@ def test_a_genuinely_large_model_is_still_allowed_at_a_coarser_target():
 def test_the_target_length_reaches_the_mesher_through_run_model():
     """The knob exists on the runner; the chain from run_model has to carry it,
     or the setting is silently ignored - the worst kind of control."""
-    from compas_timber_fea.core.materials import Material
-    from compas_timber_fea.core.model import StructuralLoadCase
-    from compas_timber_fea.core.model import StructuralSupport
-    from compas_opensees import run_model
+    from tekton_core.core.materials import Material
+    from tekton_core.core.model import StructuralLoadCase
+    from tekton_core.core.model import StructuralSupport
+    from tekton_opensees import run_model
 
     def square(target):
         side, divisions = 4.0, 8

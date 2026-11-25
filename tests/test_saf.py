@@ -2,8 +2,8 @@ import os
 
 from compas.data import json_load
 
-from compas_timber_fea.translator import TimberToStructural
-from compas_saf.exporter.saf import SAFExporter
+from tekton_core.translator import TimberToStructural
+from tekton_saf.exporter.saf import SAFExporter
 
 # Configuration
 HERE = os.path.dirname(__file__)

@@ -26,10 +26,10 @@ The repository is a `uv` workspace holding six packages under `packages/`.
 
 | Package | Role | Runs where |
 | --- | --- | --- |
-| [`compas_timber_fea`](packages/compas_timber_fea) | The neutral layer: `TimberToStructural` translator, joint and plate policies, units, preflight, serialization, results back onto beams | anywhere, including Rhino's Python 3.9 |
-| [`compas_dlubal`](packages/compas_dlubal) | RFEM/RSTAB adapter: gRPC client, object mappers, result reader | Python ≥ 3.10 (the `dlubal-api` floor) |
-| [`compas_opensees`](packages/compas_opensees) | OpenSees backend: builder, gmsh plate meshing, analysis loop, result reader. No licence, no desktop application | Python ≥ 3.12 |
-| [`compas_saf`](packages/compas_saf) | SAF `.xlsx` exporter | Python ≥ 3.10 |
+| [`tekton_core`](packages/tekton_core) | The neutral layer: `TimberToStructural` translator, joint and plate policies, units, preflight, serialization, results back onto beams | anywhere, including Rhino's Python 3.9 |
+| [`tekton_dlubal`](packages/tekton_dlubal) | RFEM/RSTAB adapter: gRPC client, object mappers, result reader | Python ≥ 3.10 (the `dlubal-api` floor) |
+| [`tekton_opensees`](packages/tekton_opensees) | OpenSees backend: builder, gmsh plate meshing, analysis loop, result reader. No licence, no desktop application | Python ≥ 3.12 |
+| [`tekton_saf`](packages/tekton_saf) | SAF `.xlsx` exporter | Python ≥ 3.10 |
 | [`tekton_app`](packages/tekton_app) | Desktop GUI (PySide6), the `tekton` CLI, and the worker subprocess Grasshopper calls | Python ≥ 3.10 |
 | [`tekton_gh`](packages/tekton_gh) | 27 Grasshopper components: author loads, supports and materials, translate, run, results, utilisation, visualise, save and load | Rhino 8 |
 
@@ -40,10 +40,10 @@ lives in the neutral layer as an explicit, reported policy.
 ```text
 tekton/
 ├── packages/
-│   ├── compas_timber_fea/   # neutral model, translator, policies, results
-│   ├── compas_dlubal/       # RFEM/RSTAB via gRPC
-│   ├── compas_opensees/     # OpenSees, in-process, licence-free
-│   ├── compas_saf/          # SAF export (xlsx)
+│   ├── tekton_core/   # neutral model, translator, policies, results
+│   ├── tekton_dlubal/       # RFEM/RSTAB via gRPC
+│   ├── tekton_opensees/     # OpenSees, in-process, licence-free
+│   ├── tekton_saf/          # SAF export (xlsx)
 │   ├── tekton_app/          # GUI, `tekton` CLI, worker subprocess
 │   └── tekton_gh/           # Grasshopper components + componentizer
 ├── docs/                    # architecture.html, the diagrams
@@ -188,11 +188,11 @@ and no running application:
 ```python
 from compas.data import json_load
 
-from compas_timber_fea.translator import TimberToStructural
-from compas_timber_fea.results import attach_results_to_timber
-from compas_timber_fea.design import DesignAssumptions
-from compas_timber_fea.design.checks import check_model
-from compas_opensees import run_model
+from tekton_core.translator import TimberToStructural
+from tekton_core.results import attach_results_to_timber
+from tekton_core.design import DesignAssumptions
+from tekton_core.design.checks import check_model
+from tekton_opensees import run_model
 
 timber_model = json_load("timber_model.json")
 
@@ -226,8 +226,8 @@ and that is silent everywhere except in the results.
 For RFEM, swap the solve for the adapter:
 
 ```python
-from compas_dlubal.dlubal.importer import DlubalImporter
-from compas_dlubal.dlubal.result_reader import DlubalResultReader
+from tekton_dlubal.dlubal.importer import DlubalImporter
+from tekton_dlubal.dlubal.result_reader import DlubalResultReader
 
 DlubalImporter(app_type="rfem", delete_all=True).run(structural_model)
 structural_model.results = DlubalResultReader(app_type="rfem").read(
@@ -257,7 +257,7 @@ from RFEM's timber design add-on. Having both is how a wrong one gets caught.
 > same transcriptions, so they cannot catch it either. They are also the base
 > Eurocode recommendations, not a national annex. Use the design numbers for
 > orientation while designing, not for verification. Every table in
-> `compas_timber_fea.design` names the clause it came from, and every report
+> `tekton_core.design` names the clause it came from, and every report
 > repeats this warning.
 
 Still open, in rough order of value:

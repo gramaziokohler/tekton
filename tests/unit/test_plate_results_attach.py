@@ -12,16 +12,16 @@ import pytest
 from compas.geometry import Point
 from compas.geometry import Vector
 
-from compas_timber_fea.core.materials import Material
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralResultSet
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralSurfaceResult
-from compas_timber_fea.core.model import StructuralThickness
-from compas_timber_fea.results import ANALYSIS_KEY
-from compas_timber_fea.results import attach_plate_results_to_timber
+from tekton_core.core.materials import Material
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralResultSet
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralSurfaceResult
+from tekton_core.core.model import StructuralThickness
+from tekton_core.results import ANALYSIS_KEY
+from tekton_core.results import attach_plate_results_to_timber
 
 GUID = "plate-guid-1"
 
@@ -157,8 +157,8 @@ def test_provenance_records_the_load_cases_and_the_axis_caveat():
 # --- utilisation ---------------------------------------------------------
 
 def test_utilisation_is_written_where_it_was_computed():
-    from compas_timber_fea.design import DesignAssumptions
-    from compas_timber_fea.design.plates import check_plates
+    from tekton_core.design import DesignAssumptions
+    from tekton_core.design.plates import check_plates
 
     model = structural()
     plate = FakePlate()
@@ -177,8 +177,8 @@ def test_without_checks_no_utilisation_is_invented():
 
 
 def test_the_envelope_carries_the_governing_check():
-    from compas_timber_fea.design import DesignAssumptions
-    from compas_timber_fea.design.plates import check_plates
+    from tekton_core.design import DesignAssumptions
+    from tekton_core.design.plates import check_plates
 
     model = structural()
     plate = FakePlate()

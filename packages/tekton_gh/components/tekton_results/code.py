@@ -72,20 +72,20 @@ def _remember_repo(root):
 
 
 def _setup(explicit_repo=None):
-    """Make compas_timber_fea + tekton_gh importable.
+    """Make tekton_core + tekton_gh importable.
 
     See TektonInfo when this fails. The purge is needed because Rhino may
     already have another compas_timber loaded (the official plugin, 1.0.5),
     which knows no `compas_timber.structural`.
     """
     # Installed from the Package Manager: the `# r:` header has had Rhino
-    # pip-install tekton-gh and compas_timber_fea, there is no repo to find.
+    # pip-install tekton-gh and tekton_core, there is no repo to find.
     # A repo named explicitly (input or TEKTON_REPO) still wins - that is how
     # a developer points released components at a checkout.
     if not (explicit_repo and str(explicit_repo).strip()) and not os.environ.get("TEKTON_REPO"):
         import importlib.util
 
-        if importlib.util.find_spec("compas_timber_fea") and importlib.util.find_spec("tekton_gh"):
+        if importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"):
             return None
     root = None
     for candidate in _repo_candidates(explicit_repo):
@@ -102,7 +102,7 @@ def _setup(explicit_repo=None):
     # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
-    for package in ("tekton_gh", "compas_timber_fea"):
+    for package in ("tekton_gh", "tekton_core"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
             sys.path.remove(src)
@@ -162,9 +162,9 @@ if structural is None:
 else:
     _setup()
     import importlib
-    import compas_timber_fea.results
-    importlib.reload(compas_timber_fea.results)
-    from compas_timber_fea.results import samples_by_beam
+    import tekton_core.results
+    importlib.reload(tekton_core.results)
+    from tekton_core.results import samples_by_beam
 
     quantity = quantity or "displacement"
     if quantity not in QUANTITIES:

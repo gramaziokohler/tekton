@@ -16,19 +16,19 @@ import pytest
 
 from compas.geometry import Point
 
-from compas_timber_fea.core.materials import Material
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralResultSet
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralSurfaceResult
-from compas_timber_fea.core.model import StructuralThickness
-from compas_timber_fea.design import DesignAssumptions
-from compas_timber_fea.design.checks import MPA_TO_KN_M2
-from compas_timber_fea.design.plates import check_plate_sample
-from compas_timber_fea.design.plates import check_plates
-from compas_timber_fea.design.plates import plate_section_properties
-from compas_timber_fea.design.plates import worst_per_plate
+from tekton_core.core.materials import Material
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralResultSet
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralSurfaceResult
+from tekton_core.core.model import StructuralThickness
+from tekton_core.design import DesignAssumptions
+from tekton_core.design.checks import MPA_TO_KN_M2
+from tekton_core.design.plates import check_plate_sample
+from tekton_core.design.plates import check_plates
+from tekton_core.design.plates import plate_section_properties
+from tekton_core.design.plates import worst_per_plate
 
 THICKNESS = 0.2
 MODULUS = 1.0 * THICKNESS ** 2 / 6.0

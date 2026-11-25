@@ -1,7 +1,7 @@
 """A Tekton installed from the Package Manager needs no repo checkout.
 
 The released components carry `# r: tekton-gh>=X.Y.Z`, so Rhino pip-installs
-tekton-gh and compas_timber_fea before the first solve, and the worker lives
+tekton-gh and tekton_core before the first solve, and the worker lives
 in ~/.tekton/worker. A checkout must keep working exactly as before, and a
 repo named explicitly must win over an installed Tekton - that is how a
 developer points released components at a checkout. And in installed mode
@@ -29,7 +29,7 @@ def _fake_find_spec(installed):
     real = importlib.util.find_spec
 
     def find_spec(name, *args, **kwargs):
-        if name in ("tekton_gh", "compas_timber_fea"):
+        if name in ("tekton_gh", "tekton_core"):
             return object() if installed else None
         return real(name, *args, **kwargs)
 
@@ -82,7 +82,7 @@ def test_an_explicit_repo_wins_over_the_installed_packages(isolated, monkeypatch
     monkeypatch.setattr(importlib.util, "find_spec", _fake_find_spec(True))
     repo = make_repo(isolated / "checkout")
     assert env_module.ensure_tekton_path(repo, purge_conflicting=False) == repo
-    assert os.path.join(repo, "packages", "compas_timber_fea", "src") in sys.path
+    assert os.path.join(repo, "packages", "tekton_core", "src") in sys.path
 
 
 def test_tekton_repo_wins_over_the_installed_packages(isolated, monkeypatch):

@@ -110,7 +110,7 @@ def _installed():
         return False
     import importlib.util
 
-    return bool(importlib.util.find_spec("compas_timber_fea") and importlib.util.find_spec("tekton_gh"))
+    return bool(importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"))
 
 
 installed = _installed()

@@ -21,9 +21,9 @@ class ConsoleStream(QObject):
 
 # Core logic imports
 try:
-    from compas_timber_fea.core.model import StructuralModel
-    from compas_saf.exporter.saf import SAFExporter
-    from compas_dlubal.dlubal.importer import DlubalImporter
+    from tekton_core.core.model import StructuralModel
+    from tekton_saf.exporter.saf import SAFExporter
+    from tekton_dlubal.dlubal.importer import DlubalImporter
 except (ImportError, KeyError):
     # Fallback to relative path for developer execution
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,9 +31,9 @@ except (ImportError, KeyError):
     if parent_dir not in sys.path:
         sys.path.append(parent_dir)
     
-    from compas_timber_fea.core.model import StructuralModel
-    from compas_saf.exporter.saf import SAFExporter
-    from compas_dlubal.dlubal.importer import DlubalImporter
+    from tekton_core.core.model import StructuralModel
+    from tekton_saf.exporter.saf import SAFExporter
+    from tekton_dlubal.dlubal.importer import DlubalImporter
 
 CONFIG_FILE = os.path.expanduser("~/.tekton_prefs.json")
 
@@ -619,7 +619,7 @@ class DlubalExportGUI(QMainWindow):
         # This matches the behavior of test.py and ensures all segments/nodes are generated.
         # We use compas.data.json_load to ensure it is decoded into a TimberModel object.
         if "beams" in data or ("dtype" in data and "compas_timber" in data["dtype"]):
-            from compas_timber_fea.translator import TimberToStructural
+            from tekton_core.translator import TimberToStructural
             
             # If data is a dict, we need to convert it to a TimberModel object
             # because the translator expects a model object with a .beams attribute.
@@ -643,7 +643,7 @@ class DlubalExportGUI(QMainWindow):
         if "structural_model" in data: data = data["structural_model"]
         
         from compas.geometry import Point, Vector
-        from compas_timber_fea.core.model import StructuralNode, StructuralMember, StructuralSection, StructuralSupport, StructuralLoadCase
+        from tekton_core.core.model import StructuralNode, StructuralMember, StructuralSection, StructuralSupport, StructuralLoadCase
         
         nodes = [StructuralNode(id=n["id"], point=Point(*n["point"])) for n in data.get("nodes", [])]
         members = [StructuralMember(id=m["id"], node_start=m["node_start"], node_end=m["node_end"], section_id=m["section_id"], orientation_vector=Vector(*m.get("orientation_vector", [0,0,1]))) for m in data.get("members", [])]

@@ -6,7 +6,7 @@ forces for a subset of members. Two things are pinned here:
 
 1. the parser turns the table into ``metadata["utilization"]`` on the
    member results, on the same stations as the forces;
-2. our own EC5 checks (``compas_timber_fea.design``), fed RFEM's CO1 forces
+2. our own EC5 checks (``tekton_core.design``), fed RFEM's CO1 forces
    and RFEM's assumptions, reproduce RFEM's ratio per member.
 
 The second is the reason WP1b exists as a *test* and not just a feature:
@@ -21,16 +21,16 @@ import os
 import pandas as pd
 import pytest
 
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralResultSet
-from compas_timber_fea.design import DesignAssumptions
-from compas_timber_fea.design import check_model
-from compas_timber_fea.design.checks import worst_per_member
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralResultSet
+from tekton_core.design import DesignAssumptions
+from tekton_core.design import check_model
+from tekton_core.design.checks import worst_per_member
 
-from compas_dlubal.dlubal.result_parsing import design_ratio_summary
-from compas_dlubal.dlubal.result_parsing import member_lengths_from_model
-from compas_dlubal.dlubal.result_parsing import parse_member_design_ratios
-from compas_dlubal.dlubal.result_parsing import parse_member_internal_forces
+from tekton_dlubal.dlubal.result_parsing import design_ratio_summary
+from tekton_dlubal.dlubal.result_parsing import member_lengths_from_model
+from tekton_dlubal.dlubal.result_parsing import parse_member_design_ratios
+from tekton_dlubal.dlubal.result_parsing import parse_member_internal_forces
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 

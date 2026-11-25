@@ -3,7 +3,7 @@
 Writes `beam.attributes['analysis']` with, per load case, sample points (t
 along the physical beam axis, N/Vy/Vz/Mt/My/Mz and displacement) and an
 envelope, plus provenance. The work is done by
-`compas_timber_fea.results.attach_results_to_timber`, offline-tested; this
+`tekton_core.results.attach_results_to_timber`, offline-tested; this
 script only picks the load case and reports.
 
 Provenance is mandatory, not decoration: a number without 'which model state,
@@ -65,20 +65,20 @@ def _remember_repo(root):
 
 
 def _setup(explicit_repo=None):
-    """Make compas_timber_fea + tekton_gh importable.
+    """Make tekton_core + tekton_gh importable.
 
     See TektonInfo when this fails. The purge is needed because Rhino may
     already have another compas_timber loaded (the official plugin, 1.0.5),
     which knows no `compas_timber.structural`.
     """
     # Installed from the Package Manager: the `# r:` header has had Rhino
-    # pip-install tekton-gh and compas_timber_fea, there is no repo to find.
+    # pip-install tekton-gh and tekton_core, there is no repo to find.
     # A repo named explicitly (input or TEKTON_REPO) still wins - that is how
     # a developer points released components at a checkout.
     if not (explicit_repo and str(explicit_repo).strip()) and not os.environ.get("TEKTON_REPO"):
         import importlib.util
 
-        if importlib.util.find_spec("compas_timber_fea") and importlib.util.find_spec("tekton_gh"):
+        if importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"):
             return None
     root = None
     for candidate in _repo_candidates(explicit_repo):
@@ -95,7 +95,7 @@ def _setup(explicit_repo=None):
     # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
-    for package in ("tekton_gh", "compas_timber_fea"):
+    for package in ("tekton_gh", "tekton_core"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
             sys.path.remove(src)
@@ -123,8 +123,8 @@ if model is None or structural is None:
     _warn("model and structural are both needed.")
 else:
     _setup()
-    from compas_timber_fea.results import ANALYSIS_KEY, attach_results_to_timber
-    from compas_timber_fea.results import attach_plate_results_to_timber
+    from tekton_core.results import ANALYSIS_KEY, attach_results_to_timber
+    from tekton_core.results import attach_plate_results_to_timber
 
     results = getattr(structural, "results", {}) or {}
     if not results:
@@ -147,8 +147,8 @@ else:
         # parameter, because a plate has no axis to run along (WP5b).
         plate_checks = None
         try:
-            from compas_timber_fea.design import DesignAssumptions
-            from compas_timber_fea.design.plates import check_plates
+            from tekton_core.design import DesignAssumptions
+            from tekton_core.design.plates import check_plates
 
             plate_checks = check_plates(structural, DesignAssumptions())
         except Exception as error:  # noqa: BLE001 - utilisation is a bonus, forces are not

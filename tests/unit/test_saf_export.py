@@ -9,12 +9,12 @@ import pytest
 from compas.geometry import Point
 from compas.geometry import Vector
 
-from compas_saf.exporter.saf import SAFExporter
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralSection
-from compas_timber_fea.core.model import StructuralSupport
+from tekton_saf.exporter.saf import SAFExporter
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralSection
+from tekton_core.core.model import StructuralSupport
 
 # Valid enum values per the SAF specification (saf.guide).
 SAF_SUPPORT_TYPES = {"Fixed", "Hinged", "Sliding", "Custom"}
@@ -143,7 +143,7 @@ def test_section_dimensions_are_rounded_not_truncated(tmp_path):
 
 def test_load_case_attributes_come_from_the_model(column_model, tmp_path):
     """Action type and load type must reflect the case, not a hardcoded default."""
-    from compas_timber_fea.core.model import StructuralLoadCase
+    from tekton_core.core.model import StructuralLoadCase
 
     column_model.load_cases.append(StructuralLoadCase(id=1, name="Self-Weight", action_category="PERMANENT", self_weight=True))
     column_model.load_cases.append(StructuralLoadCase(id=2, name="Snow", action_category="SNOW"))
@@ -164,7 +164,7 @@ def test_load_case_attributes_come_from_the_model(column_model, tmp_path):
 
 def test_material_properties_come_from_the_material(column_model, tmp_path):
     """A GL24h model must not export with C24 stiffness."""
-    from compas_timber_fea.core.materials import Material
+    from tekton_core.core.materials import Material
 
     column_model.materials[1] = Material.from_preset("GL24h")
 

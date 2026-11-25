@@ -1,14 +1,14 @@
 """Rhino-side test mode.
 
 Rhino 8 runs CPython 3.9 and installs only the Rhino side of Tekton
-(compas_timber_fea, tekton-gh). build.yml therefore runs the unit tests a
+(tekton_core, tekton-gh). build.yml therefore runs the unit tests a
 second time on 3.9 with just those packages, to catch anything that is not
 3.9-clean before Rhino's pip does.
 
 Set ``TEKTON_RHINO_SIDE=1`` for that run. A test that needs a worker-only
 package (the RFEM client, OpenSees, SAF, the app) is then skipped instead of
 failing. Only a missing *worker-only* module is excused: an ImportError from
-compas_timber_fea or tekton_gh still fails, because that is exactly what the
+tekton_core or tekton_gh still fails, because that is exactly what the
 run exists to catch. Without the variable nothing here changes anything.
 """
 
@@ -22,9 +22,9 @@ RHINO_SIDE = os.environ.get("TEKTON_RHINO_SIDE") == "1"
 #: Top-level modules that only exist in the 3.12 worker environment.
 WORKER_ONLY = frozenset(
     (
-        "compas_dlubal",
-        "compas_opensees",
-        "compas_saf",
+        "tekton_dlubal",
+        "tekton_opensees",
+        "tekton_saf",
         "tekton_app",
         "dlubal",
         "grpc",

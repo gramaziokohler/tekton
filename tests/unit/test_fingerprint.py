@@ -22,22 +22,22 @@ import math
 from compas.geometry import Point
 from compas.geometry import Vector
 
-from compas_timber_fea.core.fingerprint import model_fingerprint
-from compas_timber_fea.core.materials import Material
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralMemberLoad
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralPointLoad
-from compas_timber_fea.core.model import StructuralSection
-from compas_timber_fea.core.model import StructuralSupport
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralSurfaceLoad
-from compas_timber_fea.core.model import StructuralThickness
-from compas_timber_fea.core.releases import LoadCombination
-from compas_timber_fea.core.releases import MemberEccentricity
-from compas_timber_fea.core.releases import MemberRelease
+from tekton_core.core.fingerprint import model_fingerprint
+from tekton_core.core.materials import Material
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralMemberLoad
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralPointLoad
+from tekton_core.core.model import StructuralSection
+from tekton_core.core.model import StructuralSupport
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralSurfaceLoad
+from tekton_core.core.model import StructuralThickness
+from tekton_core.core.releases import LoadCombination
+from tekton_core.core.releases import MemberEccentricity
+from tekton_core.core.releases import MemberRelease
 
 
 def _model():
@@ -322,8 +322,8 @@ def test_reordering_load_cases_does_not_change_it():
 def test_results_do_not_change_it():
     """A model with results in it is the same model - otherwise the stamp
     could never match the model it was computed from."""
-    from compas_timber_fea.core.model import StructuralNodeResult
-    from compas_timber_fea.core.model import StructuralResultSet
+    from tekton_core.core.model import StructuralNodeResult
+    from tekton_core.core.model import StructuralResultSet
 
     model = _model()
     result_set = StructuralResultSet(load_case_id=1, name="LC1")
@@ -396,7 +396,7 @@ def test_a_load_on_an_unknown_surface_still_hashes():
 def test_the_payload_can_be_diffed():
     """Why the payload is public: when two models disagree, the answer to
     'which part changed' has to be inspectable, not just 'they differ'."""
-    from compas_timber_fea.core.fingerprint import fingerprint_payload
+    from tekton_core.core.fingerprint import fingerprint_payload
 
     base = fingerprint_payload(_model())
     changed = _model()

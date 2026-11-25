@@ -12,7 +12,7 @@ import pytest
 
 rfem = pytest.importorskip("dlubal.api.rfem", reason="dlubal-api not installed")
 
-from compas_dlubal.dlubal.design_setup import setup_timber_design  # noqa: E402
+from tekton_dlubal.dlubal.design_setup import setup_timber_design  # noqa: E402
 
 
 class Member:

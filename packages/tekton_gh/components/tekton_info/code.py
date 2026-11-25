@@ -91,7 +91,7 @@ installed = False
 if not (repo and str(repo).strip()) and not os.environ.get("TEKTON_REPO"):
     import importlib.util
 
-    installed = bool(importlib.util.find_spec("compas_timber_fea") and importlib.util.find_spec("tekton_gh"))
+    installed = bool(importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"))
 
 root = None if installed else _find_repo(repo)
 if installed:
@@ -115,10 +115,10 @@ else:
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
 
-    # Make the layer that runs inside Rhino importable. compas_dlubal and
-    # compas_saf are deliberately absent: they need grpc/pandas/vtk and Python
+    # Make the layer that runs inside Rhino importable. tekton_dlubal and
+    # tekton_saf are deliberately absent: they need grpc/pandas/vtk and Python
     # >= 3.10, so they only run in the worker process.
-    fea_src = os.path.join(root, "packages", "compas_timber_fea", "src")
+    fea_src = os.path.join(root, "packages", "tekton_core", "src")
     gh_src = os.path.join(root, "packages", "tekton_gh", "src")
     for path in (gh_src, fea_src):
         if os.path.isdir(path) and path not in sys.path:
@@ -164,12 +164,12 @@ if compas_timber is not None:
 
     if structural_ok:
         try:
-            import compas_timber_fea  # noqa: F401
+            import tekton_core  # noqa: F401
 
-            report.append("compas_timber_fea: OK")
+            report.append("tekton_core: OK")
             ok = installed or root is not None
         except ImportError as exc:
-            report.append("compas_timber_fea not importable ({})".format(exc))
+            report.append("tekton_core not importable ({})".format(exc))
 
 report.append("")
 report.append("Backends (RFEM/SAF) do NOT run here but in the worker process:")

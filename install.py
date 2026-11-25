@@ -159,7 +159,7 @@ def check_worker_env(report, fix):
     version = out.strip()
 
     missing = []
-    for module in ("compas", "compas_timber", "compas_timber_fea", "compas_opensees", "gmsh"):
+    for module in ("compas", "compas_timber", "tekton_core", "tekton_opensees", "gmsh"):
         code, _ = run([python, "-c", "import {}".format(module)])
         if code != 0:
             missing.append(module)

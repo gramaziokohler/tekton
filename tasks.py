@@ -34,7 +34,7 @@ GHUSER_BUILD = os.path.join(COMPONENTIZER, "ghuser_build")
 #: What every component header says, by mode. Development components find the
 #: monorepo on disk and keep their own Rhino venv, so a released Tekton and a
 #: checkout never share an environment. A release names one PyPI package;
-#: tekton-gh pulls in compas_timber_fea, which pulls in compas_timber.
+#: tekton-gh pulls in tekton_core, which pulls in compas_timber.
 DEV_VENV = "tekton-test"
 DEV_REQUIREMENTS = "compas, compas_timber"
 RELEASE_VENV = "tekton"

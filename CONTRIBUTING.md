@@ -58,7 +58,7 @@ entirely plausible output. So if a change affects results, the pull request
 should say how you know they are right: a closed-form comparison, a cross-check
 against the other backend, or a recorded fixture.
 
-The same applies to the code tables in `compas_timber_fea.design` and
+The same applies to the code tables in `tekton_core.design` and
 `core/load_catalogue.py`. They were transcribed from the standards by a
 developer, not checked by an engineer, and the tests assert against the same
 transcriptions — so the tests cannot catch a wrong value either. Treat an edit

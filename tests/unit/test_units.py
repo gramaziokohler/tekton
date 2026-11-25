@@ -9,11 +9,11 @@ from compas.geometry import Line
 from compas_timber.elements import Beam
 from compas_timber.model import TimberModel
 
-from compas_timber_fea.core.units import UnitError
-from compas_timber_fea.core.units import check_section_plausible
-from compas_timber_fea.core.units import check_thickness_plausible
-from compas_timber_fea.core.units import scale_to_meters
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.core.units import UnitError
+from tekton_core.core.units import check_section_plausible
+from tekton_core.core.units import check_thickness_plausible
+from tekton_core.core.units import scale_to_meters
+from tekton_core.translator import TimberToStructural
 
 
 def test_known_units_scale_to_meters():

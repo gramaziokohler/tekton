@@ -17,11 +17,11 @@ import pytest
 
 from compas.geometry import Point
 
-from compas_timber_fea.core.model import StructuralLineSupport
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralThickness
+from tekton_core.core.model import StructuralLineSupport
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralThickness
 
 INF = float("inf")
 
@@ -70,8 +70,8 @@ def _with_something_to_solve(model):
     that aborts inside LAPACK rather than failing. A bare chain of supported
     nodes is not a model anyone would solve; a real wall foot carries a wall.
     """
-    from compas_timber_fea.core.model import StructuralMember
-    from compas_timber_fea.core.model import StructuralSection
+    from tekton_core.core.model import StructuralMember
+    from tekton_core.core.model import StructuralSection
 
     model.materials[1] = "C24"
     model.sections.append(StructuralSection(id=1, name="R", material_id=1, width=0.1, height=0.2))
@@ -82,7 +82,7 @@ def _with_something_to_solve(model):
 
 
 def _build(model):
-    from compas_opensees.builder import ModelBuilder
+    from tekton_opensees.builder import ModelBuilder
 
     ops = RecordingOps()
     ModelBuilder(ops, _with_something_to_solve(model)).build()
@@ -113,8 +113,8 @@ def test_it_survives_the_json_round_trip():
     import os
     import tempfile
 
-    from compas_timber_fea.core.serialization import model_from_json
-    from compas_timber_fea.core.serialization import model_to_json
+    from tekton_core.core.serialization import model_from_json
+    from tekton_core.core.serialization import model_to_json
 
     model = _wall(stiffness=5000.0)
     model.line_supports[0].source_element_id = "plate-guid"
@@ -135,8 +135,8 @@ def test_rigid_survives_the_json_round_trip():
     import os
     import tempfile
 
-    from compas_timber_fea.core.serialization import model_from_json
-    from compas_timber_fea.core.serialization import model_to_json
+    from tekton_core.core.serialization import model_from_json
+    from tekton_core.core.serialization import model_to_json
 
     path = os.path.join(tempfile.mkdtemp(), "m.json")
     model_to_json(_wall(), path)
@@ -146,7 +146,7 @@ def test_rigid_survives_the_json_round_trip():
 # --- the fingerprint ------------------------------------------------------
 
 def test_the_fingerprint_notices_a_line_support():
-    from compas_timber_fea.core.fingerprint import model_fingerprint
+    from tekton_core.core.fingerprint import model_fingerprint
 
     without = _wall()
     without.line_supports = []
@@ -154,13 +154,13 @@ def test_the_fingerprint_notices_a_line_support():
 
 
 def test_the_fingerprint_notices_a_changed_line_stiffness():
-    from compas_timber_fea.core.fingerprint import model_fingerprint
+    from tekton_core.core.fingerprint import model_fingerprint
 
     assert model_fingerprint(_wall(stiffness=5000.0)) != model_fingerprint(_wall(stiffness=9000.0))
 
 
 def test_the_fingerprint_ignores_renumbering_of_a_line_support():
-    from compas_timber_fea.core.fingerprint import model_fingerprint
+    from tekton_core.core.fingerprint import model_fingerprint
 
     base = _wall()
     shifted = _wall()
@@ -176,7 +176,7 @@ def test_the_fingerprint_ignores_renumbering_of_a_line_support():
 def test_a_line_support_counts_as_restraint():
     """A plate held only along an edge is supported - preflight must not
     call it a mechanism just because there is no nodal support."""
-    from compas_timber_fea.core.preflight import preflight
+    from tekton_core.core.preflight import preflight
 
     model = StructuralModel()
     model.materials[1] = "C24"
@@ -191,7 +191,7 @@ def test_a_line_support_counts_as_restraint():
 
 def test_a_line_support_of_one_node_is_an_error():
     """One node is a point support written in the wrong place."""
-    from compas_timber_fea.core.preflight import preflight
+    from tekton_core.core.preflight import preflight
 
     model = _wall()
     model.line_supports[0].nodes = [1]
@@ -201,7 +201,7 @@ def test_a_line_support_of_one_node_is_an_error():
 
 
 def test_a_line_support_on_unknown_nodes_is_reported():
-    from compas_timber_fea.core.preflight import preflight
+    from tekton_core.core.preflight import preflight
 
     model = _wall()
     model.line_supports[0].nodes = [1, 2, 999]
@@ -246,7 +246,7 @@ def test_a_springy_direction_becomes_a_spring_not_a_fix():
 
 def test_the_total_stiffness_is_length_times_the_per_metre_value():
     """The invariant. 4 m of 5000 kN/m2 is 20000 kN/m however it is meshed."""
-    from compas_opensees.builder import line_support_stiffnesses
+    from tekton_opensees.builder import line_support_stiffnesses
 
     per_metre = 5000.0
     coarse = line_support_stiffnesses(_wall(spacing=2.0, stiffness=per_metre), 1)
@@ -257,7 +257,7 @@ def test_the_total_stiffness_is_length_times_the_per_metre_value():
 
 
 def test_refining_the_mesh_does_not_change_the_total():
-    from compas_opensees.builder import line_support_stiffnesses
+    from tekton_opensees.builder import line_support_stiffnesses
 
     totals = [
         sum(v["uz"] for v in line_support_stiffnesses(_wall(spacing=s, stiffness=1000.0), 1).values())
@@ -269,7 +269,7 @@ def test_refining_the_mesh_does_not_change_the_total():
 def test_the_end_nodes_carry_half_the_tributary_length():
     """A node in the middle owns half a segment on each side; an end node
     owns only one. Splitting it evenly would stiffen the ends."""
-    from compas_opensees.builder import line_support_stiffnesses
+    from tekton_opensees.builder import line_support_stiffnesses
 
     values = line_support_stiffnesses(_wall(length=4.0, spacing=1.0, stiffness=1000.0), 1)
     assert values[1]["uz"] == pytest.approx(500.0)     # end: 0.5 m tributary
@@ -279,7 +279,7 @@ def test_the_end_nodes_carry_half_the_tributary_length():
 
 def test_an_uneven_chain_weights_by_real_length():
     """Node spacing is not uniform once a mesher has been near it."""
-    from compas_opensees.builder import line_support_stiffnesses
+    from tekton_opensees.builder import line_support_stiffnesses
 
     model = StructuralModel()
     for i, x in enumerate([0.0, 1.0, 5.0], start=1):
@@ -296,7 +296,7 @@ def test_an_uneven_chain_weights_by_real_length():
 def test_a_rigid_direction_stays_rigid_per_node():
     """inf per metre is inf per node - multiplying it by a length is
     meaningless, and a rounding of inf would silently free the support."""
-    from compas_opensees.builder import line_support_stiffnesses
+    from tekton_opensees.builder import line_support_stiffnesses
 
     model = _wall(stiffness=INF)
     model.line_supports[0].ux = 3000.0
@@ -307,7 +307,7 @@ def test_a_rigid_direction_stays_rigid_per_node():
 
 
 def test_a_free_direction_stays_free():
-    from compas_opensees.builder import line_support_stiffnesses
+    from tekton_opensees.builder import line_support_stiffnesses
 
     model = _wall(stiffness=1000.0)
     model.line_supports[0].ux = 0.0
@@ -317,7 +317,7 @@ def test_a_free_direction_stays_free():
 
 def test_a_zero_length_chain_is_refused_rather_than_divided_by():
     """Two nodes in the same place have no length to distribute over."""
-    from compas_opensees.builder import line_support_stiffnesses
+    from tekton_opensees.builder import line_support_stiffnesses
 
     model = StructuralModel()
     model.nodes.append(StructuralNode(id=1, point=Point(0, 0, 0)))
@@ -333,7 +333,7 @@ def test_a_broken_chain_is_a_warning_not_a_crash():
     model = _wall()
     model.line_supports[0].nodes = [1, 2, 999]
 
-    from compas_opensees.builder import ModelBuilder
+    from tekton_opensees.builder import ModelBuilder
 
     ops = RecordingOps()
     built = ModelBuilder(ops, _with_something_to_solve(model)).build()
@@ -347,7 +347,7 @@ def test_a_line_and_a_nodal_support_on_one_node_both_apply():
     The line here holds uz only, the nodal support holds everything, so the
     node ends up with two fix calls rather than one silently replacing the
     other."""
-    from compas_timber_fea.core.model import StructuralSupport
+    from tekton_core.core.model import StructuralSupport
 
     model = _wall(stiffness=INF)
     for dof in ("ux", "uy", "rx", "ry", "rz"):
@@ -380,7 +380,7 @@ def _timber_plate(attributes=None):
 
 
 def _translate(timber_model):
-    from compas_timber_fea.translator import TimberToStructural
+    from tekton_core.translator import TimberToStructural
 
     return TimberToStructural(source_units="m").translate(timber_model)
 
@@ -416,7 +416,7 @@ def test_an_edge_can_carry_a_support_type():
 
 
 def test_an_unknown_support_type_falls_back_and_says_so():
-    from compas_timber_fea.translator import TimberToStructural
+    from tekton_core.translator import TimberToStructural
 
     translator = TimberToStructural(source_units="m")
     structural = translator.translate(_timber_plate({"supported_edges": [[0, "nonsense"]]}))
@@ -426,7 +426,7 @@ def test_an_unknown_support_type_falls_back_and_says_so():
 
 
 def test_an_edge_index_out_of_range_is_reported_not_dropped():
-    from compas_timber_fea.translator import TimberToStructural
+    from tekton_core.translator import TimberToStructural
 
     translator = TimberToStructural(source_units="m")
     structural = translator.translate(_timber_plate({"supported_edges": [99]}))
@@ -477,7 +477,7 @@ def test_the_chain_uses_the_surface_nodes():
 
 
 def test_a_supported_plate_passes_preflight():
-    from compas_timber_fea.core.preflight import preflight
+    from tekton_core.core.preflight import preflight
 
     structural = _translate(_timber_plate({"supported_edges": [0]}))
     assert not any("no supports" in error for error in preflight(structural).errors)

@@ -62,20 +62,20 @@ def _remember_repo(root):
 
 
 def _setup(explicit_repo=None):
-    """Make compas_timber_fea + tekton_gh importable.
+    """Make tekton_core + tekton_gh importable.
 
     See TektonInfo when this fails. The purge is needed because Rhino may
     already have another compas_timber loaded (the official plugin, 1.0.5),
     which knows no `compas_timber.structural`.
     """
     # Installed from the Package Manager: the `# r:` header has had Rhino
-    # pip-install tekton-gh and compas_timber_fea, there is no repo to find.
+    # pip-install tekton-gh and tekton_core, there is no repo to find.
     # A repo named explicitly (input or TEKTON_REPO) still wins - that is how
     # a developer points released components at a checkout.
     if not (explicit_repo and str(explicit_repo).strip()) and not os.environ.get("TEKTON_REPO"):
         import importlib.util
 
-        if importlib.util.find_spec("compas_timber_fea") and importlib.util.find_spec("tekton_gh"):
+        if importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"):
             return None
     root = None
     for candidate in _repo_candidates(explicit_repo):
@@ -92,7 +92,7 @@ def _setup(explicit_repo=None):
     # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
-    for package in ("tekton_gh", "compas_timber_fea"):
+    for package in ("tekton_gh", "tekton_core"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
             sys.path.remove(src)
@@ -122,7 +122,7 @@ try:
     _setup()
     from tekton_gh.rhino_io import attach_value_list
 
-    from compas_timber_fea.core.support_types import support_type_names
+    from tekton_core.core.support_types import support_type_names
 
     attach_value_list(ghenv, support_type_names(), param_index=2, nickname="Support_type")  # type: ignore # noqa: F821
 except Exception:
@@ -138,10 +138,10 @@ else:
 
     tol = tolerance if tolerance else 1e-4
 
-    from compas_timber_fea.core.support_types import SUPPORT_TYPE_ORDER
-    from compas_timber_fea.core.support_types import describe as _describe_support
-    from compas_timber_fea.core.support_types import key_from_name
-    from compas_timber_fea.core.support_types import stiffnesses
+    from tekton_core.core.support_types import SUPPORT_TYPE_ORDER
+    from tekton_core.core.support_types import describe as _describe_support
+    from tekton_core.core.support_types import key_from_name
+    from tekton_core.core.support_types import stiffnesses
 
     support_type = key_from_name(support_type) if support_type else "pinned"
     try:

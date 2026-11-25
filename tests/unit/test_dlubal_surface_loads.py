@@ -12,15 +12,15 @@ import pytest
 
 from compas.geometry import Vector
 
-from compas_timber_fea.core.model import StructuralLineSupport
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralSurfaceLoad
+from tekton_core.core.model import StructuralLineSupport
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralSurfaceLoad
 
 rfem = pytest.importorskip("dlubal.api.rfem", reason="dlubal-api not installed")
 
-from compas_dlubal.dlubal.mappers.mapper_loads import LoadMapper  # noqa: E402
-from compas_dlubal.dlubal.mappers.mapper_supports import SupportMapper  # noqa: E402
-from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper  # noqa: E402
+from tekton_dlubal.dlubal.mappers.mapper_loads import LoadMapper  # noqa: E402
+from tekton_dlubal.dlubal.mappers.mapper_supports import SupportMapper  # noqa: E402
+from tekton_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper  # noqa: E402
 
 
 @pytest.fixture
@@ -107,7 +107,7 @@ def test_a_zero_pressure_produces_nothing(loads):
 
 def test_surface_load_numbers_do_not_collide_with_other_loads(loads):
     """All load objects share one numbering space in RFEM."""
-    from compas_timber_fea.core.model import StructuralPointLoad
+    from tekton_core.core.model import StructuralPointLoad
 
     point = loads.map_point_load(
         StructuralPointLoad(id=1, node_id=1, load_case_id=1, force=Vector(0, 0, -1)))
@@ -196,7 +196,7 @@ def test_the_name_travels(surfaces):
 
 def test_the_nodal_support_mapper_still_works():
     """Guard: line supports are a second kind, not a replacement."""
-    from compas_timber_fea.core.model import StructuralSupport
+    from tekton_core.core.model import StructuralSupport
 
     proto = SupportMapper(rfem.types_for_nodes).map(StructuralSupport(id=1, nodes=[1]))
 

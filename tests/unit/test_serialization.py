@@ -9,14 +9,14 @@ import math
 from compas.geometry import Point
 from compas.geometry import Vector
 
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralSection
-from compas_timber_fea.core.model import StructuralSupport
-from compas_timber_fea.core.releases import LoadCombination
-from compas_timber_fea.core.releases import MemberRelease
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralSection
+from tekton_core.core.model import StructuralSupport
+from tekton_core.core.releases import LoadCombination
+from tekton_core.core.releases import MemberRelease
 
 
 def _model():
@@ -110,7 +110,7 @@ def test_roundtrip_of_a_translated_model(tmp_path):
     from compas_timber.elements import Beam
     from compas_timber.model import TimberModel
 
-    from compas_timber_fea.translator import TimberToStructural
+    from tekton_core.translator import TimberToStructural
 
     timber_model = TimberModel()
     timber_model.add_element(Beam.from_centerline(Line((0, 0, 0), (3, 0, 0)), width=0.1, height=0.2))

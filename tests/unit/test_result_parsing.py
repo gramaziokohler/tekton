@@ -9,16 +9,16 @@ import pandas as pd
 import pytest
 from compas.geometry import Point
 
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
 
-from compas_dlubal.dlubal.result_parsing import ResultColumnError
-from compas_dlubal.dlubal.result_parsing import member_lengths_from_model
-from compas_dlubal.dlubal.result_parsing import parse_member_deformations
-from compas_dlubal.dlubal.result_parsing import parse_member_internal_forces
-from compas_dlubal.dlubal.result_parsing import parse_node_deformations
-from compas_dlubal.dlubal.result_parsing import parse_support_forces
+from tekton_dlubal.dlubal.result_parsing import ResultColumnError
+from tekton_dlubal.dlubal.result_parsing import member_lengths_from_model
+from tekton_dlubal.dlubal.result_parsing import parse_member_deformations
+from tekton_dlubal.dlubal.result_parsing import parse_member_internal_forces
+from tekton_dlubal.dlubal.result_parsing import parse_node_deformations
+from tekton_dlubal.dlubal.result_parsing import parse_support_forces
 
 
 def member_forces_frame():
@@ -135,7 +135,7 @@ def test_member_lengths_from_model():
 
 def test_surface_results_merge_deformation_and_forces_per_mesh_node():
     """Two tables, one sample per (surface, mesh node): position Z-up, N/m -> kN/m, Nm/m -> kNm/m."""
-    from compas_dlubal.dlubal.result_parsing import parse_surface_results
+    from tekton_dlubal.dlubal.result_parsing import parse_surface_results
 
     deformations = pd.DataFrame({"surface_no": [1, 1], "mesh_node_no": [1, 2], "location_x": [0.0, 1.0], "location_y": [0.0, 0.0], "location_z": [-2.8, -2.8], "u_z": [0.001, 0.002]})
     forces = pd.DataFrame({"surface_no": [1, 1], "mesh_node_no": [1, 2], "location_x": [0.0, 1.0], "location_y": [0.0, 0.0], "location_z": [-2.8, -2.8], "m_x": [-15.5, 20.0], "n_x": [-22500.0, 100.0], "v_x": [5.0, 6.0]})
@@ -152,7 +152,7 @@ def test_surface_results_merge_deformation_and_forces_per_mesh_node():
 
 
 def test_surface_results_tolerate_a_missing_table():
-    from compas_dlubal.dlubal.result_parsing import parse_surface_results
+    from tekton_dlubal.dlubal.result_parsing import parse_surface_results
 
     forces = pd.DataFrame({"surface_no": [2], "mesh_node_no": [7], "m_y": [1000.0]})
 

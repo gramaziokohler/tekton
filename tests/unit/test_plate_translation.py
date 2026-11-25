@@ -8,16 +8,16 @@ import pytest
 from compas.data import json_load
 from compas.geometry import Vector
 
-from compas_timber_fea.core.joint_policy import PlateConnectionPolicy
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralSurfaceConnection
-from compas_timber_fea.core.releases import MemberRelease
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.core.joint_policy import PlateConnectionPolicy
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralSurfaceConnection
+from tekton_core.core.releases import MemberRelease
+from tekton_core.translator import TimberToStructural
 
 rfem = pytest.importorskip("dlubal.api.rfem", reason="dlubal-api not installed")
 
-from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper  # noqa: E402
+from tekton_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper  # noqa: E402
 
 PLATES = "tests/timber_model_plates_2.json"
 

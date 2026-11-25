@@ -26,20 +26,20 @@ import pytest
 
 from compas.geometry import Point
 
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralMemberLoad
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralSection
-from compas_timber_fea.core.model import StructuralSupport
-from compas_timber_fea.core.releases import MemberRelease
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralMemberLoad
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralSection
+from tekton_core.core.model import StructuralSupport
+from tekton_core.core.releases import MemberRelease
 
 pytest.importorskip("pandas", reason="SAF export needs pandas")
 
-from compas_saf.exporter.saf import SAFExporter  # noqa: E402
-from compas_saf.exporter.saf import UnsupportedModel  # noqa: E402
-from compas_saf.exporter.saf import fidelity_report  # noqa: E402
+from tekton_saf.exporter.saf import SAFExporter  # noqa: E402
+from tekton_saf.exporter.saf import UnsupportedModel  # noqa: E402
+from tekton_saf.exporter.saf import fidelity_report  # noqa: E402
 
 
 def _model():
@@ -115,8 +115,8 @@ def test_torsion_is_always_a_warning():
 def test_surfaces_are_a_refusal():
     """No surface sheet is written at all, so a plate model would export as
     its beams alone - a different structure, not an emptier one."""
-    from compas_timber_fea.core.model import StructuralSurface
-    from compas_timber_fea.core.model import StructuralThickness
+    from tekton_core.core.model import StructuralSurface
+    from tekton_core.core.model import StructuralThickness
 
     model = _model()
     model.thicknesses.append(StructuralThickness(id=1, name="t", material_id=1, thickness=0.2))
@@ -126,7 +126,7 @@ def test_surfaces_are_a_refusal():
 
 
 def test_line_supports_are_a_refusal():
-    from compas_timber_fea.core.model import StructuralLineSupport
+    from tekton_core.core.model import StructuralLineSupport
 
     model = _model()
     model.line_supports.append(StructuralLineSupport(id=1, nodes=[1, 2]))
