@@ -67,6 +67,15 @@ Tooling: `uv sync --extra dev --extra release`.
 A broken release is never overwritten: `yak yank tekton X.Y.Z` and yank on
 pypi.org, then release `X.Y.(Z+1)` through every step above.
 
+## Yak token
+
+`publish_yak.yml` reads the repository secret `TEKTON_YAK_TOKEN` (set
+2026-11-28) and refuses to run without it - never the gramaziokohler org
+secret `YAK_DF_TOKEN`, which is compas-dev's. To replace it: sign in with
+the McNeel account that owns `tekton` (the first push made it the owner),
+run `yak login --ci` (a non-expiring key), and
+`gh secret set TEKTON_YAK_TOKEN -R gramaziokohler/tekton`.
+
 ## One-time setup still open
 
 - `compas_timber` with the plate API (#866, merged after 3.0.2) released
@@ -76,11 +85,6 @@ pypi.org, then release `X.Y.(Z+1)` through every step above.
 - PyPI: a trusted publisher per project (repository
   `gramaziokohler/tekton`, workflow `release.yml`, environment `pypi`), and
   the `pypi` environment in the repository settings.
-- Yak: Tekton's own token. Sign in with the McNeel account that is to own
-  `tekton` (the first push makes it the owner), run `yak login --ci`, and
-  store the token it prints as the repository secret `TEKTON_YAK_TOKEN`.
-  Not the org secret `YAK_DF_TOKEN` - that one is compas-dev's;
-  `publish_yak.yml` refuses to run without `TEKTON_YAK_TOKEN`.
 - The worker bootstrap: something that creates `~/.tekton/worker` for the
   user (a setup component, or `install.py` installing from PyPI).
 - A real package icon (`packages/tekton_gh/yak_template/icon.png` is the
