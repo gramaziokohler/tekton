@@ -54,7 +54,8 @@ Tooling: `uv sync --extra dev --extra release`.
    `git push origin main vX.Y.Z`.
 5. The tag runs `release.yml`: verify, build, check that `tekton-gh`
    installs on Python 3.9 from the wheels, publish to PyPI (trusted
-   publishing, environment `pypi`). Wait for green.
+   publishing, one job and environment `pypi-<package>` per package).
+   Wait for all six to be green.
 6. *Actions -> publish_yak -> Run workflow*, `test`. It refuses unless
    `X.Y.Z` is on PyPI.
 7. In a clean Rhino 8 (no checkout, no `TEKTON_REPO`): `_TestPackageManager`,
@@ -82,9 +83,12 @@ run `yak login --ci` (a non-expiring key), and
   to PyPI; replace the git pin in `pyproject.toml` and `requirements.txt`
   with that version. `release.yml` refuses to publish until the git pin is
   gone.
-- PyPI: a trusted publisher per project (repository
-  `gramaziokohler/tekton`, workflow `release.yml`, environment `pypi`), and
-  the `pypi` environment in the repository settings.
+- PyPI: a (pending) trusted publisher per project - repository
+  `gramaziokohler/tekton`, workflow `release.yml`, environment
+  `pypi-<project>` (`pypi-tekton-core`, `pypi-tekton-dlubal`, ...). One
+  environment per project because PyPI refuses the same pending publisher
+  for a second not-yet-existing project. The six environments exist in the
+  repository settings, deployments limited to tags `v*`.
 - The worker bootstrap: something that creates `~/.tekton/worker` for the
   user (a setup component, or `install.py` installing from PyPI).
 - A real package icon (`packages/tekton_gh/yak_template/icon.png` is the
