@@ -89,12 +89,18 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    # Trusted publishing: each of the six projects on pypi.org names this
-    # repository, this workflow (release.yml) and this environment as its
-    # publisher, so no token is stored anywhere. Protect the environment with
-    # required reviewers to get a last manual gate before the upload.
+    # Trusted publishing: each project on pypi.org names this repository,
+    # this workflow (release.yml) and its own environment pypi-<package> as
+    # its publisher, so no token is stored anywhere. One environment per
+    # package because PyPI accepts a pending publisher (repo + workflow +
+    # environment) for one not-yet-existing project only.
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [tekton-core, tekton-dlubal, tekton-opensees, tekton-saf, tekton-app, tekton-gh]
     environment:
-      name: pypi
+      name: pypi-${{ matrix.package }}
+      url: https://pypi.org/project/${{ matrix.package }}/
     permissions:
       id-token: write
     steps:
@@ -103,5 +109,14 @@ jobs:
           name: dist
           path: dist/
 
+      # Files are named after the import name (tekton_core-X.Y.Z...).
+      - name: Keep this package's files
+        run: |
+          mkdir upload
+          mv dist/$(echo "${{ matrix.package }}" | tr - _)-* upload/
+          ls -l upload
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: upload/
