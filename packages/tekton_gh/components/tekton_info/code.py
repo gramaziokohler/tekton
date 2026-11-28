@@ -85,8 +85,27 @@ report.append("Python {}".format(sys.version.split()[0]))
 if sys.version_info[:2] != (3, 9):
     report.append("  Note: Rhino 8 / CPython 3.9 was expected.")
 
-root = _find_repo(repo)
-if root is None:
+# Installed from the Package Manager (and no repo named): nothing to find,
+# the packages are importable as they are; only the worker needs a check.
+installed = False
+if not (repo and str(repo).strip()) and not os.environ.get("TEKTON_REPO"):
+    import importlib.util
+
+    installed = bool(importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"))
+
+root = None if installed else _find_repo(repo)
+if installed:
+    from tekton_gh import __version__ as _tekton_version
+    from tekton_gh.worker import find_worker_python, worker_setup_hint
+
+    report.append("Tekton {} (installed from the Package Manager, no repo needed)".format(_tekton_version))
+    _worker = find_worker_python()
+    if _worker:
+        report.append("Worker: {}".format(_worker))
+    else:
+        report.append("Worker: NOT SET UP")
+        report.extend("  " + line for line in worker_setup_hint().splitlines())
+elif root is None:
     report.append("Repo: NOT FOUND")
     report.append("  -> Set the 'repo' input or the TEKTON_REPO environment variable.")
 else:
@@ -96,10 +115,10 @@ else:
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
 
-    # Make the layer that runs inside Rhino importable. compas_dlubal and
-    # compas_saf are deliberately absent: they need grpc/pandas/vtk and Python
+    # Make the layer that runs inside Rhino importable. tekton_dlubal and
+    # tekton_saf are deliberately absent: they need grpc/pandas/vtk and Python
     # >= 3.10, so they only run in the worker process.
-    fea_src = os.path.join(root, "packages", "compas_timber_fea", "src")
+    fea_src = os.path.join(root, "packages", "tekton_core", "src")
     gh_src = os.path.join(root, "packages", "tekton_gh", "src")
     for path in (gh_src, fea_src):
         if os.path.isdir(path) and path not in sys.path:
@@ -138,19 +157,19 @@ if compas_timber is not None:
         structural_ok = False
         report.append("compas_timber.structural: MISSING")
         report.append(
-            "  -> Wrong compas_timber version. Tekton needs the branch "
-            "'structural_graph_plates'. In Rhino: create a dedicated venv with "
-            "that revision (see packages/tekton_gh/README.md)."
+            "  -> Wrong compas_timber version. Tekton needs the pinned revision "
+            "of compas_timber main (newer than 3.0.2). In Rhino: create a "
+            "dedicated venv with it (see packages/tekton_gh/README.md)."
         )
 
     if structural_ok:
         try:
-            import compas_timber_fea  # noqa: F401
+            import tekton_core  # noqa: F401
 
-            report.append("compas_timber_fea: OK")
-            ok = root is not None
+            report.append("tekton_core: OK")
+            ok = installed or root is not None
         except ImportError as exc:
-            report.append("compas_timber_fea not importable ({})".format(exc))
+            report.append("tekton_core not importable ({})".format(exc))
 
 report.append("")
 report.append("Backends (RFEM/SAF) do NOT run here but in the worker process:")

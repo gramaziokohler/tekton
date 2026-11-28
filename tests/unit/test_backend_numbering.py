@@ -14,14 +14,14 @@ import pytest
 
 from compas.geometry import Point
 
-from compas_timber_fea.core.backend_map import MAX_RFEM_NUMBER
-from compas_timber_fea.core.backend_map import BackendMap
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralSection
-from compas_timber_fea.core.model import StructuralSupport
-from compas_timber_fea.translator import stable_id
+from tekton_core.core.backend_map import MAX_RFEM_NUMBER
+from tekton_core.core.backend_map import BackendMap
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralSection
+from tekton_core.core.model import StructuralSupport
+from tekton_core.translator import stable_id
 
 
 def _model():
@@ -51,7 +51,7 @@ def test_the_fixture_really_exceeds_what_rfem_accepts():
 # --- numbering a whole model ---------------------------------------------
 
 def test_numbering_a_model_puts_everything_inside_the_ceiling():
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     backend_map = number_model(_model(), BackendMap(backend="rfem"))
 
@@ -61,7 +61,7 @@ def test_numbering_a_model_puts_everything_inside_the_ceiling():
 
 
 def test_numbering_is_dense_from_one():
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     model = _model()
     model.nodes.append(StructuralNode(id=stable_id("node", 8.0, 0.0, 0.0), point=Point(8, 0, 0)))
@@ -74,7 +74,7 @@ def test_numbering_is_dense_from_one():
 def test_numbering_twice_does_not_renumber():
     """An unchanged model pushed twice must keep every number, or the second
     push replaces objects the engineer has been working on."""
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     model = _model()
     backend_map = number_model(model, BackendMap(backend="rfem"))
@@ -87,7 +87,7 @@ def test_numbering_twice_does_not_renumber():
 
 def test_an_edited_model_keeps_the_numbers_of_what_survived():
     """The whole point of WP6: add an element, and everything else stays put."""
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     model = _model()
     backend_map = number_model(model, BackendMap(backend="rfem"))
@@ -107,7 +107,7 @@ def test_an_edited_model_keeps_the_numbers_of_what_survived():
 def test_a_members_endpoints_are_backend_numbers_not_neutral_ids():
     """The subtle half. Writing a small `no` while leaving `node_start` as a
     hash would produce a member pointing at a node that does not exist."""
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     model = _model()
     backend_map = number_model(model, BackendMap(backend="rfem"))
@@ -121,7 +121,7 @@ def test_a_members_endpoints_are_backend_numbers_not_neutral_ids():
 
 
 def test_a_support_points_at_backend_node_numbers():
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     model = _model()
     backend_map = number_model(model, BackendMap(backend="rfem"))
@@ -135,7 +135,7 @@ def test_a_support_points_at_backend_node_numbers():
 def test_a_result_row_lands_on_the_neutral_member():
     """RFEM reports member 1; the result has to end up on the neutral member,
     whatever its id is."""
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     model = _model()
     backend_map = number_model(model, BackendMap(backend="rfem"))
@@ -148,7 +148,7 @@ def test_a_result_row_lands_on_the_neutral_member():
 def test_a_row_for_an_object_we_did_not_push_is_not_invented():
     """The engineer added a member in RFEM. It has no neutral counterpart, and
     pretending it does would attach its forces to one of ours."""
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     backend_map = number_model(_model(), BackendMap(backend="rfem"))
 
@@ -156,7 +156,7 @@ def test_a_row_for_an_object_we_did_not_push_is_not_invented():
 
 
 def test_the_round_trip_is_exact_for_every_object():
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     model = _model()
     backend_map = number_model(model, BackendMap(backend="rfem"))
@@ -177,7 +177,7 @@ def test_the_numbering_survives_a_session():
     import os
     import tempfile
 
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     model = _model()
     backend_map = number_model(model, BackendMap(backend="rfem"))
@@ -192,7 +192,7 @@ def test_the_numbering_survives_a_session():
 
 def test_the_map_path_sits_next_to_the_model():
     """Findable without being told where it is."""
-    from compas_dlubal.dlubal.numbering import map_path_for
+    from tekton_dlubal.dlubal.numbering import map_path_for
 
     assert map_path_for("/tmp/x/model.json") == "/tmp/x/model.rfem.json"
     assert map_path_for("/tmp/x/model.json", backend="saf") == "/tmp/x/model.saf.json"
@@ -202,7 +202,7 @@ def test_numbering_refuses_a_map_from_another_backend():
     import os
     import tempfile
 
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.numbering import number_model
 
     backend_map = number_model(_model(), BackendMap(backend="rfem"))
     path = os.path.join(tempfile.mkdtemp(), "m.json")

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tekton-opensees"
+version = "0.1.0"
+description = "OpenSees backend for Tekton - pip-installable, headless, runs the whole chain in CI"
+authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
+readme = "PYPI.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "tekton-core == 0.1.0",
+    # openseespywin needs Python >= 3.12 (the Windows wheel), so the solver is
+    # conditional; on older interpreters the package imports but cannot run.
+    "openseespy >= 3.8; python_version >= '3.12'",
+    # OpenSees has no mesher, and the neutral model carries no mesh by design,
+    # so plates are meshed here in the adapter. gmsh rather than compas_cgal
+    # because `setTransfiniteCurve` lets a shared edge's node count be
+    # prescribed - the only way two plates provably meet on the same nodes.
+    # Measured in tests/spike_meshers.py.
+    "gmsh >= 4.13",
+]
+
+[project.urls]
+Repository = "https://github.com/gramaziokohler/tekton"
+Issues = "https://github.com/gramaziokohler/tekton/issues"
+Changelog = "https://github.com/gramaziokohler/tekton/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+package-dir = { "" = "src" }

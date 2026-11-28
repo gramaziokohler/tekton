@@ -22,25 +22,25 @@ import pytest
 from compas.geometry import Point
 from compas.geometry import Vector
 
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralMemberLoad
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralPointLoad
-from compas_timber_fea.core.model import StructuralSection
-from compas_timber_fea.core.model import StructuralSupport
-from compas_timber_fea.core.releases import MemberRelease
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralMemberLoad
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralPointLoad
+from tekton_core.core.model import StructuralSection
+from tekton_core.core.model import StructuralSupport
+from tekton_core.core.releases import MemberRelease
 
 pytest.importorskip("openseespy", reason="openseespy not installed (needs Python >= 3.12 on Windows)")
 
-from compas_opensees import run_model  # noqa: E402
-from compas_opensees.conventions import G_ACC  # noqa: E402
-from compas_opensees.conventions import local_axes  # noqa: E402
-from compas_opensees.conventions import rectangle_torsion_constant  # noqa: E402
-from compas_opensees.conventions import section_constants  # noqa: E402
-from compas_opensees.conventions import to_local  # noqa: E402
-from compas_opensees.runner import load_opensees  # noqa: E402
+from tekton_opensees import run_model  # noqa: E402
+from tekton_opensees.conventions import G_ACC  # noqa: E402
+from tekton_opensees.conventions import local_axes  # noqa: E402
+from tekton_opensees.conventions import rectangle_torsion_constant  # noqa: E402
+from tekton_opensees.conventions import section_constants  # noqa: E402
+from tekton_opensees.conventions import to_local  # noqa: E402
+from tekton_opensees.runner import load_opensees  # noqa: E402
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
@@ -167,9 +167,9 @@ def test_mechanism_fails_loudly():
 def test_a_degenerate_surface_is_reported_not_silently_dropped():
     """Surfaces are built since WP0b (see test_opensees_shells.py); an outline
     that is not a polygon still has to say so rather than vanish."""
-    from compas_timber_fea.core.model import StructuralSurface
+    from tekton_core.core.model import StructuralSurface
 
-    from compas_timber_fea.core.model import StructuralThickness
+    from tekton_core.core.model import StructuralThickness
 
     model = beam_model(4.0)
     model.thicknesses = [StructuralThickness(id=1, name="t", material_id=1, thickness=0.1)]
@@ -241,7 +241,7 @@ def test_sticks_signs_agree_with_rfem_station_by_station(sticks):
 
 def test_results_attach_to_the_timber_model(sticks):
     from compas.data import json_load
-    from compas_timber_fea.results import attach_results_to_timber
+    from tekton_core.results import attach_results_to_timber
 
     model, _ = sticks
     timber = json_load(os.path.join(os.path.dirname(__file__), "..", "timber_model_sticks.json"))

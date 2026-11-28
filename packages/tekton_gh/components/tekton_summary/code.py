@@ -70,7 +70,16 @@ def _remember_repo(root):
 
 
 def _setup(explicit_repo=None):
-    """Make compas_timber_fea + tekton_gh importable. See TektonInfo when this fails."""
+    """Make tekton_core + tekton_gh importable. See TektonInfo when this fails."""
+    # Installed from the Package Manager: the `# r:` header has had Rhino
+    # pip-install tekton-gh and tekton_core, there is no repo to find.
+    # A repo named explicitly (input or TEKTON_REPO) still wins - that is how
+    # a developer points released components at a checkout.
+    if not (explicit_repo and str(explicit_repo).strip()) and not os.environ.get("TEKTON_REPO"):
+        import importlib.util
+
+        if importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"):
+            return None
     root = None
     for candidate in _repo_candidates(explicit_repo):
         candidate = str(candidate).strip() if candidate else ""
@@ -85,7 +94,7 @@ def _setup(explicit_repo=None):
         )
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
-    for package in ("tekton_gh", "compas_timber_fea"):
+    for package in ("tekton_gh", "tekton_core"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
             sys.path.remove(src)
@@ -138,16 +147,16 @@ else:
     try:
         _setup()
 
-        from compas_timber_fea.design import DesignAssumptions
-        from compas_timber_fea.design.checks import check_model
-        from compas_timber_fea.design.plates import check_plates
+        from tekton_core.design import DesignAssumptions
+        from tekton_core.design.checks import check_model
+        from tekton_core.design.plates import check_plates
         from tekton_gh.summary import build_csv
         from tekton_gh.summary import build_report
         from tekton_gh.summary import headline_numbers
 
         model = structural
         if hasattr(model, "to_jsonstring") is False and isinstance(model, str):
-            from compas_timber_fea.core.model import StructuralModel
+            from tekton_core.core.model import StructuralModel
 
             model = StructuralModel.from_json(model)
 

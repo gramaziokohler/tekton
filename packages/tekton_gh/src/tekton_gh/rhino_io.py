@@ -6,7 +6,7 @@ lines from the neutral model, a colour ramp for utilisation values.
 """
 
 #: Rhino unit system -> short name of the Tekton unit contract
-#: (``compas_timber_fea.core.units.UNIT_SCALES``).
+#: (``tekton_core.core.units.UNIT_SCALES``).
 #: Matters because without this translation a mm model silently turns into
 #: 200-metre plates - the bug that prompted the unit contract in the first
 #: place.

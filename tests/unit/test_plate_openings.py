@@ -15,12 +15,12 @@ from compas.geometry import Polyline
 from compas_timber.elements import Plate
 from compas_timber.model import TimberModel
 
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralThickness
-from compas_timber_fea.translator import TimberToStructural
-from compas_opensees.meshing import mesh_surfaces
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralThickness
+from tekton_core.translator import TimberToStructural
+from tekton_opensees.meshing import mesh_surfaces
 
 SIDE = 4.0
 THICKNESS = 0.2
@@ -88,8 +88,8 @@ def test_openings_survive_the_json_round_trip():
     import os
     import tempfile
 
-    from compas_timber_fea.core.serialization import model_from_json
-    from compas_timber_fea.core.serialization import model_to_json
+    from tekton_core.core.serialization import model_from_json
+    from tekton_core.core.serialization import model_to_json
 
     model, _ = neutral_plate([[5, 6, 7, 8]])
     path = os.path.join(tempfile.mkdtemp(), "m.json")

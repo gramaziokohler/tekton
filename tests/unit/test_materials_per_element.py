@@ -9,7 +9,7 @@ of whichever was translated first, and nothing in the output looked wrong.
 
 from compas_timber.model import TimberModel
 
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.translator import TimberToStructural
 
 STICKS = "tests/timber_model_sticks.json"
 

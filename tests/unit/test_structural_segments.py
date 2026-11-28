@@ -14,7 +14,7 @@ from compas_timber.connections import TButtJoint
 from compas_timber.elements import Beam
 from compas_timber.model import TimberModel
 
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.translator import TimberToStructural
 
 
 def _girder_and_leg():

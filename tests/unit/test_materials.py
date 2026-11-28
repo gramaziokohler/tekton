@@ -10,10 +10,10 @@ from compas.geometry import Line
 from compas_timber.elements import Beam
 from compas_timber.model import TimberModel
 
-from compas_timber_fea.core.materials import PRESETS
-from compas_timber_fea.core.materials import Material
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.core.materials import PRESETS
+from tekton_core.core.materials import Material
+from tekton_core.core.model import StructuralModel
+from tekton_core.translator import TimberToStructural
 
 
 def test_presets_carry_full_physical_properties():

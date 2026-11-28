@@ -14,16 +14,16 @@ import math
 
 import pytest
 
-from compas_timber_fea.core.materials import Material
-from compas_timber_fea.design import DesignAssumptions
-from compas_timber_fea.design import gamma_M_for
-from compas_timber_fea.design import k_h_bending
-from compas_timber_fea.design import k_mod
-from compas_timber_fea.design import member_length
-from compas_timber_fea.design import section_properties
-from compas_timber_fea.design.checks import MPA_TO_KN_M2
-from compas_timber_fea.design.checks import check_member
-from compas_timber_fea.design.checks import worst_per_member
+from tekton_core.core.materials import Material
+from tekton_core.design import DesignAssumptions
+from tekton_core.design import gamma_M_for
+from tekton_core.design import k_h_bending
+from tekton_core.design import k_mod
+from tekton_core.design import member_length
+from tekton_core.design import section_properties
+from tekton_core.design.checks import MPA_TO_KN_M2
+from tekton_core.design.checks import check_member
+from tekton_core.design.checks import worst_per_member
 
 
 class FakeSection:

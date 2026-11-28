@@ -5,7 +5,7 @@ library, but SAF wants the numbers in the sheet, and OpenSees/Abaqus have no
 library at all. So the neutral model carries the physical properties, and this
 component supplies them.
 
-The presets come from `compas_timber_fea.core.materials` (EN 338 for solid
+The presets come from `tekton_core.core.materials` (EN 338 for solid
 timber, EN 14080 for glulam) - one source for GH, GUI and CLI.
 
 Overrides are the normal case for tested material: preset as a starting point,
@@ -67,7 +67,16 @@ def _remember_repo(root):
 
 
 def _setup(explicit_repo=None):
-    """Make compas_timber_fea importable."""
+    """Make tekton_core importable."""
+    # Installed from the Package Manager: the `# r:` header has had Rhino
+    # pip-install tekton-gh and tekton_core, there is no repo to find.
+    # A repo named explicitly (input or TEKTON_REPO) still wins - that is how
+    # a developer points released components at a checkout.
+    if not (explicit_repo and str(explicit_repo).strip()) and not os.environ.get("TEKTON_REPO"):
+        import importlib.util
+
+        if importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"):
+            return None
     root = None
     for candidate in _repo_candidates(explicit_repo):
         candidate = str(candidate).strip() if candidate else ""
@@ -84,7 +93,7 @@ def _setup(explicit_repo=None):
     # for the next Rhino session.
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
-    for package in ("tekton_gh", "compas_timber_fea"):
+    for package in ("tekton_gh", "tekton_core"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
             sys.path.remove(src)
@@ -109,7 +118,7 @@ elements = elements  # type: ignore # noqa: F821
 # --------------------- SCRIPT ---------------------
 
 _setup()
-from compas_timber_fea.core.materials import PRESETS, Material  # noqa: E402
+from tekton_core.core.materials import PRESETS, Material  # noqa: E402
 
 name = (grade or "C24").strip()
 

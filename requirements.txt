@@ -2,9 +2,9 @@
 
 compas >= 2
 # Tekton depends on the compas_timber.structural API (StructuralGraph.from_model,
-# Beam-/PlateStructuralElementSolver), which lives on the structural_graph_plates
-# branch. Pinned to a revision so installs are reproducible; bump deliberately.
-compas_timber @ git+https://github.com/gramaziokohler/compas_timber.git@4f45dc2019a8bee35c03665d17ce05412c64989e
+# Beam-/PlateStructuralElementSolver), merged into compas_timber main (#866) after
+# 3.0.2 and not yet on PyPI. Pinned to a revision so installs are reproducible; bump deliberately.
+compas_timber @ git+https://github.com/gramaziokohler/compas_timber.git@b3a2220d7b9d3851123fa1089cffa780aef36709
 dlubal-api == 2.13.8
 openpyxl
 pandas

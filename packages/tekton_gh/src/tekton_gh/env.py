@@ -1,10 +1,16 @@
 """Path and environment setup for the Rhino side.
 
-The problem this module solves: Rhino's Python does not find
-`compas_timber_fea`, because the package sits in the monorepo and is not
-installed. And the Rhino session may already have imported a *different*
+Two ways Tekton reaches Rhino. *Installed*: the components come from the
+Package Manager, their `# r: tekton-gh>=X.Y.Z` header has Rhino pip-install
+tekton-gh and tekton_core, and there is nothing to find - see
+:func:`installed`. *From a checkout*: the components are built from the repo,
+and the problem this module solves is that Rhino's Python does not find
+`tekton_core`, because the package sits in the monorepo and is not
+installed. A repo named explicitly (a `repo` input, or TEKTON_REPO) wins over
+an installed Tekton, so a developer can point released components at a
+checkout. And the Rhino session may already have imported a *different*
 `compas_timber` (the official GH plugin, version 1.0.5) - but Tekton needs the
-`structural_graph_plates` branch, which brings `compas_timber.structural`.
+pinned revision of compas_timber main, which brings `compas_timber.structural`.
 
 Order matters: `sys.path.insert(0, ...)` and, if needed, a purge of the
 already loaded modules.
@@ -38,9 +44,29 @@ COMMON_LOCATIONS = (
 )
 
 #: Monorepo packages allowed to run inside Rhino (the pure-Python layer).
-#: `compas_dlubal` and `compas_saf` are deliberately absent - they need
+#: `tekton_dlubal` and `tekton_saf` are deliberately absent - they need
 #: grpc/pandas/vtk and only run in the worker (see worker.py).
-IN_PROCESS_PACKAGES = ("compas_timber_fea",)
+IN_PROCESS_PACKAGES = ("tekton_core",)
+
+
+def installed():
+    """Is the Rhino side importable without the repo - a Package Manager install?
+
+    `find_spec` only looks, it imports nothing. Once a checkout has been put
+    on `sys.path` this is true as well, but TEKTON_REPO is set by then, and
+    an explicitly named repo is asked about first.
+    """
+    import importlib.util
+
+    try:
+        return all(importlib.util.find_spec(name) is not None for name in ("tekton_gh",) + IN_PROCESS_PACKAGES)
+    except (ImportError, ValueError):
+        return False
+
+
+def _explicit(repo_root):
+    """A repo the user named: the argument, or the environment variable."""
+    return bool((repo_root and str(repo_root).strip()) or os.environ.get(DEFAULT_REPO_ENV_VAR, "").strip())
 
 
 def _valid(candidate):
@@ -232,7 +258,7 @@ def tekton_repo_root(explicit=None, document_path=None):
 
 
 def ensure_tekton_path(repo_root=None, purge_conflicting=True, document_path=None):
-    """Make `compas_timber_fea` importable.
+    """Make `tekton_core` importable.
 
     Parameters
     ----------
@@ -249,15 +275,19 @@ def ensure_tekton_path(repo_root=None, purge_conflicting=True, document_path=Non
 
     Returns
     -------
-    str
-        The repo root that was used.
+    str or None
+        The repo root that was used, or None for an installed Tekton (no
+        repo named, and the packages are importable as they are).
 
     Raises
     ------
     RuntimeError
-        When the repo is not found. Loud on purpose: a component that
-        silently does nothing is worse than one that turns red.
+        When the repo is not found and Tekton is not installed either. Loud
+        on purpose: a component that silently does nothing is worse than one
+        that turns red.
     """
+    if not _explicit(repo_root) and installed():
+        return None
     root, _ = discover_repo_root(repo_root, document_path)
     if root is not None:
         remember_repo_root(root)
@@ -266,7 +296,7 @@ def ensure_tekton_path(repo_root=None, purge_conflicting=True, document_path=Non
 
     if purge_conflicting:
         _purge("compas_timber")
-        _purge("compas_timber_fea")
+        _purge("tekton_core")
 
     for package in IN_PROCESS_PACKAGES:
         src = os.path.join(root, "packages", package, "src")
@@ -326,12 +356,20 @@ def diagnose(repo_root=None, document_path=None):
     """
     lines = ["Python {}".format(sys.version.split()[0])]
 
-    root, source = discover_repo_root(repo_root, document_path)
-    if root:
-        lines.append("Repo: {}".format(root))
-        lines.append("      found via {}".format(source))
+    if not _explicit(repo_root) and installed():
+        from tekton_gh import __version__
+        from tekton_gh.worker import WORKER_DIR, find_worker_python
+
+        lines.append("Tekton {} (installed, no repo needed)".format(__version__))
+        worker = find_worker_python()
+        lines.append("Worker: {}".format(worker or "NOT SET UP (expected in {})".format(WORKER_DIR)))
     else:
-        lines.append("Repo: NOT FOUND")
+        root, source = discover_repo_root(repo_root, document_path)
+        if root:
+            lines.append("Repo: {}".format(root))
+            lines.append("      found via {}".format(source))
+        else:
+            lines.append("Repo: NOT FOUND")
 
     try:
         import compas
@@ -355,14 +393,14 @@ def diagnose(repo_root=None, document_path=None):
     except ImportError:
         lines.append(
             "compas_timber.structural MISSING - wrong compas_timber version. "
-            "Tekton needs the 'structural_graph_plates' branch; see README."
+            "Tekton needs the pinned compas_timber revision; see README."
         )
 
     try:
-        import compas_timber_fea  # noqa: F401
+        import tekton_core  # noqa: F401
 
-        lines.append("compas_timber_fea: OK")
+        lines.append("tekton_core: OK")
     except ImportError as exc:
-        lines.append("compas_timber_fea not importable ({})".format(exc))
+        lines.append("tekton_core not importable ({})".format(exc))
 
     return lines

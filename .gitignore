@@ -161,3 +161,6 @@ docs/discussion/
 *.code-workspace
 .env.*
 !.env.example
+
+# Extra venvs (e.g. the Python 3.9 Rhino-side test venv from build.yml)
+.venv*/

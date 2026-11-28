@@ -16,19 +16,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "packages
 from compas.geometry import Point  # noqa: E402
 from compas.geometry import Vector  # noqa: E402
 
-from compas_timber_fea.core.materials import Material  # noqa: E402
-from compas_timber_fea.core.model import StructuralLoadCase  # noqa: E402
-from compas_timber_fea.core.model import StructuralMember  # noqa: E402
-from compas_timber_fea.core.model import StructuralMemberResult  # noqa: E402
-from compas_timber_fea.core.model import StructuralModel  # noqa: E402
-from compas_timber_fea.core.model import StructuralNode  # noqa: E402
-from compas_timber_fea.core.model import StructuralNodeResult  # noqa: E402
-from compas_timber_fea.core.model import StructuralPointLoad  # noqa: E402
-from compas_timber_fea.core.model import StructuralResultSet  # noqa: E402
-from compas_timber_fea.core.model import StructuralSection  # noqa: E402
-from compas_timber_fea.core.model import StructuralSupport  # noqa: E402
-from compas_timber_fea.design import DesignAssumptions  # noqa: E402
-from compas_timber_fea.design.checks import check_model  # noqa: E402
+from tekton_core.core.materials import Material  # noqa: E402
+from tekton_core.core.model import StructuralLoadCase  # noqa: E402
+from tekton_core.core.model import StructuralMember  # noqa: E402
+from tekton_core.core.model import StructuralMemberResult  # noqa: E402
+from tekton_core.core.model import StructuralModel  # noqa: E402
+from tekton_core.core.model import StructuralNode  # noqa: E402
+from tekton_core.core.model import StructuralNodeResult  # noqa: E402
+from tekton_core.core.model import StructuralPointLoad  # noqa: E402
+from tekton_core.core.model import StructuralResultSet  # noqa: E402
+from tekton_core.core.model import StructuralSection  # noqa: E402
+from tekton_core.core.model import StructuralSupport  # noqa: E402
+from tekton_core.design import DesignAssumptions  # noqa: E402
+from tekton_core.design.checks import check_model  # noqa: E402
 from tekton_gh.summary import applied_load_total  # noqa: E402
 from tekton_gh.summary import build_csv  # noqa: E402
 from tekton_gh.summary import build_report  # noqa: E402
@@ -244,7 +244,7 @@ def test_headline_numbers_carry_the_backend_ratio_separately():
 
 def plate_result_set():
     """A result set with two plates, so "per plate" can be told from "overall"."""
-    from compas_timber_fea.core.model import StructuralSurfaceResult
+    from tekton_core.core.model import StructuralSurfaceResult
 
     model = make_model()
     result_set = model.results[1]

@@ -15,13 +15,13 @@ import pytest
 from compas.geometry import Point
 from compas.geometry import Vector
 
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralMemberResult
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralNodeResult
-from compas_timber_fea.core.model import StructuralResultSet
-from compas_timber_fea.core.model import StructuralSection
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralMemberResult
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralNodeResult
+from tekton_core.core.model import StructuralResultSet
+from tekton_core.core.model import StructuralSection
 
 from tekton_app.worker import parse_load_cases
 
@@ -184,7 +184,7 @@ def test_worker_runs_opensees_end_to_end(tmp_path):
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "404 Staebe, 344 Knoten" in completed.stdout
-    from compas_timber_fea.core.model import StructuralModel
+    from tekton_core.core.model import StructuralModel
 
     model = StructuralModel.from_json(str(out))
     assert model.results[1].metadata["source"] == "opensees"

@@ -18,8 +18,8 @@ Rhino — regardless of how we write our own code.
 
 ```text
 ┌─ Rhino 8 (CPython 3.9) ────────────────┐      ┌─ Worker (repo .venv, 3.12) ─┐
-│ compas_timber (structural branch)      │      │ compas_dlubal → RFEM        │
-│ compas_timber_fea  ← runs here, ✅      │ JSON │ compas_saf    → xlsx        │
+│ compas_timber (structural branch)      │      │ tekton_dlubal → RFEM        │
+│ tekton_core  ← runs here, ✅      │ JSON │ tekton_saf    → xlsx        │
 │ tekton_gh (this package)               │ ───→ │                             │
 │  authoring, translate, inspect          │ ←─── │ calculates, reads results   │
 └────────────────────────────────────────┘      └─────────────────────────────┘
@@ -30,7 +30,7 @@ protocol of our own — and every run leaves behind a diffable model as a side
 effect, the same artefact that gets handed to engineers.
 
 **Verified** (on 2026-08-28 in a running Rhino 8 instance):
-`compas_timber_fea` imports under 3.9, `TimberToStructural.translate()`
+`tekton_core` imports under 3.9, `TimberToStructural.translate()`
 completes (test model: 84 beams → 344 nodes, 404 members), the JSON roundtrip
 works.
 
@@ -42,8 +42,9 @@ itself. `--fix --build` also builds and installs the components, provided
 Rhino is running. The steps below are what it does, and what to reach for
 when something is off.
 
-**1. Create the Rhino venv.** Tekton needs `compas_timber` from the branch
-`structural_graph_plates` — `compas_timber.structural` exists only there. The
+**1. Create the Rhino venv.** Tekton needs `compas_timber` from its `main`
+branch, newer than 3.0.2 — the plate API in `compas_timber.structural` is not
+released yet. The
 official COMPAS Timber plugin ships an older version that is *not* enough.
 Create a dedicated venv in Rhino and install the pinned revision into it. The
 name has to match the header of every component — currently
@@ -233,7 +234,7 @@ results back — **by button only**).
 StructuralModel: envelope per beam, samples and their parameter t on the
 *beam* axis as trees, JSON record, `stale` check; with the TimberModel wired
 in, the Beam objects in the same order), `Attach Results` (writes
-`beam.attributes["analysis"]` via `compas_timber_fea.results`: the same
+`beam.attributes["analysis"]` via `tekton_core.results`: the same
 samples and envelope, plus provenance; all load cases or one), `Visualize` (deformed shape and colouring: polylines
 through the deformed RFEM stations, sections swept along them as
 vertex-coloured meshes, one colour per member; `quantity` is
@@ -372,7 +373,7 @@ matrix singular, node 39, direction Y") reaches the `log` output. If you
 see it: it is mechanics, not plumbing — look at the model in RFEM.
 
 **Units at the Dlubal boundary.** The neutral model is kN/kNm, the Dlubal
-API is N/Nm. The factor lives in one place, `compas_dlubal/conventions.py`,
+API is N/Nm. The factor lives in one place, `tekton_dlubal/conventions.py`,
 and applies to loads going out and results coming back. Before 2026-09-15
 both directions were off by 1000 — loads arrived 1000× too small, results
 1000× too large. If a number looks absurd, check the unit before the model.

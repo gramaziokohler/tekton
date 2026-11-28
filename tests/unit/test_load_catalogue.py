@@ -9,18 +9,18 @@ arithmetic is asserted term by term rather than by shape.
 
 import pytest
 
-from compas_timber_fea.core.load_catalogue import CATEGORIES
-from compas_timber_fea.core.load_catalogue import CATEGORY_ORDER
-from compas_timber_fea.core.load_catalogue import GAMMA_G_FAVOURABLE
-from compas_timber_fea.core.load_catalogue import GAMMA_G_UNFAVOURABLE
-from compas_timber_fea.core.load_catalogue import GAMMA_Q_UNFAVOURABLE
-from compas_timber_fea.core.load_catalogue import category
-from compas_timber_fea.core.load_catalogue import category_names
-from compas_timber_fea.core.load_catalogue import describe
-from compas_timber_fea.core.load_catalogue import generate_combinations
-from compas_timber_fea.core.load_catalogue import key_from_name
-from compas_timber_fea.core.load_catalogue import to_load_combinations
-from compas_timber_fea.core.model import StructuralLoadCase
+from tekton_core.core.load_catalogue import CATEGORIES
+from tekton_core.core.load_catalogue import CATEGORY_ORDER
+from tekton_core.core.load_catalogue import GAMMA_G_FAVOURABLE
+from tekton_core.core.load_catalogue import GAMMA_G_UNFAVOURABLE
+from tekton_core.core.load_catalogue import GAMMA_Q_UNFAVOURABLE
+from tekton_core.core.load_catalogue import category
+from tekton_core.core.load_catalogue import category_names
+from tekton_core.core.load_catalogue import describe
+from tekton_core.core.load_catalogue import generate_combinations
+from tekton_core.core.load_catalogue import key_from_name
+from tekton_core.core.load_catalogue import to_load_combinations
+from tekton_core.core.model import StructuralLoadCase
 
 
 def cases(*specs):

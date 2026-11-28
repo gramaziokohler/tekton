@@ -9,7 +9,7 @@ from compas.geometry import Line
 from compas_timber.elements import Beam
 from compas_timber.model import TimberModel
 
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.translator import TimberToStructural
 
 
 def _beam(start, end, width=0.1, height=0.2):

@@ -68,7 +68,16 @@ def _remember_repo(root):
 
 
 def _setup(explicit_repo=None):
-    """Make compas_timber_fea importable."""
+    """Make tekton_core importable."""
+    # Installed from the Package Manager: the `# r:` header has had Rhino
+    # pip-install tekton-gh and tekton_core, there is no repo to find.
+    # A repo named explicitly (input or TEKTON_REPO) still wins - that is how
+    # a developer points released components at a checkout.
+    if not (explicit_repo and str(explicit_repo).strip()) and not os.environ.get("TEKTON_REPO"):
+        import importlib.util
+
+        if importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"):
+            return None
     root = None
     for candidate in _repo_candidates(explicit_repo):
         candidate = str(candidate).strip() if candidate else ""
@@ -85,7 +94,7 @@ def _setup(explicit_repo=None):
     # for the next Rhino session.
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
-    for package in ("tekton_gh", "compas_timber_fea"):
+    for package in ("tekton_gh", "tekton_core"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
             sys.path.remove(src)
@@ -118,7 +127,7 @@ try:
     _setup()
     from tekton_gh.rhino_io import attach_value_list
 
-    from compas_timber_fea.core.support_types import support_type_names
+    from tekton_core.core.support_types import support_type_names
 
     attach_value_list(ghenv, support_type_names(), param_index=3, nickname="Support_type")  # type: ignore # noqa: F821
 except Exception:
@@ -132,12 +141,12 @@ if structural is None:
 else:
     _setup()
     import Rhino.Geometry as rg
-    from compas_timber_fea.core.model import StructuralSupport
+    from tekton_core.core.model import StructuralSupport
 
-    from compas_timber_fea.core.support_types import SUPPORT_TYPE_ORDER
-    from compas_timber_fea.core.support_types import describe as _describe_support
-    from compas_timber_fea.core.support_types import key_from_name
-    from compas_timber_fea.core.support_types import stiffnesses
+    from tekton_core.core.support_types import SUPPORT_TYPE_ORDER
+    from tekton_core.core.support_types import describe as _describe_support
+    from tekton_core.core.support_types import key_from_name
+    from tekton_core.core.support_types import stiffnesses
 
     # The catalogue carries all twelve named types plus the explicit and
     # spring paths; see core/support_types.py.

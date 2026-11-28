@@ -12,12 +12,12 @@ import pytest
 from compas.geometry import Point
 from compas.geometry import Vector
 
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralMemberResult
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralNodeResult
-from compas_timber_fea.core.model import StructuralResultSet
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralMemberResult
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralNodeResult
+from tekton_core.core.model import StructuralResultSet
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "packages", "tekton_gh", "src"))
 
@@ -124,7 +124,7 @@ def test_quantity_lookup_defaults_to_displacement():
 
 
 def test_surface_stations_use_result_samples_or_fall_back_to_corners():
-    from compas_timber_fea.core.model import StructuralSurface, StructuralSurfaceResult
+    from tekton_core.core.model import StructuralSurface, StructuralSurfaceResult
     from tekton_gh.visualize import surface_stations
 
     model = StructuralModel()
@@ -145,12 +145,12 @@ def neutral_plate_model():
     """A single 4x4 m plate in the neutral model, thick enough to mesh."""
     from compas.geometry import Point as _P
 
-    from compas_timber_fea.core.model import StructuralModel
-    from compas_timber_fea.core.model import StructuralNode
-    from compas_timber_fea.core.model import StructuralSurface
-    from compas_timber_fea.core.model import StructuralThickness
+    from tekton_core.core.model import StructuralModel
+    from tekton_core.core.model import StructuralNode
+    from tekton_core.core.model import StructuralSurface
+    from tekton_core.core.model import StructuralThickness
 
-    from compas_timber_fea.core.materials import Material
+    from tekton_core.core.materials import Material
 
     corners = {1: (0, 0, 0), 2: (4, 0, 0), 3: (4, 4, 0), 4: (0, 4, 0)}
     model = StructuralModel()
@@ -163,7 +163,7 @@ def neutral_plate_model():
 
 
 def _self_weight_case():
-    from compas_timber_fea.core.model import StructuralLoadCase
+    from tekton_core.core.model import StructuralLoadCase
 
     return StructuralLoadCase(id=1, name="Self-Weight", action_category="PERMANENT", self_weight=True)
 
@@ -206,10 +206,10 @@ def test_the_solved_mesh_travels_with_the_results():
     """
     import math
 
-    from compas_opensees.runner import run_model
-    from compas_timber_fea.core.model import StructuralSupport
-    from compas_timber_fea.core.support_types import key_from_name
-    from compas_timber_fea.core.support_types import stiffnesses
+    from tekton_opensees.runner import run_model
+    from tekton_core.core.model import StructuralSupport
+    from tekton_core.core.support_types import key_from_name
+    from tekton_core.core.support_types import stiffnesses
 
     model, _ = neutral_plate_model()
     model.supports.append(

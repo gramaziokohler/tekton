@@ -284,7 +284,7 @@ def build_report(model, checks_by_case=None, assumptions=None, title="Tekton ana
         With ``results`` filled.
     checks_by_case : dict, optional
         ``{load_case_id: [MemberCheck, ...]}`` from
-        :func:`compas_timber_fea.design.check_model`. When absent, the
+        :func:`tekton_core.design.check_model`. When absent, the
         utilisation section says it was not computed.
     assumptions : DesignAssumptions, optional
         Printed verbatim when design checks were run.
@@ -452,7 +452,7 @@ def build_report(model, checks_by_case=None, assumptions=None, title="Tekton ana
 
         plate_case_checks = (plate_checks_by_case or {}).get(case_id)
         if plate_case_checks:
-            from compas_timber_fea.design.plates import worst_per_plate
+            from tekton_core.design.plates import worst_per_plate
 
             worst_plates = worst_per_plate(plate_case_checks)
             lines.append("  Plate utilisation (own EC5 checks)")
@@ -479,7 +479,7 @@ def build_report(model, checks_by_case=None, assumptions=None, title="Tekton ana
         elif not case_checks:
             lines.append("  Utilisation   no member could be checked (see notes)")
         else:
-            from compas_timber_fea.design.checks import worst_per_member
+            from tekton_core.design.checks import worst_per_member
 
             worst = worst_per_member(case_checks)
             failing = [entry for entry in worst if not entry.passes]
@@ -592,7 +592,7 @@ def headline_numbers(model, checks_by_case=None):
             out["max_utilization_backend"] = backend["worst"][0]["ratio"]
             out["max_utilization_backend_member"] = backend["worst"][0]["member_id"]
     if checks_by_case:
-        from compas_timber_fea.design.checks import worst_per_member
+        from tekton_core.design.checks import worst_per_member
 
         everything = [entry for checks in checks_by_case.values() for entry in checks]
         if everything:

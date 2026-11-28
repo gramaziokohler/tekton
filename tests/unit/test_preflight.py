@@ -8,15 +8,15 @@ anyone noticing.
 from compas.data import json_load
 from compas.geometry import Point
 
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralMemberLoad
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralSection
-from compas_timber_fea.core.model import StructuralSupport
-from compas_timber_fea.core.preflight import preflight
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralMemberLoad
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralSection
+from tekton_core.core.model import StructuralSupport
+from tekton_core.core.preflight import preflight
+from tekton_core.translator import TimberToStructural
 
 
 def _minimal_model():

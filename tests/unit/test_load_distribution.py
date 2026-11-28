@@ -12,15 +12,15 @@ import pytest
 
 from compas.geometry import Point
 
-from compas_timber_fea.core.load_distribution import distribute_area_load
-from compas_timber_fea.core.load_distribution import edge_widths
-from compas_timber_fea.core.load_distribution import element_ranges
-from compas_timber_fea.core.load_distribution import find_panels
-from compas_timber_fea.core.load_distribution import point_in_regions
-from compas_timber_fea.core.load_distribution import split_range
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
+from tekton_core.core.load_distribution import distribute_area_load
+from tekton_core.core.load_distribution import edge_widths
+from tekton_core.core.load_distribution import element_ranges
+from tekton_core.core.load_distribution import find_panels
+from tekton_core.core.load_distribution import point_in_regions
+from tekton_core.core.load_distribution import split_range
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
 
 
 def grid(nx, ny, dx=1.0, dy=1.0, z=0.0, legs=()):

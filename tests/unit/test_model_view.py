@@ -6,17 +6,17 @@ import sys
 from compas.geometry import Point
 from compas.geometry import Vector
 
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralMemberLoad
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralNodeResult
-from compas_timber_fea.core.model import StructuralPointLoad
-from compas_timber_fea.core.model import StructuralResultSet
-from compas_timber_fea.core.model import StructuralSection
-from compas_timber_fea.core.model import StructuralSupport
-from compas_timber_fea.core.releases import MemberRelease
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralMemberLoad
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralNodeResult
+from tekton_core.core.model import StructuralPointLoad
+from tekton_core.core.model import StructuralResultSet
+from tekton_core.core.model import StructuralSection
+from tekton_core.core.model import StructuralSupport
+from tekton_core.core.releases import MemberRelease
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "packages", "tekton_gh", "src"))
 
@@ -193,7 +193,7 @@ def test_legend_counts():
 
 
 def test_surfaces_and_edge_connections():
-    from compas_timber_fea.core.model import StructuralSurface, StructuralSurfaceConnection, StructuralThickness
+    from tekton_core.core.model import StructuralSurface, StructuralSurfaceConnection, StructuralThickness
     from tekton_gh.model_view import surface_connection_specs, surface_specs
 
     m = _model()

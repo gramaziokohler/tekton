@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tekton-core"
+version = "0.1.0"
+description = "Core module for Tekton"
+authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
+readme = "PYPI.md"
+license = "MIT"
+# Runs inside Rhino 8 (CPython 3.9) as well as in the worker, so it has to
+# stay 3.9-clean: no PEP 604 unions at runtime, no match, no slots= dataclasses.
+# build.yml runs its tests on 3.9 to keep it that way.
+requires-python = ">=3.9"
+dependencies = [
+    "compas_timber",
+    "compas >= 2.15, < 3",
+]
+
+[project.urls]
+Repository = "https://github.com/gramaziokohler/tekton"
+Issues = "https://github.com/gramaziokohler/tekton/issues"
+Changelog = "https://github.com/gramaziokohler/tekton/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+package-dir = { "" = "src" }

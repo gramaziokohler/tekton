@@ -18,9 +18,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from compas_timber_fea.core.model import StructuralModel  # noqa: E402
-from compas_dlubal.dlubal.importer import DlubalImporter  # noqa: E402
-from compas_dlubal.dlubal.result_reader import DlubalResultReader  # noqa: E402
+from tekton_core.core.model import StructuralModel  # noqa: E402
+from tekton_dlubal.dlubal.importer import DlubalImporter  # noqa: E402
+from tekton_dlubal.dlubal.result_reader import DlubalResultReader  # noqa: E402
 from tekton_app.worker import read_api_key  # noqa: E402
 
 MESH_SIZE = 0.35

@@ -21,7 +21,7 @@ import os
 
 import pytest
 
-from compas_timber_fea.core.model import StructuralModel
+from tekton_core.core.model import StructuralModel
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 NEUTRAL_GRAVITY = 9.81
@@ -79,8 +79,8 @@ def test_rfem_plate_is_isotropic(recorded, model):
 
 @pytest.fixture(scope="module")
 def opensees_results(model):
-    from compas_opensees import run_model
-    from compas_opensees.runner import load_opensees
+    from tekton_opensees import run_model
+    from tekton_opensees.runner import load_opensees
 
     try:
         load_opensees()

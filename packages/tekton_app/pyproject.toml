@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=66.0"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,16 +7,23 @@ name = "tekton-app"
 version = "0.1.0"
 description = "GUI App module for Tekton"
 authors = [{ name = "Lorin Wiedemeier", email = "wiedemeier@arch.ethz.ch" }]
+readme = "PYPI.md"
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
     "PySide6",
-    "compas_timber_fea",
-    "compas_dlubal",
-    "compas_saf"
+    "tekton-core == 0.1.0",
+    "tekton-dlubal == 0.1.0",
+    "tekton-saf == 0.1.0",
 ]
 
 [project.scripts]
 tekton = "tekton_app.__main__:main"
+
+[project.urls]
+Repository = "https://github.com/gramaziokohler/tekton"
+Issues = "https://github.com/gramaziokohler/tekton/issues"
+Changelog = "https://github.com/gramaziokohler/tekton/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
 package-dir = { "" = "src" }

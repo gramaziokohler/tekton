@@ -8,9 +8,9 @@ only hint, which reads like "RFEM is not running").
 
 import pytest
 
-from compas_dlubal.dlubal.client import CANDIDATE_PORTS
-from compas_dlubal.dlubal.client import DlubalClient
-from compas_dlubal.dlubal.client import configured_port
+from tekton_dlubal.dlubal.client import CANDIDATE_PORTS
+from tekton_dlubal.dlubal.client import DlubalClient
+from tekton_dlubal.dlubal.client import configured_port
 
 
 class FakeApplication:

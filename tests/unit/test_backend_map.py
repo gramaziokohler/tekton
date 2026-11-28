@@ -29,8 +29,8 @@ import tempfile
 
 import pytest
 
-from compas_timber_fea.core.backend_map import BackendMap
-from compas_timber_fea.core.backend_map import MAX_RFEM_NUMBER
+from tekton_core.core.backend_map import BackendMap
+from tekton_core.core.backend_map import MAX_RFEM_NUMBER
 
 
 def _map():

@@ -1,14 +1,16 @@
 name: release
 
+# A tag vX.Y.Z publishes all six packages to PyPI, in lockstep. The Grasshopper
+# package (Yak) is a separate, manual step afterwards: publish_yak.yml. The
+# full sequence is in docs/RELEASE.md.
 on:
   push:
     tags:
       - 'v*'
 
-# The monorepo packages are not published to PyPI (they depend on each other by
-# name and on an unreleased compas_timber branch). This workflow therefore only
-# verifies that a tagged revision installs and passes its tests; publishing is
-# done manually if and when the packages are released.
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -20,6 +22,32 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Tag, versions and dependencies agree
+        run: |
+          python3 - <<'EOF'
+          import os, sys, tomllib
+          tag = os.environ["GITHUB_REF_NAME"].removeprefix("v")
+          root = tomllib.load(open("pyproject.toml", "rb"))
+          version = root["tool"]["bumpversion"]["current_version"]
+          problems = []
+          if tag != version:
+              problems.append(f"tag v{tag} but [tool.bumpversion] says {version}")
+          # PyPI cannot carry a git pin: the metadata would just say
+          # `compas_timber`, and users would get a release without the plate API.
+          source = root["tool"]["uv"]["sources"].get("compas_timber", {})
+          if "git" in source:
+              problems.append("compas_timber is still a git pin - release it to PyPI first and depend on that version")
+          for name in sorted(os.listdir("packages")):
+              path = os.path.join("packages", name, "pyproject.toml")
+              if os.path.isfile(path):
+                  found = tomllib.load(open(path, "rb"))["project"]["version"]
+                  if found != version:
+                      problems.append(f"{path}: {found} != {version}")
+          for problem in problems:
+              print("::error::" + problem)
+          sys.exit(1 if problems else 0)
+          EOF
+
       - name: Install workspace
         run: uv sync --extra dev
 
@@ -28,3 +56,52 @@ jobs:
 
       - name: Test
         run: uv run pytest -v
+
+  build:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build sdists and wheels
+        run: |
+          for package in tekton-core tekton-dlubal tekton-opensees tekton-saf tekton-app tekton-gh; do
+            uv build --package "$package" --out-dir dist
+          done
+          ls -l dist
+
+      # The Rhino side has to install on Rhino's Python 3.9 from the built
+      # wheels alone - this is the check Rhino's pip would otherwise do first.
+      - name: Rhino side installs on Python 3.9
+        run: |
+          uv venv --python 3.9 /tmp/rhino39
+          VIRTUAL_ENV=/tmp/rhino39 uv pip install --find-links dist tekton-gh
+          /tmp/rhino39/bin/python -c "import tekton_gh, tekton_core; print('ok', tekton_core.__version__)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    # Trusted publishing: each of the six projects on pypi.org names this
+    # repository, this workflow (release.yml) and this environment as its
+    # publisher, so no token is stored anywhere. Protect the environment with
+    # required reviewers to get a last manual gate before the upload.
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

@@ -8,16 +8,16 @@ import pytest
 from compas.data import json_load
 from compas.geometry import Vector
 
-from compas_timber_fea.core.joint_policy import PlateConnectionPolicy
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralSurfaceConnection
-from compas_timber_fea.core.releases import MemberRelease
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.core.joint_policy import PlateConnectionPolicy
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralSurfaceConnection
+from tekton_core.core.releases import MemberRelease
+from tekton_core.translator import TimberToStructural
 
 rfem = pytest.importorskip("dlubal.api.rfem", reason="dlubal-api not installed")
 
-from compas_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper  # noqa: E402
+from tekton_dlubal.dlubal.mappers.mapper_surfaces import SurfaceMapper  # noqa: E402
 
 PLATES = "tests/timber_model_plates_2.json"
 
@@ -156,7 +156,7 @@ def test_connections_sharing_a_release_share_one_hinge(surface_mapper):
 
 
 def test_translating_twice_does_not_double_the_surfaces():
-    """The model appends structural surfaces on generation; a Grasshopper re-solve must not stack them."""
+    """A Grasshopper re-solve translates the same TimberModel again; the surfaces must not stack."""
     timber_model = json_load(PLATES)
     first = TimberToStructural(source_units="mm").translate(timber_model)
     second = TimberToStructural(source_units="mm").translate(timber_model)

@@ -11,23 +11,23 @@ import pytest
 from compas.geometry import Point
 from compas.geometry import Vector
 
-from compas_timber_fea.core.materials import Material
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralMemberResult
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralNodeResult
-from compas_timber_fea.core.model import StructuralResultSet
-from compas_timber_fea.core.model import StructuralSupport
-from compas_timber_fea.core.model import StructuralSurface
-from compas_timber_fea.core.model import StructuralSurfaceLoad
-from compas_timber_fea.core.model import StructuralThickness
-from compas_timber_fea.core.releases import LoadCombination
-from compas_timber_fea.core.superposition import COMBINATION_ID_BASE
-from compas_timber_fea.core.superposition import SuperpositionError
-from compas_timber_fea.core.superposition import combine_all
-from compas_timber_fea.core.superposition import combine_results
-from compas_opensees import run_model
+from tekton_core.core.materials import Material
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralMemberResult
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralNodeResult
+from tekton_core.core.model import StructuralResultSet
+from tekton_core.core.model import StructuralSupport
+from tekton_core.core.model import StructuralSurface
+from tekton_core.core.model import StructuralSurfaceLoad
+from tekton_core.core.model import StructuralThickness
+from tekton_core.core.releases import LoadCombination
+from tekton_core.core.superposition import COMBINATION_ID_BASE
+from tekton_core.core.superposition import SuperpositionError
+from tekton_core.core.superposition import combine_all
+from tekton_core.core.superposition import combine_results
+from tekton_opensees import run_model
 
 
 def plate(pressure=None, thickness=0.2, self_weight=False, case_id=1, side=4.0, divisions=8):

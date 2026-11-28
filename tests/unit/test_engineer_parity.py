@@ -12,15 +12,15 @@ from compas.geometry import Point
 from compas_timber.elements import Beam
 from compas_timber.model import TimberModel
 
-from compas_timber_fea.core.load_distribution import apply_area_load
-from compas_timber_fea.core.load_distribution import distribute_area_load
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.serialization import model_from_json
-from compas_timber_fea.core.serialization import model_to_json
-from compas_timber_fea.core.support_types import SUPPORT_TYPES
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.core.load_distribution import apply_area_load
+from tekton_core.core.load_distribution import distribute_area_load
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.serialization import model_from_json
+from tekton_core.core.serialization import model_to_json
+from tekton_core.core.support_types import SUPPORT_TYPES
+from tekton_core.translator import TimberToStructural
 
 
 def _beam(start, end, **attributes):
@@ -197,8 +197,8 @@ def _length(model, member_id):
 def test_member_set_maps_to_a_continuous_rfem_member_set():
     from dlubal.api import rfem
 
-    from compas_dlubal.dlubal.mappers.mapper_sets import MemberSetMapper
-    from compas_dlubal.dlubal.numbering import Numbering
+    from tekton_dlubal.dlubal.mappers.mapper_sets import MemberSetMapper
+    from tekton_dlubal.dlubal.numbering import Numbering
 
     structural = TimberToStructural().translate(_portal(girder_set="g"))
     obj = MemberSetMapper(rfem.structure_core, Numbering()).map(structural.member_sets[0])
@@ -225,11 +225,11 @@ class _FakeApplication:
 def _transfer_objects(heights):
     from dlubal.api import rfem
 
-    from compas_dlubal.dlubal.mappers.mapper_loads import LoadMapper
-    from compas_dlubal.dlubal.mappers.mapper_sets import LoadTransferMapper
-    from compas_dlubal.dlubal.backend_map_io import load_map
-    from compas_dlubal.dlubal.numbering import Numbering
-    from compas_dlubal.dlubal.numbering import number_model
+    from tekton_dlubal.dlubal.mappers.mapper_loads import LoadMapper
+    from tekton_dlubal.dlubal.mappers.mapper_sets import LoadTransferMapper
+    from tekton_dlubal.dlubal.backend_map_io import load_map
+    from tekton_dlubal.dlubal.numbering import Numbering
+    from tekton_dlubal.dlubal.numbering import number_model
 
     model = _grid(heights)
     apply_area_load(model, {"pressure": [0, 0, -2.5], "load_case_id": 1, "band": 0.5, "transfer_surface": True})
@@ -274,7 +274,7 @@ def test_a_warped_field_becomes_two_triangles_with_a_free_diagonal():
 
 
 def test_fan_apex_skips_a_corner_in_the_middle_of_a_side():
-    from compas_dlubal.dlubal.mappers.mapper_sets import _fan_apex
+    from tekton_dlubal.dlubal.mappers.mapper_sets import _fan_apex
 
     # from corner 0 the last triangle (4,0) (0,0) (2,0) is a sliver along the bottom side
     assert _fan_apex([[4, 0], [4, 3], [0, 3], [0, 0], [2, 0]]) not in (0, None)
@@ -307,7 +307,7 @@ class _FakeModels:
 
 
 def _client(app):
-    from compas_dlubal.dlubal.client import DlubalClient
+    from tekton_dlubal.dlubal.client import DlubalClient
 
     client = DlubalClient(api_key="k")
     client.application = app
@@ -348,8 +348,8 @@ def test_a_rectangle_goes_to_rfem_by_its_parameters_not_its_name():
     """RFEM reads dimensions in a name in model units (mm): 'R_M1 0.28/1' was 0.28 x 1 mm."""
     from dlubal.api import rfem
 
-    from compas_dlubal.dlubal.mappers.mapper_members import MemberMapper
-    from compas_timber_fea.core.model import StructuralSection
+    from tekton_dlubal.dlubal.mappers.mapper_members import MemberMapper
+    from tekton_core.core.model import StructuralSection
 
     cs = MemberMapper(rfem.structure_core).map_section(
         StructuralSection(id=1, name="R_M1 0.28/1", material_id=1, width=0.28, height=1.0))

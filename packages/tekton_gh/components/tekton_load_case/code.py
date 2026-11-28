@@ -63,12 +63,21 @@ def _remember_repo(root):
 
 
 def _setup(explicit_repo=None):
-    """Make compas_timber_fea + tekton_gh importable.
+    """Make tekton_core + tekton_gh importable.
 
     See TektonInfo when this fails. The purge is needed because Rhino may
     already have another compas_timber loaded (the official plugin, 1.0.5),
     which knows no `compas_timber.structural`.
     """
+    # Installed from the Package Manager: the `# r:` header has had Rhino
+    # pip-install tekton-gh and tekton_core, there is no repo to find.
+    # A repo named explicitly (input or TEKTON_REPO) still wins - that is how
+    # a developer points released components at a checkout.
+    if not (explicit_repo and str(explicit_repo).strip()) and not os.environ.get("TEKTON_REPO"):
+        import importlib.util
+
+        if importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"):
+            return None
     root = None
     for candidate in _repo_candidates(explicit_repo):
         candidate = str(candidate).strip() if candidate else ""
@@ -84,7 +93,7 @@ def _setup(explicit_repo=None):
     # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
-    for package in ("tekton_gh", "compas_timber_fea"):
+    for package in ("tekton_gh", "tekton_core"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
             sys.path.remove(src)
@@ -112,7 +121,7 @@ id: int  # type: ignore
 # and TektonInfo says what is missing.
 try:
     _setup()
-    from compas_timber_fea.core.load_catalogue import category_names
+    from tekton_core.core.load_catalogue import category_names
     from tekton_gh.rhino_io import attach_value_list
 
     attach_value_list(ghenv, category_names(), param_index=1, nickname="Category")  # type: ignore # noqa: F821
@@ -120,10 +129,10 @@ except Exception:
     pass
 
 _setup()
-from compas_timber_fea.core.load_catalogue import CATEGORIES  # noqa: E402
-from compas_timber_fea.core.load_catalogue import category as _category  # noqa: E402
-from compas_timber_fea.core.load_catalogue import key_from_name  # noqa: E402
-from compas_timber_fea.core.model import StructuralLoadCase  # noqa: E402
+from tekton_core.core.load_catalogue import CATEGORIES  # noqa: E402
+from tekton_core.core.load_catalogue import category as _category  # noqa: E402
+from tekton_core.core.load_catalogue import key_from_name  # noqa: E402
+from tekton_core.core.model import StructuralLoadCase  # noqa: E402
 
 # The drop-down hands over "A - Imposed - domestic, residential"; a typed
 # value is just the key. Both end up as the key.

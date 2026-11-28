@@ -7,14 +7,14 @@ backends, which defeats the point of having a neutral layer.
 import pytest
 from compas.geometry import Vector
 
-from compas_timber_fea.core.model import StructuralLoadCase
-from compas_timber_fea.core.model import StructuralMemberLoad
-from compas_timber_fea.core.model import StructuralPointLoad
-from compas_timber_fea.core.releases import LoadCombination
+from tekton_core.core.model import StructuralLoadCase
+from tekton_core.core.model import StructuralMemberLoad
+from tekton_core.core.model import StructuralPointLoad
+from tekton_core.core.releases import LoadCombination
 
 rfem = pytest.importorskip("dlubal.api.rfem", reason="dlubal-api not installed")
 
-from compas_dlubal.dlubal.mappers.mapper_loads import LoadMapper  # noqa: E402
+from tekton_dlubal.dlubal.mappers.mapper_loads import LoadMapper  # noqa: E402
 
 
 @pytest.fixture
@@ -139,7 +139,7 @@ def test_no_combinations_means_no_design_situations(mapper):
 
 def test_every_mapped_category_exists_in_the_api_enum():
     """The names were probed live against RFEM; this guards them against an API update."""
-    from compas_dlubal.dlubal.mappers.mapper_loads import ACTION_CATEGORY_NAMES
+    from tekton_dlubal.dlubal.mappers.mapper_loads import ACTION_CATEGORY_NAMES
 
     enum_type = rfem.loading.LoadCase.DESCRIPTOR.fields_by_name["action_category"].enum_type
     available = {value.name for value in enum_type.values}
@@ -149,8 +149,8 @@ def test_every_mapped_category_exists_in_the_api_enum():
 
 def test_the_catalogue_categories_are_all_mapped():
     """Every key the load catalogue can put on a load case must reach RFEM."""
-    from compas_timber_fea.core.load_catalogue import CATEGORIES
-    from compas_dlubal.dlubal.mappers.mapper_loads import ACTION_CATEGORY_NAMES
+    from tekton_core.core.load_catalogue import CATEGORIES
+    from tekton_dlubal.dlubal.mappers.mapper_loads import ACTION_CATEGORY_NAMES
 
     assert not set(CATEGORIES) - set(ACTION_CATEGORY_NAMES)
 

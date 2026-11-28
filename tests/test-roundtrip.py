@@ -39,7 +39,7 @@ print(f"Marked support points on {marked} beams at z={lowest:.3f} (script-side c
 
 # 1. TRANSLATION (timber -> neutral model)
 print("Translating timber model to agnostic structural model...")
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.translator import TimberToStructural
 
 translator = TimberToStructural(connector_mode="rigid", material_name="C24")
 structural_model = translator.translate(timber_model)
@@ -50,7 +50,7 @@ for entry in translator.report:
 
 # 2. PUSH (neutral model -> Dlubal)
 print("Pushing to Dlubal...")
-from compas_dlubal.dlubal.importer import DlubalImporter
+from tekton_dlubal.dlubal.importer import DlubalImporter
 
 importer = DlubalImporter(app_type=APP_TYPE, delete_all=True, api_key=MY_API_KEY)
 if not importer.run(structural_model, model_name="roundtrip-test-model"):
@@ -59,7 +59,7 @@ print("Exported to Dlubal.")
 
 # 3. CALCULATE + READ (Dlubal -> neutral model)
 print("Calculating and reading results...")
-from compas_dlubal.dlubal.result_reader import DlubalResultReader
+from tekton_dlubal.dlubal.result_reader import DlubalResultReader
 
 result_reader = DlubalResultReader(app_type=APP_TYPE, api_key=MY_API_KEY)
 structural_model.results = result_reader.read(load_cases=[1], calculate=True, structural_model=structural_model)
@@ -75,8 +75,8 @@ for load_case_id, result_set in structural_model.results.items():
 
 # 4. ATTACH (neutral results -> timber beams)
 print("Attaching results to timber beams...")
-from compas_timber_fea.results import ANALYSIS_KEY
-from compas_timber_fea.results import attach_results_to_timber
+from tekton_core.results import ANALYSIS_KEY
+from tekton_core.results import attach_results_to_timber
 
 attached = attach_results_to_timber(structural_model, timber_model)
 print(f"  -> results attached to {len(attached)} beams")

@@ -1,0 +1,82 @@
+name: publish_yak
+
+# The Grasshopper package for Rhino 8's Package Manager. Started by hand,
+# AFTER release.yml has put the same version on PyPI: the components name
+# `tekton-gh>=X.Y.Z`, and Rhino installs that on first use. Run it with `test`
+# first, install from the test server in a clean Rhino, then run it with
+# `prod`. The full sequence is in docs/RELEASE.md.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Yak server"
+        required: true
+        type: choice
+        options:
+          - test
+          - prod
+
+permissions:
+  contents: read
+
+jobs:
+  publish_yak:
+    # The componentizer needs GH_IO.dll through pythonnet, which means Windows.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install workspace and release tooling
+        run: uv sync --extra dev --extra release
+
+      # Only a version that is already on PyPI may go to Yak: otherwise every
+      # machine that installs the package gets components that cannot load.
+      - name: The PyPI release exists
+        shell: pwsh
+        run: |
+          $version = uv run --no-sync python -c "import tasks; print(tasks.current_version())"
+          foreach ($package in @("tekton-gh", "tekton-core")) {
+            $code = (Invoke-WebRequest -Uri "https://pypi.org/pypi/$package/$version/json" -SkipHttpErrorCheck).StatusCode
+            if ($code -ne 200) { Write-Error "$package $version is not on PyPI (HTTP $code). Run release.yml first."; exit 1 }
+          }
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      # The source stays in development mode; only this checkout gets the
+      # release header (`# r: tekton-gh>=X.Y.Z`, `# venv: tekton`).
+      - name: Release headers
+        run: uv run --no-sync invoke gh-headers --release
+
+      - name: Build the components
+        run: uv run --no-sync invoke build-ghuser
+
+      - name: Build the Yak package (Rhino 8)
+        run: uv run --no-sync invoke yakerize --target-rhino rh8
+
+      - name: Publish
+        shell: pwsh
+        run: |
+          # Tekton's own token, a repository secret. Not the gramaziokohler org
+          # secret YAK_DF_TOKEN: that belongs to the compas-dev McNeel account,
+          # and the first push makes the token's account the owner of `tekton`.
+          if (-not $env:YAK_TOKEN) { Write-Error "Repository secret TEKTON_YAK_TOKEN is not set (see docs/RELEASE.md)"; exit 1 }
+          $file = Get-ChildItem -Path dist\yak_package\*rh8*.yak -File | Select-Object -First 1
+          if (-not $file) { Write-Error "No .yak file in dist\yak_package"; exit 1 }
+          if ("${{ github.event.inputs.environment }}" -eq "test") {
+            uv run --no-sync invoke publish-yak --yak-file $file.FullName --test-server
+          } else {
+            uv run --no-sync invoke publish-yak --yak-file $file.FullName
+          }
+        env:
+          YAK_TOKEN: ${{ secrets.TEKTON_YAK_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yak-package
+          path: dist/yak_package/*.yak

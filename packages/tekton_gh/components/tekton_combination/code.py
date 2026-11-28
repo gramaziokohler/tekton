@@ -59,12 +59,21 @@ def _remember_repo(root):
 
 
 def _setup(explicit_repo=None):
-    """Make compas_timber_fea + tekton_gh importable.
+    """Make tekton_core + tekton_gh importable.
 
     See TektonInfo when this fails. The purge is needed because Rhino may
     already have another compas_timber loaded (the official plugin, 1.0.5),
     which knows no `compas_timber.structural`.
     """
+    # Installed from the Package Manager: the `# r:` header has had Rhino
+    # pip-install tekton-gh and tekton_core, there is no repo to find.
+    # A repo named explicitly (input or TEKTON_REPO) still wins - that is how
+    # a developer points released components at a checkout.
+    if not (explicit_repo and str(explicit_repo).strip()) and not os.environ.get("TEKTON_REPO"):
+        import importlib.util
+
+        if importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"):
+            return None
     root = None
     for candidate in _repo_candidates(explicit_repo):
         candidate = str(candidate).strip() if candidate else ""
@@ -80,7 +89,7 @@ def _setup(explicit_repo=None):
     # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
-    for package in ("tekton_gh", "compas_timber_fea"):
+    for package in ("tekton_gh", "tekton_core"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
             sys.path.remove(src)
@@ -115,9 +124,9 @@ elif generate:
     # psi_0. Plus the serviceability combinations, because deflection limits
     # are checked against those and not against ULS.
     _setup()
-    from compas_timber_fea.core.load_catalogue import describe
-    from compas_timber_fea.core.load_catalogue import generate_combinations
-    from compas_timber_fea.core.load_catalogue import to_load_combinations
+    from tekton_core.core.load_catalogue import describe
+    from tekton_core.core.load_catalogue import generate_combinations
+    from tekton_core.core.load_catalogue import to_load_combinations
 
     _generated = generate_combinations(list(load_cases), favourable_permanent=bool(favourable))
     combination = to_load_combinations(_generated)
@@ -135,7 +144,7 @@ elif len(load_cases) != len(factors):
     _warn("load_cases ({}) and factors ({}) must be the same length.".format(len(load_cases), len(factors)))
 else:
     _setup()
-    from compas_timber_fea.core.releases import LoadCombination
+    from tekton_core.core.releases import LoadCombination
 
     _manual = LoadCombination(
         id=1,

@@ -8,16 +8,16 @@ types existed still translates to exactly what it translated to before.
 
 import pytest
 
-from compas_timber_fea.core.support_types import DOF_ORDER
-from compas_timber_fea.core.support_types import FREE
-from compas_timber_fea.core.support_types import INF
-from compas_timber_fea.core.support_types import SUPPORT_TYPE_ORDER
-from compas_timber_fea.core.support_types import SUPPORT_TYPES
-from compas_timber_fea.core.support_types import describe
-from compas_timber_fea.core.support_types import key_from_name
-from compas_timber_fea.core.support_types import matching_type
-from compas_timber_fea.core.support_types import stiffnesses
-from compas_timber_fea.core.support_types import support_type_names
+from tekton_core.core.support_types import DOF_ORDER
+from tekton_core.core.support_types import FREE
+from tekton_core.core.support_types import INF
+from tekton_core.core.support_types import SUPPORT_TYPE_ORDER
+from tekton_core.core.support_types import SUPPORT_TYPES
+from tekton_core.core.support_types import describe
+from tekton_core.core.support_types import key_from_name
+from tekton_core.core.support_types import matching_type
+from tekton_core.core.support_types import stiffnesses
+from tekton_core.core.support_types import support_type_names
 
 
 # --- the catalogue -------------------------------------------------------
@@ -137,7 +137,7 @@ def test_describe_shows_a_spring_as_its_value():
 def test_points_of_different_types_become_separate_supports():
     from compas_timber.model import TimberModel
 
-    from compas_timber_fea.translator import TimberToStructural
+    from tekton_core.translator import TimberToStructural
 
     model = TimberModel.from_json("tests/timber_model_sticks.json")
     beams = list(model.beams)
@@ -155,7 +155,7 @@ def test_a_point_without_a_type_still_becomes_pinned():
     """Models written before WP4 must translate exactly as they did."""
     from compas_timber.model import TimberModel
 
-    from compas_timber_fea.translator import TimberToStructural
+    from tekton_core.translator import TimberToStructural
 
     model = TimberModel.from_json("tests/timber_model_sticks.json")
     beam = list(model.beams)[0]

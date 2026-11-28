@@ -93,7 +93,7 @@ Two things the plate path taught, both fixed in code:
   the 1D timber model; a plate needs a stiffness matrix. RFEM then refuses to
   calculate and says nothing in its errors table. The importer now pushes a
   second, orthotropic-2D variant of every material for the thicknesses
-  (`compas_dlubal.mappers.mapper_members.map_material(for_surfaces=True)`).
+  (`tekton_dlubal.mappers.mapper_members.map_material(for_surfaces=True)`).
 
 ## `tekton_plates_opensees_hypar.ghx`
 

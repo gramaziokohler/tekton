@@ -1,0 +1,26 @@
+# Yak manifest for the Tekton Grasshopper package. `{{ version }}` is filled
+# in by `invoke yakerize` (compas_invocations2) from [tool.bumpversion] in the
+# root pyproject.toml. The package carries only the .ghuser components, this
+# icon, README and LICENSE: the Python code comes from PyPI, which Rhino
+# installs on first use from each component's `# r: tekton-gh>=...` header.
+name: tekton
+version: {{ version }}
+authors:
+  - Gramazio Kohler Research, ETH Zurich
+description: >
+  Structural analysis for COMPAS Timber models in Grasshopper. Tekton
+  translates a timber model into a neutral structural model, solves it with
+  OpenSees (no licence needed) or Dlubal RFEM/RSTAB, or exports it as SAF, and
+  brings the results back onto the beams and plates, with EN 1995 checks.
+  Requires Rhino 8. RFEM needs a Dlubal licence and API key and runs on Windows.
+url: https://github.com/gramaziokohler/tekton
+keywords:
+  - compas
+  - timber
+  - structural
+  - analysis
+  - fea
+  - rfem
+  - opensees
+  - grasshopper
+icon: icon.png

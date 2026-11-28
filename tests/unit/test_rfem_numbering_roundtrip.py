@@ -18,20 +18,20 @@ import pytest
 
 from compas.geometry import Point
 
-from compas_timber_fea.core.backend_map import MAX_RFEM_NUMBER
-from compas_timber_fea.core.backend_map import BackendMap
-from compas_timber_fea.core.model import StructuralMember
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralNode
-from compas_timber_fea.core.model import StructuralSection
-from compas_timber_fea.core.model import StructuralSupport
-from compas_timber_fea.translator import stable_id
+from tekton_core.core.backend_map import MAX_RFEM_NUMBER
+from tekton_core.core.backend_map import BackendMap
+from tekton_core.core.model import StructuralMember
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralNode
+from tekton_core.core.model import StructuralSection
+from tekton_core.core.model import StructuralSupport
+from tekton_core.translator import stable_id
 
 pandas = pytest.importorskip("pandas", reason="result parsing needs pandas")
 
-from compas_dlubal.dlubal.numbering import number_model  # noqa: E402
-from compas_dlubal.dlubal.result_parsing import parse_member_internal_forces  # noqa: E402
-from compas_dlubal.dlubal.result_parsing import parse_node_deformations  # noqa: E402
+from tekton_dlubal.dlubal.numbering import number_model  # noqa: E402
+from tekton_dlubal.dlubal.result_parsing import parse_member_internal_forces  # noqa: E402
+from tekton_dlubal.dlubal.result_parsing import parse_node_deformations  # noqa: E402
 
 
 def _model():

@@ -64,7 +64,16 @@ def _remember_repo(root):
 
 
 def _setup(explicit_repo=None):
-    """Make compas_timber_fea + tekton_gh importable."""
+    """Make tekton_core + tekton_gh importable."""
+    # Installed from the Package Manager: the `# r:` header has had Rhino
+    # pip-install tekton-gh and tekton_core, there is no repo to find.
+    # A repo named explicitly (input or TEKTON_REPO) still wins - that is how
+    # a developer points released components at a checkout.
+    if not (explicit_repo and str(explicit_repo).strip()) and not os.environ.get("TEKTON_REPO"):
+        import importlib.util
+
+        if importlib.util.find_spec("tekton_core") and importlib.util.find_spec("tekton_gh"):
+            return None
     root = None
     for candidate in _repo_candidates(explicit_repo):
         candidate = str(candidate).strip() if candidate else ""
@@ -80,7 +89,7 @@ def _setup(explicit_repo=None):
     # Deposit it for the components without a repo input of their own.
     os.environ["TEKTON_REPO"] = root
     _remember_repo(root)
-    for package in ("tekton_gh", "compas_timber_fea"):
+    for package in ("tekton_gh", "tekton_core"):
         src = os.path.join(root, "packages", package, "src")
         if src in sys.path:
             sys.path.remove(src)
@@ -116,7 +125,7 @@ else:
     # holds; when only a load changes, this re-solves without Translate and
     # would stack the loads onto those of the previous solve.
     structural = copy.deepcopy(structural)
-    from compas_timber_fea.core.model import StructuralMemberLoad, StructuralPointLoad, StructuralSurfaceLoad
+    from tekton_core.core.model import StructuralMemberLoad, StructuralPointLoad, StructuralSurfaceLoad
 
     tol = 0.01 if tolerance is None else float(tolerance)
 
@@ -185,7 +194,7 @@ else:
 
         elif load.get("kind") == "member":
             from compas.geometry import Vector
-            from compas_timber_fea.core.load_distribution import element_ranges, split_range
+            from tekton_core.core.load_distribution import element_ranges, split_range
 
             start = float(load.get("dist_start", 0.0))
             end = float(load.get("dist_end", 1.0))
@@ -219,7 +228,7 @@ else:
 
         elif load.get("kind") == "area":
             # The work lives in the library (reloads without rebuilding this component).
-            from compas_timber_fea.core.load_distribution import apply_area_load
+            from tekton_core.core.load_distribution import apply_area_load
 
             info = apply_area_load(structural, load, to_meters=to_meters, report=report)
             applied_members += info["members"]

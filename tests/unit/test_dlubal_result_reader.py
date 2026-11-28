@@ -8,7 +8,7 @@ import inspect
 
 import pytest
 
-from compas_dlubal.dlubal.result_reader import DlubalResultReader
+from tekton_dlubal.dlubal.result_reader import DlubalResultReader
 
 rfem = pytest.importorskip("dlubal.api.rfem", reason="dlubal-api not installed")
 
@@ -108,7 +108,7 @@ def ratio_frame():
 
 
 def test_design_ratios_are_merged_into_every_result_set():
-    from compas_timber_fea.core.model import StructuralMemberResult, StructuralResultSet
+    from tekton_core.core.model import StructuralMemberResult, StructuralResultSet
 
     stations = {1: [StructuralMemberResult(1, 1, position=0.0, axial=-1.0), StructuralMemberResult(1, 1, position=1.0)]}
     result_sets = {1: StructuralResultSet(load_case_id=1, name="LC1", member_results=stations, metadata={})}
@@ -129,7 +129,7 @@ def test_design_ratios_are_merged_into_every_result_set():
 
 
 def test_missing_design_results_are_reported_not_raised():
-    from compas_timber_fea.core.model import StructuralResultSet
+    from tekton_core.core.model import StructuralResultSet
 
     result_sets = {1: StructuralResultSet(load_case_id=1, name="LC1", member_results={}, metadata={})}
 

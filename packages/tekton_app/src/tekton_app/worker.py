@@ -95,14 +95,14 @@ def parse_load_cases(raw):
 
 def run_saf(model, out_path, model_name):
     """SAF-Export. Schreibt eine xlsx, kein Ergebnismodell."""
-    from compas_saf.exporter.saf import SAFExporter
+    from tekton_saf.exporter.saf import SAFExporter
 
     target = out_path
     if not target.lower().endswith(".xlsx"):
         target = os.path.splitext(target)[0] + ".xlsx"
 
     log("SAF-Export nach {}".format(target))
-    from compas_saf.exporter.saf import UnsupportedModel
+    from tekton_saf.exporter.saf import UnsupportedModel
 
     exporter = SAFExporter(model)
     try:
@@ -127,7 +127,7 @@ def run_opensees(model, load_cases, calculate, mesh_target_length=None):
     feinere Vorgabe kostet Rechenzeit und aendert das Ergebnis nur, solange
     es noch nicht konvergiert ist.
     """
-    from compas_opensees import run_model
+    from tekton_opensees import run_model
 
     if not calculate:
         log("OpenSees hat keinen Modellzustand ohne Rechnung - --no-calculate ist hier bedeutungslos.")
@@ -149,8 +149,8 @@ def run_dlubal(model, app_type, model_name, load_cases, calculate, api_key, dele
     Mit ``design`` wird nach dem Push das Holzbemessungs-Add-on eingerichtet
     und dessen Ausnutzung pro Station mitgelesen (``metadata["utilization"]``).
     """
-    from compas_dlubal.dlubal.importer import DlubalImporter
-    from compas_dlubal.dlubal.result_reader import DlubalResultReader
+    from tekton_dlubal.dlubal.importer import DlubalImporter
+    from tekton_dlubal.dlubal.result_reader import DlubalResultReader
 
     log("Verbinde mit {} …".format(app_type.upper()))
     importer = DlubalImporter(app_type=app_type, api_key=api_key, delete_all=delete_all, design=design, port=port)
@@ -231,7 +231,7 @@ def main(argv=None):
 
     # Erst importieren, wenn die Argumente stimmen: der Import zieht grpc/vtk
     # und dauert spuerbar.
-    from compas_timber_fea.core.model import StructuralModel
+    from tekton_core.core.model import StructuralModel
 
     log("Lade Modell: {}".format(args.input))
     model = StructuralModel.from_json(args.input)

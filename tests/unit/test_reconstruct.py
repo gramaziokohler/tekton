@@ -13,13 +13,13 @@ from compas.geometry import Vector
 from compas_timber.elements import Beam
 from compas_timber.model import TimberModel
 
-from compas_timber_fea.core.model import StructuralMemberResult
-from compas_timber_fea.core.model import StructuralModel
-from compas_timber_fea.core.model import StructuralResultSet
-from compas_timber_fea.reconstruct import beam_connectivity
-from compas_timber_fea.reconstruct import chain_endpoints
-from compas_timber_fea.reconstruct import structural_to_timber
-from compas_timber_fea.translator import TimberToStructural
+from tekton_core.core.model import StructuralMemberResult
+from tekton_core.core.model import StructuralModel
+from tekton_core.core.model import StructuralResultSet
+from tekton_core.reconstruct import beam_connectivity
+from tekton_core.reconstruct import chain_endpoints
+from tekton_core.reconstruct import structural_to_timber
+from tekton_core.translator import TimberToStructural
 
 STICKS = "tests/timber_model_sticks.json"
 
