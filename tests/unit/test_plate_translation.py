@@ -156,7 +156,7 @@ def test_connections_sharing_a_release_share_one_hinge(surface_mapper):
 
 
 def test_translating_twice_does_not_double_the_surfaces():
-    """The model appends structural surfaces on generation; a Grasshopper re-solve must not stack them."""
+    """A Grasshopper re-solve translates the same TimberModel again; the surfaces must not stack."""
     timber_model = json_load(PLATES)
     first = TimberToStructural(source_units="mm").translate(timber_model)
     second = TimberToStructural(source_units="mm").translate(timber_model)

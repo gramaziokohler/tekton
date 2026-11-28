@@ -47,10 +47,11 @@ tekton-opensees = { workspace = true }
 tekton-saf = { workspace = true }
 tekton-app = { workspace = true }
 tekton-gh = { workspace = true }
-# Tekton depends on the compas_timber.structural API, which lives on the
-# structural_graph_plates branch. Keep this revision in sync with
+# Tekton depends on the compas_timber.structural plate API, merged into
+# compas_timber main (#866) after 3.0.2 and not yet on PyPI. Keep this
+# revision in sync with
 # requirements.txt. To work against a local checkout instead, see README.
-compas_timber = { git = "https://github.com/gramaziokohler/compas_timber.git", rev = "4f45dc2019a8bee35c03665d17ce05412c64989e" }
+compas_timber = { git = "https://github.com/gramaziokohler/compas_timber.git", rev = "b3a2220d7b9d3851123fa1089cffa780aef36709" }
 
 # One version for every package, released in lockstep: the components name
 # tekton-gh, which pins tekton_core exactly, so the Rhino side and the

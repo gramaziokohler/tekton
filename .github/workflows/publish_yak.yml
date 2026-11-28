@@ -62,6 +62,10 @@ jobs:
       - name: Publish
         shell: pwsh
         run: |
+          # Tekton's own token, a repository secret. Not the gramaziokohler org
+          # secret YAK_DF_TOKEN: that belongs to the compas-dev McNeel account,
+          # and the first push makes the token's account the owner of `tekton`.
+          if (-not $env:YAK_TOKEN) { Write-Error "Repository secret TEKTON_YAK_TOKEN is not set (see docs/RELEASE.md)"; exit 1 }
           $file = Get-ChildItem -Path dist\yak_package\*rh8*.yak -File | Select-Object -First 1
           if (-not $file) { Write-Error "No .yak file in dist\yak_package"; exit 1 }
           if ("${{ github.event.inputs.environment }}" -eq "test") {
@@ -70,7 +74,7 @@ jobs:
             uv run --no-sync invoke publish-yak --yak-file $file.FullName
           }
         env:
-          YAK_TOKEN: ${{ secrets.YAK_DF_TOKEN }}
+          YAK_TOKEN: ${{ secrets.TEKTON_YAK_TOKEN }}
 
       - uses: actions/upload-artifact@v4
         with:

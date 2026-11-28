@@ -42,8 +42,9 @@ itself. `--fix --build` also builds and installs the components, provided
 Rhino is running. The steps below are what it does, and what to reach for
 when something is off.
 
-**1. Create the Rhino venv.** Tekton needs `compas_timber` from the branch
-`structural_graph_plates` — `compas_timber.structural` exists only there. The
+**1. Create the Rhino venv.** Tekton needs `compas_timber` from its `main`
+branch, newer than 3.0.2 — the plate API in `compas_timber.structural` is not
+released yet. The
 official COMPAS Timber plugin ships an older version that is *not* enough.
 Create a dedicated venv in Rhino and install the pinned revision into it. The
 name has to match the header of every component — currently

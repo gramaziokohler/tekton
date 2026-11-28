@@ -157,9 +157,9 @@ if compas_timber is not None:
         structural_ok = False
         report.append("compas_timber.structural: MISSING")
         report.append(
-            "  -> Wrong compas_timber version. Tekton needs the branch "
-            "'structural_graph_plates'. In Rhino: create a dedicated venv with "
-            "that revision (see packages/tekton_gh/README.md)."
+            "  -> Wrong compas_timber version. Tekton needs the pinned revision "
+            "of compas_timber main (newer than 3.0.2). In Rhino: create a "
+            "dedicated venv with it (see packages/tekton_gh/README.md)."
         )
 
     if structural_ok:

@@ -69,15 +69,18 @@ pypi.org, then release `X.Y.(Z+1)` through every step above.
 
 ## One-time setup still open
 
-- `compas_timber` with the plate API released to PyPI; replace the git pin
-  in `pyproject.toml` and `requirements.txt`, and lift the `compas < 2.16`
-  cap in `tekton_core`. `release.yml` refuses to publish until the git
-  pin is gone.
+- `compas_timber` with the plate API (#866, merged after 3.0.2) released
+  to PyPI; replace the git pin in `pyproject.toml` and `requirements.txt`
+  with that version. `release.yml` refuses to publish until the git pin is
+  gone.
 - PyPI: a trusted publisher per project (repository
   `gramaziokohler/tekton`, workflow `release.yml`, environment `pypi`), and
   the `pypi` environment in the repository settings.
-- Yak: confirm which McNeel account owns `YAK_DF_TOKEN` - the first push
-  makes it the owner of `tekton`.
+- Yak: Tekton's own token. Sign in with the McNeel account that is to own
+  `tekton` (the first push makes it the owner), run `yak login --ci`, and
+  store the token it prints as the repository secret `TEKTON_YAK_TOKEN`.
+  Not the org secret `YAK_DF_TOKEN` - that one is compas-dev's;
+  `publish_yak.yml` refuses to run without `TEKTON_YAK_TOKEN`.
 - The worker bootstrap: something that creates `~/.tekton/worker` for the
   user (a setup component, or `install.py` installing from PyPI).
 - A real package icon (`packages/tekton_gh/yak_template/icon.png` is the

@@ -305,19 +305,9 @@ class TimberToStructural:
         if list(timber_model.plates):
             from compas_timber.structural import PlateStructuralElementSolver
             print("Generiere strukturelle Flächen...")
-            # The model *appends* structural surfaces and surface lines on
-            # every generation. Translating the same TimberModel twice (a
-            # re-solve in Grasshopper) would therefore double every plate in
-            # RFEM. Start from a clean slate.
-            # (Not model.remove_plate_structural_surfaces: it passes None as
-            # the value, which compas' node_attribute reads as "get" - the
-            # surfaces stay. An empty list is a real assignment.)
-            graph = timber_model._graph
-            for plate in timber_model.plates:
-                graph.node_attribute(plate.graphnode, "structural_surfaces", [])
-            for edge in list(graph.edges()):
-                if graph.edge_attribute(edge, "structural_surface_lines"):
-                    graph.edge_attribute(edge, "structural_surface_lines", [])
+            # Translating the same TimberModel twice (a re-solve in
+            # Grasshopper) is safe: since #866 the solver replaces the
+            # surfaces and lines it stored before instead of appending.
             plate_solver = PlateStructuralElementSolver()
             plate_solver.add_structural_surfaces(timber_model)
             # Process all joints for plate-plate connections
@@ -818,10 +808,16 @@ class TimberToStructural:
 
         for n1, n2 in structural_graph.surface_connection_edges:
             attributes = structural_graph.edge_attributes((n1, n2))
-            line = attributes.get("line") if hasattr(attributes, "get") else None
             own_plate = attributes.get("plate") if hasattr(attributes, "get") else None
-            # The line's parent plate is the plate on the other side of the joint.
-            other_plate = getattr(line, "parent_plate", None)
+            # A connection line's parent plate is the plate on the other side
+            # of the joint; an edge can carry several lines, one per neighbour.
+            plates = [own_plate] + [
+                line.parent_plate for line in structural_graph.surface_lines(n1, n2) if line.line_type == "connection"
+            ]
+            source_element_ids = []
+            for plate in plates:
+                if plate is not None and source_id(plate) not in source_element_ids:
+                    source_element_ids.append(source_id(plate))
 
             joint = structural_graph.joint(n1, n2)
             release = self.plate_policy.release_for(joint)
@@ -836,9 +832,7 @@ class TimberToStructural:
                     nodes=[node_to_id(structural_graph, n1), node_to_id(structural_graph, n2)],
                     release=release,
                     source_joint_id=source_id(joint) if joint is not None else None,
-                    source_element_ids=[
-                        source_id(plate) for plate in (own_plate, other_plate) if plate is not None
-                    ],
+                    source_element_ids=source_element_ids,
                 )
             )
             conn_id_counter += 1

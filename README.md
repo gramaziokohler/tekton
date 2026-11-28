@@ -65,10 +65,11 @@ tekton/
   you push to Dlubal — and Windows, since RFEM is a Windows application. The
   `dlubal-api` client itself installs anywhere; it is the application that is
   the constraint. SAF export needs neither.
-- **`compas_timber` from the `structural_graph_plates` branch**, pinned to a
+- **`compas_timber` from its `main` branch** (newer than 3.0.2), pinned to a
   revision in `pyproject.toml` *and* `requirements.txt` — the two are read by
   different installers, so `install.py` checks that they agree. The released
-  COMPAS Timber does not carry `compas_timber.structural`, which Tekton reads.
+  COMPAS Timber (3.0.2 and older) does not carry the plate API in
+  `compas_timber.structural` that Tekton reads.
 
 ## Installation
 

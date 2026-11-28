@@ -10,7 +10,7 @@ installed. A repo named explicitly (a `repo` input, or TEKTON_REPO) wins over
 an installed Tekton, so a developer can point released components at a
 checkout. And the Rhino session may already have imported a *different*
 `compas_timber` (the official GH plugin, version 1.0.5) - but Tekton needs the
-`structural_graph_plates` branch, which brings `compas_timber.structural`.
+pinned revision of compas_timber main, which brings `compas_timber.structural`.
 
 Order matters: `sys.path.insert(0, ...)` and, if needed, a purge of the
 already loaded modules.
@@ -393,7 +393,7 @@ def diagnose(repo_root=None, document_path=None):
     except ImportError:
         lines.append(
             "compas_timber.structural MISSING - wrong compas_timber version. "
-            "Tekton needs the 'structural_graph_plates' branch; see README."
+            "Tekton needs the pinned compas_timber revision; see README."
         )
 
     try:
